@@ -1,6 +1,6 @@
 # Week 01 evidence report — Foundation
 
-- Status: local W1 acceptance complete; remote CI remediation in progress
+- Status: local W1 acceptance complete; remote CI passed; PR merge pending
 - Branch: `week/01-foundation`
 - Runtime baseline: Python 3.13 (explicitly authorized for W1)
 - Paid model calls and cost: 0 / 0
@@ -127,8 +127,9 @@ was not read, changed, staged, ignored, or deleted.
 - The first remote PR CI run confirmed backend, frontend, and Compose jobs.
   Its Gitleaks job failed because the workflow token lacked pull-request
   access (`Resource not accessible by integration`). The W1-only remediation
-  grants `pull-requests: write`; the follow-up CI result must be recorded
-  before merge.
+  grants `pull-requests: write`.
+- The remediation commit passed all remote CI jobs (backend, frontend,
+  Compose, and Gitleaks) on the W1 PR before merge.
 
 ## Known limitations
 
@@ -140,8 +141,8 @@ was not read, changed, staged, ignored, or deleted.
    `npm run build` commands both passed with normal local file permissions;
    this is an execution-sandbox limitation, not a code or dependency failure.
 3. The local Gitleaks binary is absent. Pre-commit private-key detection and
-   npm audit ran locally; the full Gitleaks history scan is enforced by CI once
-   an authorized push occurs.
+   npm audit ran locally; the full Gitleaks history scan is enforced by CI and
+   passed on the W1 PR.
 4. Branch protection, GitHub native secret scanning/push protection, required
    checks, Project board, and Milestone configuration are hosted settings that
    must be enabled by repository maintainers after a remote repository is

@@ -1,6 +1,6 @@
 # Week 02 evidence report — Sandbox Foundation
 
-- Status: local W2 quality, runtime, staged diff, and private-key acceptance complete
+- Status: local W2 acceptance complete; initial remote PR checks passed; merge pending
 - Branch: `week/02-sandbox`
 - Baseline commit: `1c23f79` (`w01-foundation`)
 - Runtime baseline: Python 3.13
@@ -113,6 +113,17 @@ was not read, copied, modified, staged, ignored, deleted, or scanned. No
 | Diff integrity | `git diff --cached --check` and staged full review | Passed; exactly 53 contract files, no unstaged diff |
 | Private-key check | pre-commit `detect-private-key --all-files` on the staged index | Passed |
 
+## Remote CI evidence
+
+- Branch `week/02-sandbox` was pushed and opened as GitHub PR #13.
+- The initial push and pull-request workflow runs (`30191963088` and
+  `30191983871`) both completed successfully on commit `635e819`.
+- Each run passed the W1 backend, W1 frontend, Sandbox backend, Sandbox
+  frontend, Compose configuration, and Gitleaks secret-scan jobs.
+- No PR merge or weekly tag had occurred when these results were recorded. The
+  evidence-only follow-up commit must pass the same required checks before the
+  authorized merge.
+
 The first request to `/assets` exposed a production-server route collision with
 Vite's static `assets` directory. Nginx originally redirected the business path
 and lost the published port. Exact `/assets` and `/assets/` SPA locations were
@@ -152,8 +163,8 @@ completed successfully.
   high-severity audit entries from one advisory affecting versions beginning at
   7.12. The manifest and lock were pinned to `7.11.0`, outside the audit's
   reported affected range, and the installed tree confirms that version.
-- The local `gitleaks` executable is unavailable. The CI Gitleaks job remains
-  enabled and unchanged in strength; no remote pass is claimed.
+- The local `gitleaks` executable is unavailable. The unchanged CI Gitleaks job
+  passed in both initial W2 PR workflow runs.
 
 ## Known limitations
 

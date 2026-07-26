@@ -1,7 +1,7 @@
 [project]
 name = "flowpilot-sandbox-api"
-version = "0.1.0"
-description = "W2 synthetic enterprise Sandbox API for FlowPilot Arena"
+version = "0.2.0"
+description = "W2 Sandbox API with the W3 deterministic Arena foundation"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "alembic>=1.15,<2.0",

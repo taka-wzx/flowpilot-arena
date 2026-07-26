@@ -1,35 +1,59 @@
 # Architecture
 
-## W2 current-state architecture
+## W3 current-state architecture
 
-W2 preserves the W1 control-plane smoke path and adds a separate synthetic
-Sandbox deployment boundary. The Sandbox uses one backend and one frontend;
-HRIS, ITSM, IAM, Asset, and Mail are logical modules rather than microservices.
+W3 preserves the W1 stateless control paths and W2 five-module manual Sandbox.
+Arena management is a distinct package and API router inside the single
+Sandbox backend deployment; sharing a process does not merge its management
+contract with the five business-module endpoints.
 
 ```mermaid
 flowchart LR
-    Operator["Human operator"] --> SW["sandbox_web\nReact/Vite + five routes"]
-    SW --> SA["sandbox_api\nFastAPI create/list endpoints"]
-    SA --> PG["PostgreSQL 17\nfive linked tables"]
-    Migration["Alembic foundation migration"] --> PG
-
-    Compose["Local Docker Compose"] --> SW
-    Compose --> SA
+    Human["Human operator"] --> SW["sandbox_web\nfive manual routes"]
+    SW --> Business["Sandbox business API\ncreate/list only"]
+    Human --> Arena["Arena management API\ncatalog · reset-seed · grade · baseline"]
+    Arena --> Specs["10 immutable JSON Task Specs\nstrict schema + SHA-256"]
+    Arena --> Reset["Task-scoped transaction"]
+    Arena --> Grader["Read-only predicate grader"]
+    Arena --> Baseline["Anonymous baseline recorder"]
+    Business --> PG["PostgreSQL\nfive fact tables + ownership"]
+    Reset --> PG
+    Grader --> PG
+    Baseline --> PG
+    Compose["Existing local Compose"] --> SW
+    Compose --> Arena
     Compose --> PG
-    Compose --> CW["control_web\nW1 static page"]
-    Compose --> CA["control_api\nW1 static health"]
+    Compose --> W1["W1 control_api + control_web"]
 ```
 
-| Boundary | W2 responsibility | W2 does not contain |
+| Boundary | W3 responsibility | W3 does not contain |
 |---|---|---|
-| `apps/control_api` | Preserve static W1 `/healthz` | Sandbox data, database, agent, external calls |
-| `apps/control_web` | Preserve the W1 static page | Sandbox routing or API calls |
-| `apps/sandbox_api` | Validate and persist five linked synthetic record types | Auth, tenancy, workflow, reset, grader, update/delete |
-| `apps/sandbox_web` | Manual create/list UI on five explicit routes | Browser automation, agent behaviour, real accounts |
-| `postgres` | Local Sandbox persistence | Production credentials or control-plane state |
-| `deploy/compose` | Start the five W2 containers and one named DB volume | Queue, worker, storage, identity, monitoring |
+| `apps/control_api` | Preserve W1 `/healthz` | Arena, database, models, external calls |
+| `apps/control_web` | Preserve W1 static page | Sandbox or Arena behaviour |
+| Five business APIs | Preserve manual W2 creation/listing; inherit ownership from employee | Reset, grade, arbitrary ownership input |
+| `/api/arena` | Catalog/detail, fixed task Reset/Seed, grade, baseline record | SQL/table/path input, browser action, benchmark run |
+| Task resources | Versioned instructions, structured facts/predicates, checksum | Run results, selectors, prompts, model/browser configuration |
+| PostgreSQL | Synthetic facts, task markers, baseline records | Control-plane or real enterprise state |
 
-## Data model
+## Task Spec and catalog
+
+Each task is a strict JSON resource validated into frozen Pydantic models.
+Unknown fields are rejected. The task contains prose for the human separately
+from structured expected state and an ordered enumerated predicate list. The
+grader never parses prose.
+
+Canonical JSON uses sorted keys, UTF-8, and compact separators, excluding only
+the `canonical_checksum` field. The SHA-256 digest is stored in and verified
+against each spec. A catalog digest covers the sorted task/checksum pairs.
+Duplicate IDs, missing fixed tasks, broken fixture/target references, invalid
+split allocation, deliverable email domains, non-task asset namespaces,
+unsupported predicates, and weights that do not total 100 fail catalog load.
+
+The ten W3 tasks are fixed joiner tasks: six Development, two Validation, and
+two Reporting. They do not represent the final roadmap dataset. Reporting
+content and checksums freeze on first W3 commit and are not tuned before W15.
+
+## Task-owned data and transaction
 
 ```mermaid
 erDiagram
@@ -37,33 +61,48 @@ erDiagram
     EMPLOYEE ||--o| IAM_ACCOUNT : receives
     EMPLOYEE ||--o{ ASSET_ASSIGNMENT : receives
     EMPLOYEE ||--o| MAILBOX : receives
+    TASK_SPEC ||--o{ EMPLOYEE : owns_by_marker
+    TASK_SPEC ||--o{ HUMAN_BASELINE_RECORD : identifies
 ```
 
-`employees` is the manual linking root. All downstream records use a database
-foreign key; IAM username, employee account, asset tag, mailbox employee, and
-mailbox address have uniqueness constraints where the W2 closure needs them.
-The API accepts only `.invalid` email addresses, the ordinary `employee` role,
-one `laptop` device type, and `SYN-` asset tags.
+The W3 migration adds a nullable `arena_task_id` index to all five fact tables.
+Null preserves W2/manual records. A task seed creates one target and one decoy
+employee with fixed IDs, values, dates, and timestamps. Business records created
+for either employee inherit its marker without accepting marker input from the
+caller.
+
+Reset/Seed accepts only a known `task_id`. In one transaction it deletes Mail,
+Asset, IAM, ITSM, and HRIS rows whose marker exactly matches that ID, then adds
+the fixed initial employees. It never accepts a table, query, fixture payload,
+path, or command. Stable ordered fact summaries and checksums make repeated
+initial states observable.
+
+## Deterministic grading
+
+The grader receives a validated spec and a SQLAlchemy session, issues ordered
+read queries, and evaluates only the frozen predicate kinds. It checks target
+employee facts; exact ticket/IAM/asset/mailbox links; ordinary IAM role; wrong
+associations; and task-owned duplicates. Results contain integer score,
+pass/fail, and ordered per-predicate facts. Only 100 passes.
+
+No grader path flushes, commits, mutates, calls a page/browser/log/model/network,
+or infers expected state from prose. Equal spec and database facts serialize to
+equal results.
+
+## Manual baseline boundary
+
+The baseline API stores a synthetic record ID, catalog task ID, constrained
+`anon-...` alias, offset-aware start/end timestamps, derived duration, manual
+action count, optional synthetic notes, and the current grader-derived score.
+It records no identity, keyboard input, screenshot, page state, selector,
+extension data, or browser telemetry and cannot operate a browser.
 
 ## Runtime and migration
 
-- PostgreSQL is healthy before the Sandbox API starts.
-- The Sandbox API runs `alembic upgrade head` through the Alembic Python API in
-  its FastAPI lifespan, then begins serving.
-- The Sandbox web container proxies only `/api/` to the Sandbox API and serves
-  all five SPA paths through an index fallback.
-- Unit tests use isolated SQLite only for deterministic ORM/API tests. Compose
-  runtime acceptance is the PostgreSQL evidence and cannot be replaced by the
-  SQLite tests.
-- The committed database credential is explicitly local-only, has no value
-  outside this disposable Compose environment, and is not a production secret.
+The new `20260726_0002` migration follows the released W2 head; the W2 migration
+is unchanged. The existing Sandbox API startup still upgrades to Alembic head.
+Compose requires no new service: both W1 services, PostgreSQL, Sandbox API, and
+Sandbox web remain the complete local topology. PostgreSQL runtime migration
+and drift checks remain mandatory; SQLite is test-only.
 
-## Deferred topology
-
-The W2 database starts empty. The documented Avery Example flow is a manual
-development recipe, not a generic reset/seed mechanism. Arena tasks, reset,
-seed, graders, splits, and baseline tools remain W3. Playwright and Agent
-execution remain W4+, while identity/tenant boundaries remain W10.
-
-See [adr/0002-w2-single-sandbox-postgres.md](adr/0002-w2-single-sandbox-postgres.md)
-for the decision rationale.
+See [adr/0003-w3-embedded-task-owned-arena.md](adr/0003-w3-embedded-task-owned-arena.md).

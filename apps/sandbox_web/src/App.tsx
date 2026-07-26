@@ -1,4 +1,4 @@
-import { BrowserRouter, NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect, useState, type MouseEvent } from "react";
 
 import "./App.css";
 import { AssetPage } from "./pages/AssetPage";
@@ -15,9 +15,35 @@ const modules = [
   ["/mail", "Mail"],
 ] as const;
 
+const pages = {
+  "/hris": HrisPage,
+  "/itsm": ItsmPage,
+  "/iam": IamPage,
+  "/assets": AssetPage,
+  "/mail": MailPage,
+} as const;
+
 export function App() {
+  const [currentPath, setCurrentPath] = useState<keyof typeof pages>(() => normalizedPath());
+  const CurrentPage = pages[currentPath];
+
+  useEffect(() => {
+    const handlePopState = () => setCurrentPath(normalizedPath());
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const navigate = (event: MouseEvent<HTMLAnchorElement>, path: keyof typeof pages) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    window.history.pushState({}, "", path);
+    setCurrentPath(path);
+  };
+
   return (
-    <BrowserRouter>
+    <>
       <header className="app-header">
         <div>
           <p className="eyebrow">FlowPilot Arena · W2</p>
@@ -28,21 +54,28 @@ export function App() {
       </header>
       <nav aria-label="Sandbox modules">
         {modules.map(([path, label]) => (
-          <NavLink key={path} to={path}>
+          <a
+            key={path}
+            href={path}
+            className={path === currentPath ? "active" : undefined}
+            onClick={(event) => navigate(event, path)}
+          >
             {label}
-          </NavLink>
+          </a>
         ))}
       </nav>
       <main>
-        <Routes>
-          <Route path="/hris" element={<HrisPage />} />
-          <Route path="/itsm" element={<ItsmPage />} />
-          <Route path="/iam" element={<IamPage />} />
-          <Route path="/assets" element={<AssetPage />} />
-          <Route path="/mail" element={<MailPage />} />
-          <Route path="*" element={<Navigate to="/hris" replace />} />
-        </Routes>
+        <CurrentPage />
       </main>
-    </BrowserRouter>
+    </>
   );
+}
+
+function normalizedPath(): keyof typeof pages {
+  const requestedPath = window.location.pathname;
+  if (requestedPath in pages) {
+    return requestedPath as keyof typeof pages;
+  }
+  window.history.replaceState({}, "", "/hris");
+  return "/hris";
 }

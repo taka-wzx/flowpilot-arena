@@ -88,6 +88,11 @@ docs/evidence/week-04-report.md
 
 deploy/compose/compose.yaml
 
+apps/sandbox_web/package.json
+apps/sandbox_web/package-lock.json
+apps/sandbox_web/src/App.tsx
+apps/sandbox_web/src/App.test.tsx
+
 apps/browser_worker/.dockerignore
 apps/browser_worker/Dockerfile
 apps/browser_worker/pyproject.toml

@@ -25,7 +25,7 @@
 
 ## Scope and exact changed files
 
-The final pre-staging W4 worktree contains exactly these 47 contract-owned
+The final pre-staging W4 worktree contains exactly these 51 contract-owned
 changed or new paths:
 
 ```text
@@ -57,6 +57,11 @@ apps/browser_worker/tests/test_observation.py
 apps/browser_worker/tests/test_policy.py
 apps/browser_worker/tests/test_runtime.py
 apps/browser_worker/tests/test_schemas.py
+
+apps/sandbox_web/package.json
+apps/sandbox_web/package-lock.json
+apps/sandbox_web/src/App.tsx
+apps/sandbox_web/src/App.test.tsx
 
 apps/dom_agent/.dockerignore
 apps/dom_agent/Dockerfile
@@ -116,7 +121,7 @@ reported `20260726_0002 (head)` and `alembic check` reported
 | Browser Worker image | W4 Dockerfile | `sha256:5b87e1bccc1cd31ab24d4164afbc25e790ed6bb595825d535ce9ec21d3102778` |
 | DOM Agent image | W4 Dockerfile | `sha256:7899a69c5ff736109c298f2085b28d8c579f80858e51299dafae8f3ad106bdf5` |
 | Acceptance image | W4 smoke Dockerfile | `sha256:63eb619581bd2153a5c67de91237df62dab9a801bc4772e8d0d542631caabf53` |
-| Host Node/npm | existing frontend locks | Node 24.15.0; npm 11.12.1 |
+| Host Node/npm | synchronized frontend locks | Node 24.15.0; npm 11.12.1 |
 | Frontend build image | `node:24-alpine` | `sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd` |
 | Frontend runtime image | `nginx:1.27-alpine` | `sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10` |
 | PostgreSQL | `postgres:17-alpine` | `sha256:742f40ea20b9ff2ff31db5458d127452988a2164df9e17441e191f3b72252193` |
@@ -213,8 +218,8 @@ wiring and that finish does not bypass grading; it is not task completion.
 | W1 frontend quality | lint, typecheck, test, build | Passed; 1 test; 30-module Vite build |
 | Sandbox/Arena backend lock | `uv sync --locked --all-groups` | Passed; 42 packages resolved |
 | Sandbox/Arena backend quality | Ruff check/format, mypy `src`, pytest | Passed; 23 files formatted; 12 typed files; 23 tests |
-| Sandbox frontend lock | `npm.cmd ci` | Install passed; 254 packages added; current registry audit reported 2 high vulnerabilities in the unchanged W2 lock |
-| Sandbox frontend quality | lint, typecheck, test, build | Passed; 6 tests; 48-module Vite build |
+| Sandbox frontend lock | `npm.cmd ci` | Passed; 250 packages added; audit reported 0 vulnerabilities |
+| Sandbox frontend quality | lint, typecheck, test, build | Passed; 8 tests; 36-module Vite build |
 | Browser Worker lock | `uv sync --locked --all-groups` | Passed; 38 packages resolved/installed |
 | Browser Worker quality | Ruff check/format, mypy `src`, pytest | Passed; 7 typed source files; 23 tests |
 | DOM Agent lock | `uv sync --locked --all-groups` | Passed; 35 packages resolved/installed |
@@ -252,18 +257,24 @@ runs did not occur.
 
 | Gate | Observed result |
 |---|---|
-| `pre-commit detect-private-key` over exact 47 files | Passed |
-| Gitleaks complete Git history | Passed; 27 commits, about 899 KB, no leaks |
-| Gitleaks exact W4 changed files | Passed for all 47 files |
+| `pre-commit detect-private-key` over exact 51 files | Passed via temporary `uvx` runner |
+| Gitleaks complete Git history | Passed before `d661c0a`; follow-up executable unavailable, so not rerun |
+| Gitleaks exact W4 changed files | Original 47 files passed before `d661c0a`; six-file remediation delta not run because Gitleaks became unavailable |
 | `git diff --check` | Passed after final evidence update |
-| Exact contract path audit | Passed; changed 47, allowed 47, outside 0, allowed-but-unchanged 0 |
-| Staged/unstaged review | Passed; all 47 contract paths staged explicitly, staged diff check passed, and no contract-owned unstaged path remained |
+| Exact contract path audit | Passed; changed 51, allowed 51, outside 0, allowed-but-unchanged 0 |
+| Staged/unstaged review | Passed; the six-file remediation delta was staged explicitly, staged diff check passed, and no contract-owned unstaged path remained |
 
 The first broad directory scan included local `.venv` dependencies and found
 two known Playwright package strings plus two generic-key false positives in a
 local URL/document sentence. The source wording was made unambiguous, and the
 authoritative exact-file scan excluded local tool caches and passed. No ignore
 or baseline suppression was added.
+
+For the remediation follow-up, neither `gitleaks` nor the global `pre-commit`
+entry point was present on `PATH`. `pre-commit` was recovered with a temporary
+`uvx` runner and passed. Gitleaks could not be recovered from standard local
+installation paths and is explicitly recorded as unavailable rather than
+silently weakening or claiming its rerun.
 
 ## Observed implementation corrections and limitations
 
@@ -276,10 +287,16 @@ or baseline suppression was added.
    publication on this Docker implementation. W1/W2 networks were restored to
    loopback-published bridge networks; Browser/Agent networks remain internal
    and un-routed. The one-off acceptance profile now runs smoke inside Compose.
-4. `npm.cmd ci` for the unchanged W2 `sandbox_web` lock succeeded but the
-   current registry audit reported two high vulnerabilities. W4 did not expand
-   its contract to alter the frozen W2 frontend dependency set; Dependabot and
-   the normal frontend gates remain enabled.
+4. The original `sandbox_web` lock produced two high-severity package entries
+   for direct `react-router-dom@7.11.0` and transitive `react-router@7.11.0`.
+   The expanded advisory set included XSS, redirect, deserialization, DoS, and
+   CSRF reports. npm first proposed `7.18.1`; after testing that version, the
+   registry reported `GHSA-qwww-vcr4-c8h2` across `>=7.12.0 <8.3.0`, leaving no
+   secure 7.x version. W4 therefore removed the unnecessary routing dependency
+   and its `cookie`, `react-router`, and `set-cookie-parser` transitives. A
+   bounded five-path in-app router preserves the existing pages, active link,
+   history navigation, and unknown-path `/hris` fallback. Host and container
+   `npm ci` now report zero vulnerabilities; all eight frontend tests pass.
 5. Real-model five-task acceptance is not authorized and is not claimed.
 6. W4 proves bounded DOM-only foundations and deterministic fake/runtime paths,
    not a task success rate, failure recovery, production reliability, malicious

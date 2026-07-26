@@ -1,6 +1,6 @@
 # Week 03 evidence report — Arena Foundation
 
-- Status: local W3 implementation and acceptance complete; no push/PR/tag performed
+- Status: local and initial remote W3 acceptance complete; PR #20 merge pending
 - Branch: `week/03-arena`
 - Baseline commit: `5d4647b` (`w02-sandbox`)
 - Runtime baseline: Python 3.13
@@ -223,6 +223,18 @@ ROI.
 One upstream `StarletteDeprecationWarning` remains in pytest for FastAPI's
 current `TestClient` import path. It does not affect the 23 passing tests.
 
+## Remote CI evidence
+
+- Branch `week/03-arena` was pushed without force and opened as GitHub PR #20
+  against `main`.
+- The initial branch workflow run `30196402705` and pull-request workflow run
+  `30196424019` both completed successfully on commit `e383adf`.
+- Both runs passed W1 backend, W1 frontend, Sandbox/Arena backend, Sandbox
+  frontend, Compose configuration, and Gitleaks `Secret scan` jobs.
+- This evidence-only follow-up commit must pass the same required checks before
+  the authorized merge. No merge or W3 tag had occurred when this section was
+  written.
+
 ## Secret and diff review
 
 The initial local review found no Gitleaks executable and a damaged user-level
@@ -232,8 +244,8 @@ Gitleaks 8.30.1 was then installed through Winget in the current-user scope and
 its package directory added to the user PATH. `gitleaks git` scanned the
 complete local Git history, including the W3 evidence commits, without finding
 a leak. Git mode was used deliberately so the pre-existing untracked
-`%SystemDrive%/` directory was never traversed. No remote W3 CI claim is made
-because the branch is unpushed.
+`%SystemDrive%/` directory was never traversed. The two initial remote W3
+Gitleaks jobs are recorded above; the evidence-only follow-up is not preclaimed.
 
 The complete contract-owned implementation, migration, Task Specs, tests,
 locks, CI, and documentation were reviewed together with the exact 41-path
@@ -244,8 +256,8 @@ status and `git diff --check`. No contract-external path is changed.
 1. This host has `docker-compose` v5.3.0 but no `docker compose` plugin and no
    Buildx plugin. Compatible Compose and the classic builder completed every
    required runtime check.
-2. A remote W3 Gitleaks/CI result still requires an authorized push and PR;
-   only the repaired local pre-commit and Gitleaks results are claimed here.
+2. The evidence-only follow-up must pass remote CI before PR #20 is merged; no
+   result for that not-yet-pushed commit is preclaimed in this report.
 3. The single observed human sample proves the five-page closure and recorder,
    not a representative timing distribution, productivity change, or ROI.
 4. W3 is unauthenticated and local-only. Any local caller can select one of the
@@ -259,5 +271,5 @@ status and `git diff --check`. No contract-external path is changed.
 
 W4 may add an isolated Playwright worker, DOM/accessibility observation, typed
 browser actions, and a DOM ReAct baseline. W3 stops without implementing or
-scaffolding those capabilities. No push, PR, merge, or `w03-arena` tag has been
-performed.
+scaffolding those capabilities. PR #20 was open, but no merge or `w03-arena`
+tag had occurred when this report was updated.

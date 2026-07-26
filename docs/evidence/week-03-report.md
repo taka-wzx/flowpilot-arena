@@ -211,18 +211,23 @@ timing, an efficiency improvement, a benchmark result, or enterprise ROI.
 | Diff whitespace | `git diff --check` | Passed |
 | Contract path audit | actual tracked/untracked changes compared with exact contract block | Passed; all 41 paths are allowlisted |
 | Explicit secret-pattern review | private-key, AWS, GitHub, OpenAI-style, and Bearer-token patterns over the 41 changed files | Passed; no matches |
+| Pre-commit private-key scan | `pre-commit clean`, `pre-commit install-hooks`, then `pre-commit run detect-private-key --all-files` | Passed; damaged user cache was rebuilt successfully |
+| Gitleaks history scan | `gitleaks git --no-banner --redact --exit-code 1 .` | Passed with Gitleaks 8.30.1; all 24 local commits scanned; no leaks found |
 
 One upstream `StarletteDeprecationWarning` remains in pytest for FastAPI's
 current `TestClient` import path. It does not affect the 23 passing tests.
 
-## Secret and diff review limitations
+## Secret and diff review
 
-The local `gitleaks` executable is unavailable. The existing pre-commit
-executable was found, but its cached `pre-commit-hooks` manifest path was not a
-file, so `detect-private-key` could not run locally. Neither failure was hidden
-or converted into a pass. The explicit changed-file secret-pattern review
-passed, and the unchanged CI still defines Gitleaks, but no remote W3 CI claim
-is made because this branch has not been pushed.
+The initial local review found no Gitleaks executable and a damaged user-level
+pre-commit hook cache. The cache was removed through `pre-commit clean`, the
+locked hooks were reinstalled, and `detect-private-key --all-files` passed.
+Gitleaks 8.30.1 was then installed through Winget in the current-user scope and
+its package directory added to the user PATH. `gitleaks git` scanned all 24
+local commits, including the evidence-only repair commit, without finding a
+leak. Git mode was used deliberately so the pre-existing untracked
+`%SystemDrive%/` directory was never traversed. No remote W3 CI claim is made
+because the branch is unpushed.
 
 The complete contract-owned implementation, migration, Task Specs, tests,
 locks, CI, and documentation were reviewed together with the exact 41-path
@@ -233,8 +238,8 @@ status and `git diff --check`. No contract-external path is changed.
 1. This host has `docker-compose` v5.3.0 but no `docker compose` plugin and no
    Buildx plugin. Compatible Compose and the classic builder completed every
    required runtime check.
-2. Local Gitleaks is unavailable, and the existing pre-commit hook cache is
-   unusable. A remote W3 Gitleaks result requires an authorized push/PR.
+2. A remote W3 Gitleaks/CI result still requires an authorized push and PR;
+   only the repaired local pre-commit and Gitleaks results are claimed here.
 3. The baseline sample proves the narrow recorder and grader-derived score, not
    a measured human completion session, productivity change, or ROI.
 4. W3 is unauthenticated and local-only. Any local caller can select one of the

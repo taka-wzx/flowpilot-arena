@@ -1,6 +1,6 @@
 # Week 01 evidence report — Foundation
 
-- Status: local W1 acceptance complete; remote CI intentionally not claimed
+- Status: local W1 acceptance complete; remote CI remediation in progress
 - Branch: `week/01-foundation`
 - Runtime baseline: Python 3.13 (explicitly authorized for W1)
 - Paid model calls and cost: 0 / 0
@@ -124,8 +124,11 @@ was not read, changed, staged, ignored, or deleted.
 - A staged-file private absolute-path pattern check passed.
 - Final status retains only the pre-existing excluded `%SystemDrive%/`
   directory as untracked; no non-contract file is staged.
-- No remote GitHub Actions run is claimed because this branch has not been
-  pushed and no PR was created.
+- The first remote PR CI run confirmed backend, frontend, and Compose jobs.
+  Its Gitleaks job failed because the workflow token lacked pull-request
+  access (`Resource not accessible by integration`). The W1-only remediation
+  grants `pull-requests: write`; the follow-up CI result must be recorded
+  before merge.
 
 ## Known limitations
 

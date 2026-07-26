@@ -1,4 +1,4 @@
-name: flowpilot-arena-w1
+name: flowpilot-arena-w2
 
 services:
   control-api:
@@ -35,3 +35,61 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: flowpilot_sandbox
+      POSTGRES_USER: flowpilot
+      POSTGRES_PASSWORD: flowpilot_local_only
+    volumes:
+      - sandbox-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowpilot -d flowpilot_sandbox"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  sandbox-api:
+    build:
+      context: ../../apps/sandbox_api
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://flowpilot:flowpilot_local_only@postgres:5432/flowpilot_sandbox
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8001/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
+  sandbox-web:
+    build:
+      context: ../../apps/sandbox_web
+      dockerfile: Dockerfile
+    depends_on:
+      sandbox-api:
+        condition: service_healthy
+    ports:
+      - "5174:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  sandbox-postgres-data:

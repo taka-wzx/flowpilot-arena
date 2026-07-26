@@ -1,48 +1,69 @@
 # Architecture
 
-## W1 current-state architecture
+## W2 current-state architecture
 
-W1 uses a minimal monorepo with two runnable application roots. They are
-separate build contexts and dependency locks so that the Python and frontend
-toolchains remain reproducible without introducing shared runtime services.
+W2 preserves the W1 control-plane smoke path and adds a separate synthetic
+Sandbox deployment boundary. The Sandbox uses one backend and one frontend;
+HRIS, ITSM, IAM, Asset, and Mail are logical modules rather than microservices.
 
 ```mermaid
 flowchart LR
-    Dev["Developer or CI"] --> Compose["Compose configuration"]
-    Compose --> Web["control_web\nReact/Vite static site"]
-    Compose --> API["control_api\nFastAPI"]
-    API --> Health["GET /healthz\nstatic response"]
+    Operator["Human operator"] --> SW["sandbox_web\nReact/Vite + five routes"]
+    SW --> SA["sandbox_api\nFastAPI create/list endpoints"]
+    SA --> PG["PostgreSQL 17\nfive linked tables"]
+    Migration["Alembic foundation migration"] --> PG
+
+    Compose["Local Docker Compose"] --> SW
+    Compose --> SA
+    Compose --> PG
+    Compose --> CW["control_web\nW1 static page"]
+    Compose --> CA["control_api\nW1 static health"]
 ```
 
-| Boundary | W1 responsibility | W1 does not contain |
+| Boundary | W2 responsibility | W2 does not contain |
 |---|---|---|
-| `apps/control_api` | Serve an in-process health response | Database, identity, tasks, model or external calls |
-| `apps/control_web` | Render a static foundation page | API fetching, routing, login, business pages |
-| `deploy/compose` | Build and wire the two local services | Data stores, queues, workers, observability |
-| `.github` | Reproduce quality and secret checks | Hosted settings or deployment credentials |
+| `apps/control_api` | Preserve static W1 `/healthz` | Sandbox data, database, agent, external calls |
+| `apps/control_web` | Preserve the W1 static page | Sandbox routing or API calls |
+| `apps/sandbox_api` | Validate and persist five linked synthetic record types | Auth, tenancy, workflow, reset, grader, update/delete |
+| `apps/sandbox_web` | Manual create/list UI on five explicit routes | Browser automation, agent behaviour, real accounts |
+| `postgres` | Local Sandbox persistence | Production credentials or control-plane state |
+| `deploy/compose` | Start the five W2 containers and one named DB volume | Queue, worker, storage, identity, monitoring |
 
-The two services share no runtime state. `control_web` depends on a passing API
-healthcheck in Compose solely to prove the basic startup ordering; it does not
-call the API.
+## Data model
 
-## Long-term topology is deferred
+```mermaid
+erDiagram
+    EMPLOYEE ||--o{ ONBOARDING_TICKET : has
+    EMPLOYEE ||--o| IAM_ACCOUNT : receives
+    EMPLOYEE ||--o{ ASSET_ASSIGNMENT : receives
+    EMPLOYEE ||--o| MAILBOX : receives
+```
 
-The roadmap names future Control Plane, Sandbox, Arena, browser, workflow,
-policy, identity, storage, and observability components. W1 intentionally does
-not create placeholder directories for them. Their eventual boundaries must be
-introduced only by the weekly contract that owns them, with an ADR when the
-decision changes the architecture.
+`employees` is the manual linking root. All downstream records use a database
+foreign key; IAM username, employee account, asset tag, mailbox employee, and
+mailbox address have uniqueness constraints where the W2 closure needs them.
+The API accepts only `.invalid` email addresses, the ordinary `employee` role,
+one `laptop` device type, and `SYN-` asset tags.
 
-## Deployment assumptions
+## Runtime and migration
 
-- Local container execution uses two containers only: Python API and static
-  web server.
-- No application configuration requires a secret in W1.
-- Docker Compose validation renders configuration; it is not evidence of a
-  production deployment.
-- CI uses the same dependency lock and build commands as local development.
+- PostgreSQL is healthy before the Sandbox API starts.
+- The Sandbox API runs `alembic upgrade head` through the Alembic Python API in
+  its FastAPI lifespan, then begins serving.
+- The Sandbox web container proxies only `/api/` to the Sandbox API and serves
+  all five SPA paths through an index fallback.
+- Unit tests use isolated SQLite only for deterministic ORM/API tests. Compose
+  runtime acceptance is the PostgreSQL evidence and cannot be replaced by the
+  SQLite tests.
+- The committed database credential is explicitly local-only, has no value
+  outside this disposable Compose environment, and is not a production secret.
 
-## Decision record
+## Deferred topology
 
-See [adr/0001-w1-minimal-monorepo.md](adr/0001-w1-minimal-monorepo.md) for the
-reasoning behind this small initial structure.
+The W2 database starts empty. The documented Avery Example flow is a manual
+development recipe, not a generic reset/seed mechanism. Arena tasks, reset,
+seed, graders, splits, and baseline tools remain W3. Playwright and Agent
+execution remain W4+, while identity/tenant boundaries remain W10.
+
+See [adr/0002-w2-single-sandbox-postgres.md](adr/0002-w2-single-sandbox-postgres.md)
+for the decision rationale.

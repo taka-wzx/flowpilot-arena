@@ -177,6 +177,44 @@ services:
       retries: 5
       start_period: 10s
 
+  real-agent:
+    profiles:
+      - real-acceptance
+    build:
+      context: ../../apps/dom_agent
+      dockerfile: Dockerfile
+    environment:
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    depends_on:
+      browser-worker:
+        condition: service_healthy
+    networks:
+      - agent-worker
+      - model-egress
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-agent:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os; from urllib.request import urlopen; assert os.environ.get('OPENAI_API_KEY'); urlopen('http://127.0.0.1:8003/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
   acceptance-smoke:
     profiles:
       - acceptance
@@ -213,6 +251,39 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  real-acceptance:
+    profiles:
+      - real-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w4_real_model_acceptance.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      REAL_AGENT_URL: http://real-agent:8003
+    depends_on:
+      control-api:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      browser-worker:
+        condition: service_healthy
+      real-agent:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - sandbox-backend
+      - agent-worker
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
 networks:
   control-backend:
   sandbox-backend:
@@ -220,6 +291,7 @@ networks:
     internal: true
   agent-worker:
     internal: true
+  model-egress:
 
 volumes:
   sandbox-postgres-data:

@@ -40,6 +40,12 @@ shape. The loop can call only Browser Worker HTTP. It has no Sandbox API or
 database network and no Reset/Seed/Grader client. Default runtime and all CI
 paths use a deterministic fake model.
 
+After the separately disclosed user authorization on 2026-07-26, one
+profile-only real Agent instance may use the same image and loop. Its only code
+path beyond the Browser Worker is a fixed HTTPS call to OpenAI Responses with
+exact model `gpt-5.6-terra`, strict action JSON Schema, no provider tools, no
+retries, and environment-only credentials. It never accepts a provider URL.
+
 Keep task lifecycle management outside both components. An acceptance caller
 uses W3 management APIs to load a fixed task, compare two Reset/Seed results,
 render title/instructions plus the immutable supplied synthetic values into a
@@ -64,6 +70,13 @@ root filesystem, drops capabilities, sets no-new-privileges, uses bounded
 tmpfs storage, and receives no database environment variable. DOM Agent uses
 equivalent non-root/read-only restrictions and receives only the Browser Worker
 URL.
+
+The authorized `real-acceptance` profile adds a non-internal `model-egress`
+bridge only to the profile-only real Agent. The trusted acceptance caller still
+owns Reset/Seed and Grader, reaches the real Agent over `agent-worker`, and
+receives no key. Default services, CI, and fake smoke never attach to this
+bridge. Compose cannot domain-allowlist an outbound bridge, so the fixed
+application destination and profile-only lifecycle are the W4 containment.
 
 Pin Playwright Python to `1.60.0`, matching its `148.0.7778.96` Chromium build,
 and pin uv to `0.11.14`. Pin Python/container tags and record resolved image
@@ -92,6 +105,9 @@ unchanged.
   Reporting results. Only tasks 001-005 are eligible in W4.
 - Without separately authorized real-model calls, W4 can prove code, schema,
   fake-model, and Compose behaviour but cannot claim five-task Agent success.
+- The authorized real profile introduces narrowly bounded provider egress at
+  the application layer; it does not add a generic model gateway, provider URL,
+  Sandbox API network, or persistent production configuration.
 
 ## Rejected alternatives
 

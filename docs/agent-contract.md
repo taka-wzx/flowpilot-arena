@@ -118,6 +118,7 @@ apps/dom_agent/uv.lock
 apps/dom_agent/src/flowpilot_dom_agent/__init__.py
 apps/dom_agent/src/flowpilot_dom_agent/schemas.py
 apps/dom_agent/src/flowpilot_dom_agent/model.py
+apps/dom_agent/src/flowpilot_dom_agent/openai_model.py
 apps/dom_agent/src/flowpilot_dom_agent/client.py
 apps/dom_agent/src/flowpilot_dom_agent/loop.py
 apps/dom_agent/src/flowpilot_dom_agent/main.py
@@ -126,8 +127,10 @@ apps/dom_agent/tests/test_schemas.py
 apps/dom_agent/tests/test_client.py
 apps/dom_agent/tests/test_loop.py
 apps/dom_agent/tests/test_api.py
+apps/dom_agent/tests/test_model.py
 
 tests/integration/w4_compose_smoke.py
+tests/integration/w4_real_model_acceptance.py
 tests/integration/Dockerfile
 ```
 
@@ -219,8 +222,18 @@ the current `observation_id` and `element_ref`.
   terminal reason.
 - W4 implements no planner, verifier, checkpoint, replay, recovery, memory,
   dynamic router, approval, or visual fallback.
-- CI and default Compose use deterministic fake models. No real provider
-  adapter is invoked without separate user authorization and evidence.
+- CI and default Compose use deterministic fake models. The user authorized a
+  one-off OpenAI `gpt-5.6-terra` five-task run on 2026-07-26 after disclosure
+  of prompt/config `w4-dom-react-openai/1.0`. After a documented minimum-action
+  audit, the user separately authorized revised 125-call, 500,000-input,
+  100,000-output, 900-second, zero-retry, USD 3.25 aggregate caps.
+- The authorized provider adapter uses only the fixed OpenAI Responses URL,
+  exact model, strict JSON Schema output, `store=false`, no provider tools,
+  and medium reasoning. The API key is environment-only and never logged,
+  returned, mounted from a file, or committed.
+- A profile-only real Agent may additionally use one outbound bridge solely
+  so its fixed adapter can reach the authorized provider. It remains absent
+  from default Compose and has no Sandbox API/PostgreSQL network or client.
 
 ## Five-task and evidence rules
 

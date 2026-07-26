@@ -10,8 +10,9 @@ or can declare task success.
 ```mermaid
 flowchart LR
     Caller["Trusted acceptance caller\nReset/Seed · brief · grade"] --> Arena["W3 Arena API"]
-    Caller --> Agent["DOM Agent\nstrict fake-model ReAct"]
+    Caller --> Agent["DOM Agent\nstrict bounded ReAct"]
     Agent --> Worker["Browser Worker\ntyped actions only"]
+    Agent -. "authorized profile only" .-> Provider["OpenAI Responses\ngpt-5.6-terra"]
     Worker --> Web["sandbox_web\nfive business pages"]
     Web --> Business["W2 business APIs"]
     Arena --> Specs["10 immutable W3 specs"]
@@ -40,6 +41,12 @@ The one-off `acceptance-smoke` profile is the trusted caller for deterministic
 Compose acceptance. It connects to W1 health, W3 management, and DOM Agent
 networks, but contains no model, Browser, database driver, or general execution
 API. Normal `up` does not start it.
+
+The separately authorized `real-acceptance` profile uses a second instance of
+the same Agent image plus a five-task caller. Only that Agent instance joins a
+non-internal `model-egress` bridge and calls the fixed OpenAI Responses URL.
+It is not joined to Sandbox or control networks; the caller has management
+networks but no model key. Default Compose and CI remain fake-only.
 
 | Boundary | W4 responsibility | W4 deliberately excludes |
 |---|---|---|
@@ -120,10 +127,10 @@ for every non-terminal result.
 
 ## Minimal DOM Agent loop
 
-`apps/dom_agent` is a separate non-root/read-only container attached only to
-`agent-worker`. It can resolve Browser Worker but not Sandbox Web/API or
-PostgreSQL. Its only outbound client has fixed create/action/delete Worker
-routes and strict response parsing.
+`apps/dom_agent` is a separate non-root/read-only container. The default
+instance is attached only to `agent-worker`; it can resolve Browser Worker but
+not Sandbox Web/API or PostgreSQL. The authorized profile-only instance also
+joins `model-egress`, but still has no Sandbox/control network or client.
 
 The model context is limited to a human-facing task brief, the current
 observation, six bounded action summaries, and remaining budgets. Model output
@@ -131,7 +138,10 @@ must validate as `w4-model-decision/1.0` containing one typed action. Hard caps
 cover steps, model calls, repeated identical actions, no-progress states,
 wall time, input/output tokens, and provider-reported micro-USD cost.
 
-W4 supplies deterministic fake scenarios only. `AgentRunResult` has no
+CI and default Compose supply deterministic fake scenarios. The authorized
+profile additionally fixes OpenAI Responses, exact `gpt-5.6-terra`, strict
+JSON Schema, medium reasoning, `store=false`, no provider tools, no retries,
+and environment-only credentials. `AgentRunResult` has no
 `success`, `passed`, `score`, or Grader field. `finish` produces
 `finished_ungraded`; an independent caller must invoke the unchanged W3 Grader.
 

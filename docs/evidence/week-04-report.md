@@ -1,12 +1,12 @@
 # Week 04 evidence report — DOM Agent Foundation
 
-- Status: local W4 code, fake-model, Compose, regression, and secret acceptance complete; real-model acceptance not authorized
+- Status: local W4 code, authorized provider path, fake-model, Compose, and regression acceptance complete; real-model calls blocked because the Codex process has no visible credential
 - Branch: `week/04-dom-agent`
 - Baseline commit: `11c4494` (`w03-arena`)
 - Runtime baseline: Python 3.13
 - Paid model calls and actual cost: 0 / 0
 - Real enterprise-system or external business API calls: 0
-- Real-model five-task runs: not authorized; not run
+- Real-model five-task runs: authorized; not run because `OPENAI_API_KEY` is unavailable to the Codex process
 - Screenshot, OCR, VLM, or visual data captured: 0
 - Push, PR, merge, or W4 tag: 0
 
@@ -25,7 +25,7 @@
 
 ## Scope and exact changed files
 
-The final pre-staging W4 worktree contains exactly these 51 contract-owned
+The final pre-staging W4 worktree contains exactly these 54 contract-owned
 changed or new paths:
 
 ```text
@@ -72,11 +72,13 @@ apps/dom_agent/src/flowpilot_dom_agent/client.py
 apps/dom_agent/src/flowpilot_dom_agent/loop.py
 apps/dom_agent/src/flowpilot_dom_agent/main.py
 apps/dom_agent/src/flowpilot_dom_agent/model.py
+apps/dom_agent/src/flowpilot_dom_agent/openai_model.py
 apps/dom_agent/src/flowpilot_dom_agent/schemas.py
 apps/dom_agent/tests/conftest.py
 apps/dom_agent/tests/test_api.py
 apps/dom_agent/tests/test_client.py
 apps/dom_agent/tests/test_loop.py
+apps/dom_agent/tests/test_model.py
 apps/dom_agent/tests/test_schemas.py
 
 docs/adr/0004-w4-isolated-dom-worker-and-agent.md
@@ -85,6 +87,7 @@ docs/plans/week-04-dom-agent.md
 
 tests/integration/Dockerfile
 tests/integration/w4_compose_smoke.py
+tests/integration/w4_real_model_acceptance.py
 ```
 
 No W2/W3 migration, Sandbox business source, W3 Task Spec/checksum, W3 test, or
@@ -98,13 +101,20 @@ Decision source:
 Browser Worker routes are `GET /healthz`, `POST /api/browser/sessions`,
 `POST /api/browser/sessions/{session_id}/actions`, and idempotent
 `DELETE /api/browser/sessions/{session_id}`. DOM Agent routes are
-`GET /healthz` and `POST /api/agent/runs`. The latter accepts only the
-`deterministic-fake` model in W4 and returns no pass/score field.
+`GET /healthz` and `POST /api/agent/runs`. The latter accepts the default
+`deterministic-fake` model and the separately authorized fixed
+`openai-gpt-5.6-terra` adapter, and returns no pass/score field.
 
 The one-off `acceptance-smoke` profile is the outer trusted caller. It connects
 to control, Sandbox management, and Agent networks solely to perform the
 deterministic Reset/Seed → fake Agent → Grader proof. It is not started by the
 normal Compose profile and contains no model or database driver.
+
+The profile-only `real-agent` uses the same non-root/read-only image, strict
+loop, and Browser Worker boundary. It alone joins `model-egress`; it has a fixed
+OpenAI Responses URL/model, no provider tools or configurable endpoint, and no
+Sandbox/control network or client. The `real-acceptance` caller has management
+networks but no key. Both profile images built successfully without a call.
 
 No W4 database migration was added. Running-container `alembic current`
 reported `20260726_0002 (head)` and `alembic check` reported
@@ -119,8 +129,8 @@ reported `20260726_0002 (head)` and `alembic check` reported
 | Playwright Python | 1.60.0 | 1.60.0 |
 | Chromium | Playwright revision 1223 | Chrome for Testing and headless shell 148.0.7778.96 |
 | Browser Worker image | W4 Dockerfile | `sha256:5b87e1bccc1cd31ab24d4164afbc25e790ed6bb595825d535ce9ec21d3102778` |
-| DOM Agent image | W4 Dockerfile | `sha256:7899a69c5ff736109c298f2085b28d8c579f80858e51299dafae8f3ad106bdf5` |
-| Acceptance image | W4 smoke Dockerfile | `sha256:63eb619581bd2153a5c67de91237df62dab9a801bc4772e8d0d542631caabf53` |
+| DOM Agent / real Agent image | W4 Dockerfile | `sha256:6f12d01c3003e84ea5ce34ad2509874c2078a73586f22f87fe9172b7b124e9e5` |
+| Fake / real acceptance image | W4 smoke Dockerfile | `sha256:33c006aa4278a42e5e532f7e0aadc1778e6c52424fe8410e79f8c7ea8be00e9f` |
 | Host Node/npm | synchronized frontend locks | Node 24.15.0; npm 11.12.1 |
 | Frontend build image | `node:24-alpine` | `sha256:a0b9bf06e4e6193cf7a0f58816cc935ff8c2a908f81e6f1a95432d679c54fbfd` |
 | Frontend runtime image | `nginx:1.27-alpine` | `sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10` |
@@ -194,6 +204,13 @@ failure, escalation, Worker error, and close paths. The Browser client exposes
 only fixed create/action/delete routes and rejects external/credentialed/path-
 bearing base URLs.
 
+The authorized OpenAI adapter passed offline tests for its fixed Responses URL
+and exact model, medium reasoning, `store=false`, absent provider tools,
+normalized strict JSON Schema, prompt config version, response/refusal/usage
+validation, conservative provider pricing, and pre-network cost rejection. The
+API rejects the authorized model with HTTP 503 when the environment key is
+absent. No offline test sends network traffic.
+
 `AgentRunResult` has no `success`, `passed`, `score`, or Grader field. Finish
 returns `finished_ungraded`.
 
@@ -223,7 +240,7 @@ wiring and that finish does not bypass grading; it is not task completion.
 | Browser Worker lock | `uv sync --locked --all-groups` | Passed; 38 packages resolved/installed |
 | Browser Worker quality | Ruff check/format, mypy `src`, pytest | Passed; 7 typed source files; 23 tests |
 | DOM Agent lock | `uv sync --locked --all-groups` | Passed; 35 packages resolved/installed |
-| DOM Agent quality | Ruff check/format, mypy `src`, pytest | Passed; 6 typed source files; 14 tests |
+| DOM Agent quality | Ruff check/format, mypy `src`, pytest | Passed; 7 typed source files; 19 tests |
 | Compose parse | `docker-compose -f deploy/compose/compose.yaml config` | Passed |
 | Compose build/start | W4 build, then complete `up -d` | Passed; seven normal-profile containers healthy |
 | Migration | running-container `alembic current`, `alembic check` | `20260726_0002 (head)`; no drift |
@@ -238,16 +255,18 @@ affect the 23, 23, or 14 passing tests.
 
 ## Five Development task record
 
-Real-model execution requires separate user authorization. Every row is
+Real-model execution was authorized for `gpt-5.6-terra` and revised aggregate
+caps, but the Codex tool process, elevated process, and Windows User/Machine
+environment scopes all reported the key unavailable. Every row is therefore
 explicitly not run; fake-model tests are not substituted.
 
 | Task ID | Spec checksum | Seed checksum | Model/prompt config | Steps/actions/calls/tokens/cost | Grader | Failure/retry/timeout/human intervention |
 |---|---|---|---|---|---|---|
-| `w3-joiner-001` | `614b3b0b1d907bf98dd9990b723eb7107e8ff81c9ed0dd5c464383f70b4f33f2` | `c4f4cd863b43b93e6e131e9938e18f640c3036d188554d28f2058aaaa9445f07` | Not authorized | Not run / 0 / 0 | Not run | None; no run |
-| `w3-joiner-002` | `4bd620f0bf346240378e3a46a3ba6c9b31ec2b4bde08463c4a2f9f95a6d7f34b` | `a1994592eadf26dc99603e6274d9f6b9307895eb4c4c28d61da3807827e8242d` | Not authorized | Not run / 0 / 0 | Not run | None; no run |
-| `w3-joiner-003` | `2f8c2ccea4a5506ae66b55fe6e9b2fc4ec326164de3e449e6516991bdc5ceae3` | `d821dcf959d905fa60c05a55a1c4c105683929ac12d297752946e1678996e476` | Not authorized | Not run / 0 / 0 | Not run | None; no run |
-| `w3-joiner-004` | `6223046d9abd748c658cebe70cebbecac85027b33128ea9930abe26f203b182b` | `cdab69be05d7fb3c544c90c4cf361c01302636340d9d37b103bed17343c701fc` | Not authorized | Not run / 0 / 0 | Not run | None; no run |
-| `w3-joiner-005` | `f356405dfa41cdfe93b0d30ae98284aff91f3277d2eb0d832abaf23116c80662` | `69f472c3e1386059c31f40327e32e4fec762f7ce2feafa22d4d7fa2958a3d9a5` | Not authorized | Not run / 0 / 0 | Not run | None; no run |
+| `w3-joiner-001` | `614b3b0b1d907bf98dd9990b723eb7107e8ff81c9ed0dd5c464383f70b4f33f2` | `c4f4cd863b43b93e6e131e9938e18f640c3036d188554d28f2058aaaa9445f07` | Authorized `gpt-5.6-terra` / `w4-dom-react-openai/1.0`; credential unavailable | Not run / 0 / 0 / 0 / 0 | Not run | Credential blocker; 0 retries/timeouts/interventions |
+| `w3-joiner-002` | `4bd620f0bf346240378e3a46a3ba6c9b31ec2b4bde08463c4a2f9f95a6d7f34b` | `a1994592eadf26dc99603e6274d9f6b9307895eb4c4c28d61da3807827e8242d` | Authorized `gpt-5.6-terra` / `w4-dom-react-openai/1.0`; credential unavailable | Not run / 0 / 0 / 0 / 0 | Not run | Credential blocker; 0 retries/timeouts/interventions |
+| `w3-joiner-003` | `2f8c2ccea4a5506ae66b55fe6e9b2fc4ec326164de3e449e6516991bdc5ceae3` | `d821dcf959d905fa60c05a55a1c4c105683929ac12d297752946e1678996e476` | Authorized `gpt-5.6-terra` / `w4-dom-react-openai/1.0`; credential unavailable | Not run / 0 / 0 / 0 / 0 | Not run | Credential blocker; 0 retries/timeouts/interventions |
+| `w3-joiner-004` | `6223046d9abd748c658cebe70cebbecac85027b33128ea9930abe26f203b182b` | `cdab69be05d7fb3c544c90c4cf361c01302636340d9d37b103bed17343c701fc` | Authorized `gpt-5.6-terra` / `w4-dom-react-openai/1.0`; credential unavailable | Not run / 0 / 0 / 0 / 0 | Not run | Credential blocker; 0 retries/timeouts/interventions |
+| `w3-joiner-005` | `f356405dfa41cdfe93b0d30ae98284aff91f3277d2eb0d832abaf23116c80662` | `69f472c3e1386059c31f40327e32e4fec762f7ce2feafa22d4d7fa2958a3d9a5` | Authorized `gpt-5.6-terra` / `w4-dom-react-openai/1.0`; credential unavailable | Not run / 0 / 0 / 0 / 0 | Not run | Credential blocker; 0 retries/timeouts/interventions |
 
 No model output, action trace, DOM, or run result was written into a Task Spec.
 No failure, timeout, retry, or human intervention occurred because the real
@@ -257,12 +276,12 @@ runs did not occur.
 
 | Gate | Observed result |
 |---|---|
-| `pre-commit detect-private-key` over exact 51 files | Passed via temporary `uvx` runner |
+| `pre-commit detect-private-key` over exact 54 files | Passed via temporary `uvx` runner |
 | Gitleaks complete Git history | Passed before `d661c0a`; follow-up executable unavailable, so not rerun |
-| Gitleaks exact W4 changed files | Original 47 files passed before `d661c0a`; six-file remediation delta not run because Gitleaks became unavailable |
+| Gitleaks exact W4 changed files | Original 47 files passed before `d661c0a`; later remediation/provider deltas not run because Gitleaks became unavailable |
 | `git diff --check` | Passed after final evidence update |
-| Exact contract path audit | Passed; changed 51, allowed 51, outside 0, allowed-but-unchanged 0 |
-| Staged/unstaged review | Passed; the six-file remediation delta was staged explicitly, staged diff check passed, and no contract-owned unstaged path remained |
+| Exact contract path audit | Passed; changed 54, allowed 54, outside 0, allowed-but-unchanged 0 |
+| Staged/unstaged review | Passed; the 17-file provider-readiness delta was staged explicitly, staged diff check passed, and no contract-owned unstaged path remained |
 
 The first broad directory scan included local `.venv` dependencies and found
 two known Playwright package strings plus two generic-key false positives in a
@@ -297,7 +316,10 @@ silently weakening or claiming its rerun.
    bounded five-path in-app router preserves the existing pages, active link,
    history navigation, and unknown-path `/hris` fallback. Host and container
    `npm ci` now report zero vulnerabilities; all eight frontend tests pass.
-5. Real-model five-task acceptance is not authorized and is not claimed.
+5. Real-model five-task acceptance is authorized, but no ordinary, elevated,
+   Windows User, or Windows Machine environment visible to Codex contained
+   `OPENAI_API_KEY`. The profile was built and all provider logic tested
+   offline, but no paid call or task run occurred; none is claimed.
 6. W4 proves bounded DOM-only foundations and deterministic fake/runtime paths,
    not a task success rate, failure recovery, production reliability, malicious
    page resistance, or enterprise ROI.

@@ -200,7 +200,7 @@ class AgentRunRequest(StrictModel):
     schema_version: Literal["w4-dom-agent-run/1.0"] = "w4-dom-agent-run/1.0"
     task_id: TaskId
     instruction: Annotated[str, StringConstraints(min_length=1, max_length=4_000)]
-    model: Literal["deterministic-fake"] = "deterministic-fake"
+    model: Literal["deterministic-fake", "openai-gpt-5.6-terra"] = "deterministic-fake"
     fake_scenario: Literal[
         "inspect_then_finish", "finish_immediately", "invalid_json", "repeat_wait", "fail"
     ] = "inspect_then_finish"

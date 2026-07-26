@@ -67,6 +67,11 @@ and the independently graded untouched initial task at 30/100 with
 `passed=false`. That is evidence that `finish` cannot bypass grading, not task
 completion.
 
+A separately authorized `real-acceptance` profile fixes OpenAI
+`gpt-5.6-terra`, prompt/config `w4-dom-react-openai/1.0`, strict action JSON,
+no provider tools or retries, and the recorded aggregate call/token/time/cost
+caps. It is not part of default Compose or CI.
+
 Stop and remove the disposable synthetic volume after acceptance:
 
 ```powershell
@@ -120,14 +125,15 @@ sequence is frozen in [docs/plans/week-04-dom-agent.md](docs/plans/week-04-dom-a
 
 No real or paid model is configured or called by default. Before any such call,
 the user must separately authorize the provider, exact model, prompt/config,
-tasks 001-005, and hard call/token/time/cost limits. Until then, the five real
-task runs are explicitly not run and no Agent success claim is made.
+tasks 001-005, and hard call/token/time/cost limits. The authorized W4 profile
+uses aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens,
+900 seconds, and USD 3.25. Agent `finish` remains ungraded.
 
 W5 screenshot/OCR/VLM/visual grounding, W6 routing, W7 planning/verifier, W8
 recovery, and all later roadmap systems are not started. See
 [docs/agent-contract.md](docs/agent-contract.md) and
 [docs/threat-model.md](docs/threat-model.md).
 
-Development occurs only on `week/04-dom-agent`. No push, PR, merge, tag, or
-real-model call is authorized by these instructions. Licensed under the
-[Apache License 2.0](LICENSE).
+Development occurs only on `week/04-dom-agent`. No push, PR, merge, or tag is
+authorized; real-model authorization is limited to the recorded W4 profile.
+Licensed under the [Apache License 2.0](LICENSE).

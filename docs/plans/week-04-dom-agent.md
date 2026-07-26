@@ -42,9 +42,12 @@ Grader as the sole success authority. The authoritative boundary is
 9. Run every W1-W4 lock, lint, format, type, test, build, Compose, migration,
    smoke, secret, and diff gate available on the host; fill evidence from
    observed outputs and clean Compose volumes.
-10. If real-model acceptance is still desired, stop and request separate
-    authorization with exact provider/model, prompt/config, five task IDs, and
-    hard call/token/cost limits. Otherwise record all five runs as not run.
+10. Real-model acceptance was separately authorized for fixed OpenAI
+    `gpt-5.6-terra`, prompt/config `w4-dom-react-openai/1.0`, tasks 001-005,
+    zero retries, and revised aggregate caps of 125 calls, 500,000 input,
+    100,000 output, 900 seconds, and USD 3.25. Run only through the profile-only
+    Agent after offline/provider-readiness gates pass; otherwise record the
+    credential or execution blocker without fabricating results.
 11. Review the exact contract-owned diff, explicitly stage allowlisted files,
     create a local commit only if every available gate passes, and stop before
     W5.

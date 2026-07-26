@@ -56,6 +56,13 @@ authorization after disclosing:
 Without authorization, record all five runs as not run. Do not estimate tokens
 or cost as observed use and do not claim the Agent completed the tasks.
 
+Authorization was received on 2026-07-26 for OpenAI `gpt-5.6-terra`, prompt
+config `w4-dom-react-openai/1.0`, tasks 001-005, no retries, and revised hard
+aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens,
+900 seconds, and USD 3.25. The revision followed an observed minimum of 18
+typed decisions per task, which made the initially disclosed 12-call cap
+incapable of completing the four required business records.
+
 ## Five-task run protocol after authorization
 
 For each task 001-005:

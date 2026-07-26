@@ -31,6 +31,9 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - W4 isolated Compose networks, one-off fake-model acceptance caller, pinned
   Python/uv/Playwright/Chromium runtime, CI jobs, dependency locks, and
   deterministic Worker/Agent/security/smoke tests.
+- W4 separately authorized profile-only OpenAI `gpt-5.6-terra` adapter and
+  five-task caller with strict action schema, fixed endpoint, no tools/retries,
+  environment-only key, and hard aggregate call/token/time/cost caps.
 
 ### Security
 

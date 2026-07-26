@@ -218,7 +218,7 @@ ROI.
 | Contract path audit | actual tracked/untracked changes compared with exact contract block | Passed; all 41 paths are allowlisted |
 | Explicit secret-pattern review | private-key, AWS, GitHub, OpenAI-style, and Bearer-token patterns over the 41 changed files | Passed; no matches |
 | Pre-commit private-key scan | `pre-commit clean`, `pre-commit install-hooks`, then `pre-commit run detect-private-key --all-files` | Passed; damaged user cache was rebuilt successfully |
-| Gitleaks history scan | `gitleaks git --no-banner --redact --exit-code 1 .` | Passed with Gitleaks 8.30.1; all 24 local commits scanned; no leaks found |
+| Gitleaks history scan | `gitleaks git --no-banner --redact --exit-code 1 .` | Passed with Gitleaks 8.30.1; complete local Git history scanned; no leaks found |
 
 One upstream `StarletteDeprecationWarning` remains in pytest for FastAPI's
 current `TestClient` import path. It does not affect the 23 passing tests.
@@ -229,9 +229,9 @@ The initial local review found no Gitleaks executable and a damaged user-level
 pre-commit hook cache. The cache was removed through `pre-commit clean`, the
 locked hooks were reinstalled, and `detect-private-key --all-files` passed.
 Gitleaks 8.30.1 was then installed through Winget in the current-user scope and
-its package directory added to the user PATH. `gitleaks git` scanned all 24
-local commits, including the evidence-only repair commit, without finding a
-leak. Git mode was used deliberately so the pre-existing untracked
+its package directory added to the user PATH. `gitleaks git` scanned the
+complete local Git history, including the W3 evidence commits, without finding
+a leak. Git mode was used deliberately so the pre-existing untracked
 `%SystemDrive%/` directory was never traversed. No remote W3 CI claim is made
 because the branch is unpushed.
 

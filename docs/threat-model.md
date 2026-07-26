@@ -1,66 +1,79 @@
-# W2 threat model — Sandbox Foundation
+# W3 threat model — Arena Foundation
 
 ## Scope and assets
 
-W2 adds a local synthetic business-record boundary to the W1 source,
-dependency, CI, and static-service assets. Protected assets are the integrity
-and availability of the development schema and five synthetic record types.
-There are still no real identities, tenants, credentials, enterprise systems,
-browser sessions, model inputs, paid model calls, or production claims.
+W3 protects the integrity and availability of ten source-controlled synthetic
+Task Specs, canonical checksums, task-owned Sandbox facts, deterministic grade
+results, and anonymous manual-baseline records. W1/W2 source, locks, migrations,
+and local runtime remain assets. There are no real identities, tenants,
+credentials, enterprise systems, browser sessions, models, or production data.
 
 ## Trust boundaries
 
 ```mermaid
 flowchart LR
-    Human["Local human operator"] --> Web["Sandbox web"]
-    Web --> API["Sandbox API"]
-    API --> DB["Local PostgreSQL volume"]
+    Human["Local human operator"] --> Web["Five Sandbox pages"]
+    Human --> Arena["Arena management API"]
+    Web --> Business["Business APIs"]
+    Arena --> Catalog["Versioned Task Specs"]
+    Arena --> DB["Local PostgreSQL"]
+    Business --> DB
     Repo["Source and locks"] --> CI["GitHub Actions"]
-    Build["Container/package builds"] --> Registries["Public registries"]
+    Build["Package/container builds"] --> Registries["Public registries"]
 ```
 
-The browser/API boundary accepts untrusted form input. The API/database
-boundary is the persistence enforcement point. Public package and image
-registries remain supply-chain boundaries. The Compose network and ports are
-development-only, not a security perimeter for production use.
+The management API is trusted to select only catalog tasks, but its path/body
+inputs are untrusted. Task resources are reviewed source, not operator data.
+Database ownership markers are the destructive-scope enforcement point. Local
+ports and the Compose network are not a production security perimeter.
 
-## Threats and W2 controls
+## Threats and W3 controls
 
-| Threat | W2 impact | Control in W2 | Remaining limitation |
+| Threat | W3 impact | Control in W3 | Remaining limitation |
 |---|---|---|---|
-| Real or personal data entered | Privacy exposure in source or local DB | `.invalid` email validation, `SYN-` asset tags, fictional manual recipe, no fixture dump | Free-text names/titles cannot prove synthetic origin; operators must follow policy |
-| Invalid cross-module reference | Incoherent onboarding state | Foreign keys and API 404 before downstream creation | No workflow transaction spans all five manual steps |
-| Duplicate business record | Ambiguous final state | Database uniqueness plus API 409 handling | No update/reconciliation flow in W2 |
-| SQL injection | Data disclosure or corruption | SQLAlchemy parameterized statements; no raw SQL from input | No auth or rate limiting; service is local-only |
-| Unauthorized local access | Anyone reaching ports can create/list data | Only synthetic data is permitted; documented local-only use | OIDC/RBAC/tenancy are W10 and the service must not be exposed publicly |
-| Destructive request | Loss of development state | No update/delete/reset endpoint; restrictive foreign keys | Operators can explicitly discard the Docker volume outside the app |
-| Credential reuse | Local public credential treated as secret | Clearly named `flowpilot_local_only`; no external value; documented prohibition | Compose credential provides no protection against a local attacker |
-| Dependency compromise/vulnerability | Build or browser compromise | Four committed locks, CI checks, Dependabot for all apps, npm audit during acceptance | No SBOM or production image signing in W2 |
-| Secret committed to history | Credential exposure | Existing ignore/pre-commit rules and CI Gitleaks remain | Hosted push protection depends on repository settings |
-| Premature automation | Unsafe scope and misleading evaluation | Exact W2 allowlist and explicit W3+ prohibitions | Contract enforcement remains review/process based |
+| Global or arbitrary reset | Destruction of unrelated Sandbox facts | Exact catalog ID; task marker filter; fixed model deletes; one transaction; no table/query input | Unauthenticated local caller may reset any of the ten synthetic tasks |
+| Partial reset/seed | Non-replayable state | Transaction rollback; dependency-ordered deletion; fixed seed facts; two-pass tests | Host/database failure testing is W8 |
+| Ownership spoofing | Unrelated row deleted or graded | Marker is never accepted in business payloads; downstream row inherits employee marker | Direct database administrators remain outside the app boundary |
+| Spec tampering or ambiguity | Invalid grading or split leakage | Strict unknown-field rejection, fixed references/predicates, per-spec and catalog SHA-256 | Review still governs authorized source changes |
+| Natural-language grader injection | False success | Grader reads structured expected state/predicate kinds only; prose is never evaluated | Prompt injection testing belongs to W14 |
+| Self-reported completion | Inflated result | Grade derives only from DB facts; baseline score is derived by the same grader | Human action counts and notes are self-recorded observations |
+| Duplicate/wrong/elevated records | Unsafe false positive | Explicit counts, association checks, ordinary-role predicate, negative tests | W3 is not a production authorization system |
+| Grader side effect | State changes during verification | Read-only query implementation; repeated result and before/after state tests | Database read isolation uses the local session defaults |
+| Personal/browser data in baseline | Privacy or premature telemetry | Anonymous alias pattern; narrow strict fields; no capture integration | Free-text notes require operator discipline |
+| Real data entered in W2 forms | Privacy exposure | `.invalid` validation, `SYN-` assets, synthetic task data and policy | Free-text business fields cannot prove provenance |
+| Arbitrary execution input | Host or DB compromise | No SQL, shell, file, selector, URL, task-payload, or command field/endpoint | Local operators retain normal host tooling outside the app |
+| Public exposure | Unauthorized mutation | Documented local-only synthetic use | OIDC/RBAC/tenancy wait for W10; never expose publicly |
+| Supply-chain or secret leak | Build compromise/credential exposure | Four locks, CI quality gates, Dependabot, Gitleaks | No SBOM/image signing yet |
 
-## Data-flow rules
+## Deterministic data-flow rules
 
-- The API accepts only non-deliverable `.invalid` email domains and synthetic
-  asset tags matching `SYN-...`.
-- Status and role values are closed W2 literals; no administrative role can be
-  created through the W2 API.
-- The web calls only the same-origin `/api` proxy. There are no analytics,
-  model, external enterprise, mail-delivery, or other outbound integrations.
-- The fixed development recipe is documentation only. It is not a reusable
-  task seed and exposes no reset or grading endpoint.
+- Task facts use only fixed source values, `.invalid` emails, `SYN-W3-...`
+  assets, fixed dates/IDs/timestamps, and no random/current-time/network/model
+  input.
+- Reset deletes only exact ownership-marker matches and returns a stable fact
+  checksum. Null-marked W2 records are outside its scope.
+- The API rejects arbitrary Reset/Grade bodies and unknown baseline fields.
+- Business APIs derive ownership from the employee row. The caller cannot set
+  or transfer ownership.
+- Grading reads business tables only. It ignores pages, logs, screenshots,
+  browser state, baseline notes, and task instructions.
+- Baseline records contain no personal identity or browser/keyboard telemetry;
+  their score is not caller-supplied.
 
 ## Explicitly deferred threats
 
-Cross-tenant access, OIDC/RBAC enforcement, approval bypass, prompt injection,
-browser isolation, model data leakage, deterministic reset/grading, task replay,
-worker recovery, and external side effects belong to later milestones. W2 does
-not claim controls for components it does not implement.
+Browser isolation and malicious pages begin W4/W14; screenshot/model leakage
+begins W5; router safety W6; planner/verifier risks W7; workflow recovery and
+fault injection W8; memory/knowledge poisoning W9; identity, cross-tenant, and
+RBAC W10; approval bypass and audit chain W11; production worker/monitoring/load
+risks W12+. W3 makes no control claim for absent components.
 
 ## Security operating rules
 
-- Never expose this unauthenticated W2 Sandbox on a public or shared network.
-- Never enter or commit real people, accounts, assets, credentials, private
-  endpoints, or enterprise-derived data.
-- Do not reinterpret the local-only database value as a deployable password.
-- Record unavailable scanners honestly; do not weaken CI or validation gates.
+- Never expose this unauthenticated environment on a public/shared network.
+- Never enter or commit real people, accounts, assets, credentials, endpoints,
+  or enterprise-derived data.
+- Never add a generic reset, arbitrary fixture, SQL, shell, file, or browser
+  execution interface under the Arena label.
+- Keep Reporting specs/checksums frozen after the first W3 commit.
+- Record unavailable scanners honestly; do not weaken CI or acceptance gates.

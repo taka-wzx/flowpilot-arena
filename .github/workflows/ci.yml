@@ -55,7 +55,7 @@ jobs:
       - run: npm run build
 
   sandbox-backend-quality:
-    name: Sandbox backend lint, type-check, and unit test
+    name: Sandbox/Arena backend lint, type-check, and unit test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -75,6 +75,11 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy src
       - run: uv run pytest
+      - name: Verify packaged Arena task catalog
+        run: >-
+          uv run python -c "from flowpilot_sandbox_api.arena.catalog import get_catalog;
+          catalog=get_catalog(); assert len(catalog.specs) == 10;
+          print(catalog.canonical_checksum)"
 
   sandbox-frontend-quality:
     name: Sandbox frontend lint, type-check, unit test, and build

@@ -29,6 +29,7 @@ class EmployeeRead(EmployeeCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    arena_task_id: str | None
     created_at: datetime
 
 
@@ -42,6 +43,7 @@ class TicketRead(TicketCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    arena_task_id: str | None
     created_at: datetime
 
 
@@ -56,6 +58,7 @@ class AccountRead(AccountCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    arena_task_id: str | None
     created_at: datetime
 
 
@@ -71,6 +74,7 @@ class AssetRead(AssetCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    arena_task_id: str | None
     created_at: datetime
 
 
@@ -91,4 +95,5 @@ class MailboxRead(MailboxCreate):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    arena_task_id: str | None
     created_at: datetime

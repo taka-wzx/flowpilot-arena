@@ -42,3 +42,9 @@ def client(db_engine: Engine) -> Iterator[TestClient]:
     yield test_client
     test_client.close()
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def db_session(db_engine: Engine) -> Iterator[Session]:
+    with Session(db_engine) as session:
+        yield session

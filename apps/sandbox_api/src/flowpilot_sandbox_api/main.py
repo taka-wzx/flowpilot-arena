@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from flowpilot_sandbox_api.arena.router import router as arena_router
 from flowpilot_sandbox_api.database import get_session
 from flowpilot_sandbox_api.models import (
     AssetAssignment,
@@ -61,9 +62,11 @@ def persist[ModelT](session: Session, record: ModelT, duplicate_message: str) ->
     return record
 
 
-def require_employee(session: Session, employee_id: int) -> None:
-    if session.get(Employee, employee_id) is None:
+def require_employee(session: Session, employee_id: int) -> Employee:
+    employee = session.get(Employee, employee_id)
+    if employee is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Employee not found")
+    return employee
 
 
 @app.get("/healthz")
@@ -96,8 +99,12 @@ def list_tickets(session: SessionDependency) -> list[OnboardingTicket]:
     status_code=status.HTTP_201_CREATED,
 )
 def create_ticket(payload: TicketCreate, session: SessionDependency) -> OnboardingTicket:
-    require_employee(session, payload.employee_id)
-    return persist(session, OnboardingTicket(**payload.model_dump()), "Ticket already exists")
+    employee = require_employee(session, payload.employee_id)
+    return persist(
+        session,
+        OnboardingTicket(**payload.model_dump(), arena_task_id=employee.arena_task_id),
+        "Ticket already exists",
+    )
 
 
 @app.get("/api/iam/accounts", response_model=list[AccountRead])
@@ -111,9 +118,11 @@ def list_accounts(session: SessionDependency) -> list[IamAccount]:
     status_code=status.HTTP_201_CREATED,
 )
 def create_account(payload: AccountCreate, session: SessionDependency) -> IamAccount:
-    require_employee(session, payload.employee_id)
+    employee = require_employee(session, payload.employee_id)
     return persist(
-        session, IamAccount(**payload.model_dump()), "Employee or username already has an account"
+        session,
+        IamAccount(**payload.model_dump(), arena_task_id=employee.arena_task_id),
+        "Employee or username already has an account",
     )
 
 
@@ -128,9 +137,11 @@ def list_assets(session: SessionDependency) -> list[AssetAssignment]:
     status_code=status.HTTP_201_CREATED,
 )
 def create_asset(payload: AssetCreate, session: SessionDependency) -> AssetAssignment:
-    require_employee(session, payload.employee_id)
+    employee = require_employee(session, payload.employee_id)
     return persist(
-        session, AssetAssignment(**payload.model_dump()), "Synthetic asset tag already exists"
+        session,
+        AssetAssignment(**payload.model_dump(), arena_task_id=employee.arena_task_id),
+        "Synthetic asset tag already exists",
     )
 
 
@@ -145,7 +156,12 @@ def list_mailboxes(session: SessionDependency) -> list[Mailbox]:
     status_code=status.HTTP_201_CREATED,
 )
 def create_mailbox(payload: MailboxCreate, session: SessionDependency) -> Mailbox:
-    require_employee(session, payload.employee_id)
+    employee = require_employee(session, payload.employee_id)
     return persist(
-        session, Mailbox(**payload.model_dump()), "Employee or address already has a mailbox"
+        session,
+        Mailbox(**payload.model_dump(), arena_task_id=employee.arena_task_id),
+        "Employee or address already has a mailbox",
     )
+
+
+app.include_router(arena_router)

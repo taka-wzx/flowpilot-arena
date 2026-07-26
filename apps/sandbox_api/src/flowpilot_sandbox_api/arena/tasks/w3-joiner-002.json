@@ -1,0 +1,32 @@
+{
+  "task_id": "w3-joiner-002",
+  "schema_version": "1.0",
+  "title": "Complete the synthetic onboarding for Milo Vector",
+  "business_process": "joiner",
+  "synthetic_actor": {"alias": "synthetic-operator-002", "role": "Synthetic IT onboarding operator"},
+  "instructions": [
+    "Review the target and decoy employees in HRIS and use only Milo Vector's employee ID.",
+    "Create exactly one open onboarding ticket, one ordinary active IAM account, one assigned laptop, and one active mailbox using the supplied synthetic identifiers.",
+    "Revisit all five modules and avoid the decoy employee, extra records, and elevated access."
+  ],
+  "split": "development",
+  "fixture": {"fixture_id": "w3-joiner-002-fixture", "fixture_version": "w3-fixture-v1", "source": "FlowPilot W3 original synthetic fixture", "license": "Apache-2.0"},
+  "initial_state": {"employees": [
+    {"kind": "target", "id": 31002, "first_name": "Milo", "last_name": "Vector", "work_email": "milo.vector.w3002@flowpilot.invalid", "department": "People Systems Studio", "job_title": "HR Operations Specialist", "location": "Singapore Test Hub", "start_date": "2026-09-14", "status": "confirmed", "created_at": "2026-07-26T03:02:00Z"},
+    {"kind": "decoy", "id": 31902, "first_name": "Decoy002", "last_name": "Example", "work_email": "decoy.002@flowpilot.invalid", "department": "Synthetic Decoy Records", "job_title": "Do Not Onboard", "location": "Fictional Holding Area", "start_date": "2026-09-14", "status": "confirmed", "created_at": "2026-07-26T03:02:01Z"}
+  ]},
+  "expected_final_state": {
+    "employee": {"id": 31002, "first_name": "Milo", "last_name": "Vector", "work_email": "milo.vector.w3002@flowpilot.invalid", "department": "People Systems Studio", "job_title": "HR Operations Specialist", "location": "Singapore Test Hub", "start_date": "2026-09-14", "status": "confirmed"},
+    "ticket": {"title": "Synthetic onboarding: Milo Vector [W3-002]", "status": "open"},
+    "iam_account": {"username": "milo.vector.w3002", "role": "employee", "status": "active"},
+    "asset": {"asset_tag": "SYN-W3-002-LAPTOP", "device_type": "laptop", "model": "SimuBook Pro 14", "status": "assigned"},
+    "mailbox": {"address": "milo.vector.w3002@flowpilot.invalid", "status": "active"}
+  },
+  "grader_predicates": [
+    {"predicate_id": "employee_matches", "kind": "employee_matches", "weight": 10}, {"predicate_id": "ticket_linked", "kind": "ticket_exactly_one_linked", "weight": 15},
+    {"predicate_id": "iam_linked", "kind": "iam_exactly_one_linked", "weight": 15}, {"predicate_id": "iam_no_elevated", "kind": "iam_no_elevated_role", "weight": 10},
+    {"predicate_id": "asset_linked", "kind": "asset_exactly_one_linked", "weight": 15}, {"predicate_id": "mailbox_linked", "kind": "mailbox_exactly_one_linked", "weight": 15},
+    {"predicate_id": "no_wrong_links", "kind": "no_wrong_associations", "weight": 10}, {"predicate_id": "no_duplicates", "kind": "no_duplicate_business_records", "weight": 10}
+  ],
+  "canonical_checksum": "4bd620f0bf346240378e3a46a3ba6c9b31ec2b4bde08463c4a2f9f95a6d7f34b"
+}

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, String, func
+from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -20,6 +20,7 @@ class Employee(Base):
     location: Mapped[str] = mapped_column(String(120))
     start_date: Mapped[date] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(32), default="confirmed")
+    arena_task_id: Mapped[str | None] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     tickets: Mapped[list["OnboardingTicket"]] = relationship(back_populates="employee")
@@ -35,6 +36,7 @@ class OnboardingTicket(Base):
     employee_id: Mapped[int] = mapped_column(ForeignKey("employees.id", ondelete="RESTRICT"))
     title: Mapped[str] = mapped_column(String(200))
     status: Mapped[str] = mapped_column(String(32), default="open")
+    arena_task_id: Mapped[str | None] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     employee: Mapped[Employee] = relationship(back_populates="tickets")
@@ -50,6 +52,7 @@ class IamAccount(Base):
     username: Mapped[str] = mapped_column(String(80), unique=True)
     role: Mapped[str] = mapped_column(String(32), default="employee")
     status: Mapped[str] = mapped_column(String(32), default="active")
+    arena_task_id: Mapped[str | None] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     employee: Mapped[Employee] = relationship(back_populates="account")
@@ -64,6 +67,7 @@ class AssetAssignment(Base):
     device_type: Mapped[str] = mapped_column(String(40), default="laptop")
     model: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(32), default="assigned")
+    arena_task_id: Mapped[str | None] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     employee: Mapped[Employee] = relationship(back_populates="assets")
@@ -78,6 +82,27 @@ class Mailbox(Base):
     )
     address: Mapped[str] = mapped_column(String(255), unique=True)
     status: Mapped[str] = mapped_column(String(32), default="active")
+    arena_task_id: Mapped[str | None] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     employee: Mapped[Employee] = relationship(back_populates="mailbox")
+
+
+class HumanBaselineRecord(Base):
+    __tablename__ = "human_baseline_records"
+    __table_args__ = (
+        CheckConstraint("duration_seconds >= 0", name="ck_baseline_duration_nonnegative"),
+        CheckConstraint("action_count >= 0", name="ck_baseline_actions_nonnegative"),
+        CheckConstraint("final_score >= 0 AND final_score <= 100", name="ck_baseline_score_range"),
+    )
+
+    record_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    task_id: Mapped[str] = mapped_column(String(32), index=True)
+    operator_alias: Mapped[str] = mapped_column(String(80))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    ended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    duration_seconds: Mapped[int] = mapped_column(Integer)
+    action_count: Mapped[int] = mapped_column(Integer)
+    final_score: Mapped[int] = mapped_column(Integer)
+    notes: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

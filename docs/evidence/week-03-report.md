@@ -175,25 +175,31 @@ verified exact stable snapshots/checksums, verified a null-owned W2 employee
 survived, and verified an ownership conflict rolled back without deleting the
 unowned record.
 
-## Manual-baseline recorder sample
+## Observed manual-baseline sample
 
 | Field | Recorded value |
 |---|---|
-| Record ID | `baseline-w3-runtime-sample-001` |
-| Task ID | `w3-joiner-010` |
-| Anonymous alias | `anon-runtime-acceptance` |
-| Start/end | `2026-07-26T06:00:00Z` / `2026-07-26T06:11:30Z` |
-| Derived duration | 690 seconds |
-| Manual action count field | 20 |
+| Record ID | `baseline-w3-human-001` |
+| Task ID | `w3-joiner-001` |
+| Anonymous alias | `anon-human-01` |
+| Start/end | `2026-07-26T08:32:32Z` / `2026-07-26T09:21:04Z` |
+| Derived duration | 2912 seconds |
+| Human-reported action count | 15 |
 | Grader-derived final score | 100 |
-| Notes | Synthetic recorder acceptance; no browser telemetry collected |
+| Notes | Human completed the synthetic task through all five Sandbox pages; no browser telemetry collected |
 
-This is a synthetic recorder acceptance sample, not a measured human-efficiency
-claim. The correct business state used for the runtime matrix was created
-through the supported local business APIs; no browser was controlled. Frontend
-tests separately exercised all five routes and a form submission, and runtime
-requests confirmed all five published routes. W3 does not claim observed human
-timing, an efficiency improvement, a benchmark result, or enterprise ROI.
+The human inspected the seeded target and decoy in HRIS, then created the exact
+ITSM, IAM, Asset, and Mail records through the five W2 pages. Two consecutive
+database-fact Grader calls returned identical 100/100 results: all eight
+predicates passed, with one correctly linked ticket, ordinary IAM account,
+asset, and mailbox; no wrong association, elevated role, or duplicate existed.
+The recorder stored only the supplied anonymous alias, timestamps, action
+count, synthetic note, and Grader-derived score. It collected no keyboard
+content, screenshot, page state, selector, extension data, or browser telemetry.
+
+This single observation proves the manual closure and recorder path, not an
+efficiency improvement, benchmark result, statistical baseline, or enterprise
+ROI.
 
 ## Validation results
 
@@ -240,8 +246,8 @@ status and `git diff --check`. No contract-external path is changed.
    required runtime check.
 2. A remote W3 Gitleaks/CI result still requires an authorized push and PR;
    only the repaired local pre-commit and Gitleaks results are claimed here.
-3. The baseline sample proves the narrow recorder and grader-derived score, not
-   a measured human completion session, productivity change, or ROI.
+3. The single observed human sample proves the five-page closure and recorder,
+   not a representative timing distribution, productivity change, or ROI.
 4. W3 is unauthenticated and local-only. Any local caller can select one of the
    ten catalog tasks. OIDC, RBAC, and tenancy remain W10.
 5. The ten tasks are fixed joiner tasks and intentionally do not cover mover,

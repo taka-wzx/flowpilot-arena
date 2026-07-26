@@ -1,12 +1,14 @@
-name: flowpilot-arena-w2
+name: flowpilot-arena-w4
 
 services:
   control-api:
     build:
       context: ../../apps/control_api
       dockerfile: Dockerfile
+    networks:
+      - control-backend
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test:
         [
@@ -27,8 +29,10 @@ services:
     depends_on:
       control-api:
         condition: service_healthy
+    networks:
+      - control-backend
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 10s
@@ -42,6 +46,8 @@ services:
       POSTGRES_DB: flowpilot_sandbox
       POSTGRES_USER: flowpilot
       POSTGRES_PASSWORD: flowpilot_local_only
+    networks:
+      - sandbox-backend
     volumes:
       - sandbox-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -60,8 +66,10 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - sandbox-backend
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     healthcheck:
       test:
         [
@@ -82,14 +90,136 @@ services:
     depends_on:
       sandbox-api:
         condition: service_healthy
+    networks:
+      - sandbox-backend
+      - browser-sandbox
     ports:
-      - "5174:80"
+      - "127.0.0.1:5174:80"
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 10s
       timeout: 3s
       retries: 3
       start_period: 5s
+
+  browser-worker:
+    build:
+      context: ../../apps/browser_worker
+      dockerfile: Dockerfile
+    environment:
+      SANDBOX_ORIGIN: http://sandbox-web
+      MAX_ACTIONS: "50"
+      MAX_NAVIGATIONS: "10"
+      MAX_WAIT_MS: "5000"
+      MAX_FILL_CHARS: "300"
+      MAX_SESSION_SECONDS: "300"
+    depends_on:
+      sandbox-web:
+        condition: service_healthy
+    networks:
+      - browser-sandbox
+      - agent-worker
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    shm_size: 1gb
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=512m
+      - /home/flowpilot-browser:rw,noexec,nosuid,size=64m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8002/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+
+  dom-agent:
+    build:
+      context: ../../apps/dom_agent
+      dockerfile: Dockerfile
+    environment:
+      BROWSER_WORKER_URL: http://browser-worker:8002
+    depends_on:
+      browser-worker:
+        condition: service_healthy
+    networks:
+      - agent-worker
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-agent:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8003/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  acceptance-smoke:
+    profiles:
+      - acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      DOM_AGENT_URL: http://dom-agent:8003
+      SANDBOX_WEB_URL: http://sandbox-web
+    depends_on:
+      control-api:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      sandbox-web:
+        condition: service_healthy
+      browser-worker:
+        condition: service_healthy
+      dom-agent:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - sandbox-backend
+      - agent-worker
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
+networks:
+  control-backend:
+  sandbox-backend:
+  browser-sandbox:
+    internal: true
+  agent-worker:
+    internal: true
 
 volumes:
   sandbox-postgres-data:

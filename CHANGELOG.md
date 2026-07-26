@@ -22,6 +22,15 @@ and this project follows [Semantic Versioning](https://semver.org/).
   with grader-derived scores.
 - W3 Alembic ownership/baseline migration and deterministic catalog, reset,
   grading, negative-state, baseline, and API tests.
+- W4 isolated non-root Playwright Browser Worker with local-origin policy,
+  bounded DOM/accessibility observations, opaque observation-scoped element
+  references, typed browser actions, and unconditional resource cleanup.
+- W4 separate DOM Agent service with strict model JSON, deterministic fake
+  scenarios, fixed Browser Worker client, and step/call/repetition/progress/
+  time/token/cost budgets.
+- W4 isolated Compose networks, one-off fake-model acceptance caller, pinned
+  Python/uv/Playwright/Chromium runtime, CI jobs, dependency locks, and
+  deterministic Worker/Agent/security/smoke tests.
 
 ### Security
 
@@ -32,3 +41,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Restricted W3 reset to exact catalog task IDs and ownership markers; rejected
   unknown spec/API fields and caller-supplied baseline scores; kept grading
   read-only and based only on structured database facts.
+- Isolated W4 Browser Worker from Sandbox API/PostgreSQL and host resources;
+  isolated DOM Agent from every Sandbox/Arena/Grader route; rejected dangerous
+  origins, redirects, selectors/code/commands, stale references, password/real
+  email/credential-like input, and unbounded actions or waits.

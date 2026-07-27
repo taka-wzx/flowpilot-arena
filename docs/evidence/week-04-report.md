@@ -9,7 +9,7 @@
 - Real-model five-task runs: OpenAI 0/5; GLM 1.0 0/5; GLM 1.1 0/5; GLM 1.2 3/5; GLM 1.3 4/5; GLM 1.4 grades 100, 100, 100, 100, and 100 (5/5)
 - Current successful provider configuration: `w4-dom-react-glm/1.4`; one-off authorization consumed, no further paid run authorized
 - Screenshot, OCR, VLM, or visual data captured: 0
-- Push, PR, merge, or W4 tag: 0
+- Remote delivery at this evidence freeze: branch pushed; PR #21 open with initial push/PR CI passed; merge and W4 tag pending
 
 ## Startup gate evidence
 
@@ -557,6 +557,19 @@ The global `pre-commit` entry point was not present on `PATH`; a temporary
 found the WinGet Gitleaks executable, reran complete-history scanning, and
 found no leaks. No ignore or baseline suppression was added.
 
+## Remote CI evidence
+
+The validated branch was pushed and PR #21 was opened against `main`. Initial
+GitHub Actions push run `30242879951` and pull-request run `30242906806` each
+passed all nine jobs: backend, frontend, Sandbox/Arena backend, Sandbox
+frontend, Browser Worker, DOM Agent, Compose configuration, Secret scan, and
+W4 deterministic Compose smoke. The two smoke jobs completed in 2m50s and
+2m47s. No paid-model credential or call is present in CI.
+
+This evidence-only follow-up is itself subject to the same remote checks before
+merge. Merge and `w04-dom-agent` tag creation are intentionally not claimed at
+this evidence freeze; they are authorized subsequent release actions.
+
 ## Observed implementation corrections and limitations
 
 1. The host has standalone `docker-compose` 5.3.0 but no `docker compose`
@@ -600,8 +613,8 @@ found no leaks. No ignore or baseline suppression was added.
 11. W4 proves bounded DOM-only foundations and this fixed Development result,
     not failure recovery, production reliability, malicious-page resistance,
     external generalization, or enterprise ROI.
-12. Remote W4 GitHub Actions are not claimed because no push or PR is authorized
-   or performed.
+12. Initial push and pull-request GitHub Actions passed all jobs. The final
+    evidence-only follow-up must also pass before the authorized merge and tag.
 
 Compose cleanup completed after final acceptance: all runtime containers,
 five W4 networks, the one-off acceptance container, and the

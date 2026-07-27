@@ -12,7 +12,12 @@
   `passed=true` after a fresh Reset/Seed pair
 - W5 real VLM/OCR results: not run and not authorized
 - Screenshot/OCR artifacts committed or persistently stored: 0
-- Remote CI, push, PR, merge, tag, and local commit: not performed
+- Local commit: `1383d1b feat: add vision agent foundation`
+- Remote delivery: `week/05-vision` pushed to origin; PR #27 opened against
+  `main`; push workflow `30255511201` and pull-request workflow `30255669343`
+  both passed all jobs, including W4 and W5 Compose smoke plus Secret scan
+- Merge and `w05-vision` tag: not performed; an evidence-only follow-up remains
+  subject to its own CI before an authorized merge and mainline tag
 
 ## Deterministic-completion amendment evidence
 
@@ -250,7 +255,7 @@ reused.
 | Gitleaks W5 delta | gitleaks dir on each exact changed path | Passed after amendment; 38 paths / no leaks |
 | Diff format | git diff --check | Passed after amendment |
 | Exact contract path audit | changed paths versus W5 allowlist | Passed after amendment; 42 allowed, 38 changed, 0 outside |
-| Staged/unstaged review | explicit review before handoff | No staged files; all 38 W5 paths remain unstaged for user review |
+| Staged/unstaged review | explicit review before local commit | 38 W5 allowlist paths staged, 0 outside, 0 unstaged; committed as `1383d1b` |
 
 The host PowerShell policy blocks npm.ps1, so npm.cmd was used as the compatible
 npm executable. The first non-escalated frontend attempt could not remove a

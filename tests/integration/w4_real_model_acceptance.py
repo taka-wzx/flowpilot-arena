@@ -1,4 +1,4 @@
-"""Authorized one-off W4 OpenAI five-task acceptance caller."""
+"""Authorization-gated one-off W4 GLM five-task acceptance caller."""
 
 import json
 from os import environ
@@ -11,8 +11,8 @@ CONTROL_API = environ.get("CONTROL_API_URL", "http://127.0.0.1:8000")
 SANDBOX_API = environ.get("SANDBOX_API_URL", "http://127.0.0.1:8001")
 REAL_AGENT = environ.get("REAL_AGENT_URL", "http://127.0.0.1:8004")
 TASK_IDS = tuple(f"w3-joiner-{index:03d}" for index in range(1, 6))
-PROMPT_CONFIG_VERSION = "w4-dom-react-openai/1.0"
-MODEL = "openai-gpt-5.6-terra"
+PROMPT_CONFIG_VERSION = "w4-dom-react-glm/1.4"
+MODEL = "zhipu-glm-5.2"
 
 PER_TASK_BUDGET = {
     "max_steps": 25,
@@ -22,13 +22,13 @@ PER_TASK_BUDGET = {
     "max_duration_seconds": 180,
     "max_input_tokens": 100_000,
     "max_output_tokens": 20_000,
-    "max_cost_microusd": 650_000,
+    "max_cost_microusd": 350_000,
 }
 MAX_TOTAL_CALLS = 125
 MAX_TOTAL_INPUT_TOKENS = 500_000
 MAX_TOTAL_OUTPUT_TOKENS = 100_000
 MAX_TOTAL_SECONDS = 900
-MAX_TOTAL_COST_MICROUSD = 3_250_000
+MAX_TOTAL_COST_MICROUSD = 1_750_000
 
 
 def request_json(
@@ -106,7 +106,7 @@ def run_task(task_id: str) -> dict[str, Any]:
         "spec_checksum": task["canonical_checksum"],
         "seed_checksum": first_seed["seed_summary"]["fact_checksum"],
         "fixture_version": task["fixture"]["fixture_version"],
-        "model": "gpt-5.6-terra",
+        "model": "glm-5.2",
         "prompt_config_version": PROMPT_CONFIG_VERSION,
         "agent_status": run["status"],
         "terminal_reason": run["terminal_reason"],

@@ -28,6 +28,13 @@ class ModelClient(Protocol):
     async def complete(self, context: ModelContext) -> RawModelResponse: ...
 
 
+class ModelCallError(RuntimeError):
+    def __init__(self, safe_reason: str, *, usage: ModelUsage | None = None) -> None:
+        super().__init__(safe_reason)
+        self.safe_reason = safe_reason
+        self.usage = usage
+
+
 class DeterministicFakeModel:
     """A no-network fake used by tests and the default Compose smoke path."""
 

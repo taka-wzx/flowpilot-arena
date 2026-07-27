@@ -6,19 +6,29 @@ from time import monotonic
 from pydantic import ValidationError
 
 from flowpilot_dom_agent.client import BrowserWorkerClient
-from flowpilot_dom_agent.model import ModelClient, ModelContext
+from flowpilot_dom_agent.model import ModelCallError, ModelClient, ModelContext
 from flowpilot_dom_agent.schemas import (
+    ActionResult,
     ActionSummary,
     AgentBudget,
     AgentRunResult,
     BrowserAction,
+    ClickAction,
     FailAction,
+    FillAction,
     FinishAction,
     ModelDecision,
+    NavigateAction,
     Observation,
+    ReadAction,
     RunStatus,
+    ScrollAction,
+    SelectAction,
     TaskId,
+    WaitAction,
 )
+
+MAX_PRIOR_ACTION_SUMMARIES = 24
 
 
 class AgentLoop:
@@ -41,6 +51,7 @@ class AgentLoop:
     ) -> AgentRunResult:
         started = self._clock()
         actions: list[ActionSummary] = []
+        context_history: list[str] = []
         model_calls = 0
         input_tokens = 0
         output_tokens = 0
@@ -91,10 +102,7 @@ class AgentLoop:
                 task_id=task_id,
                 instruction=instruction,
                 observation=observation,
-                prior_actions=tuple(
-                    f"{item.action_type}:{item.success}:{item.error_category or 'none'}"
-                    for item in actions[-6:]
-                ),
+                prior_actions=tuple(context_history[-MAX_PRIOR_ACTION_SUMMARIES:]),
                 remaining_steps=budget.max_steps - steps,
                 remaining_model_calls=budget.max_model_calls - model_calls,
                 remaining_input_tokens=budget.max_input_tokens - input_tokens,
@@ -103,6 +111,39 @@ class AgentLoop:
             )
             try:
                 response = await self._model.complete(context)
+            except ModelCallError as exc:
+                if exc.usage is not None:
+                    model_calls += 1
+                    input_tokens += exc.usage.input_tokens
+                    output_tokens += exc.usage.output_tokens
+                    cost_microusd += exc.usage.cost_microusd
+                await self._safe_close(session_id)
+                post_call = self._post_call_budget_status(
+                    started, input_tokens, output_tokens, cost_microusd, budget
+                )
+                if post_call is not None:
+                    return self._result(
+                        task_id,
+                        post_call[0],
+                        post_call[1],
+                        steps,
+                        model_calls,
+                        input_tokens,
+                        output_tokens,
+                        cost_microusd,
+                        actions,
+                    )
+                return self._result(
+                    task_id,
+                    "model_error",
+                    exc.safe_reason,
+                    steps,
+                    model_calls,
+                    input_tokens,
+                    output_tokens,
+                    cost_microusd,
+                    actions,
+                )
             except Exception:
                 await self._safe_close(session_id)
                 return self._result(
@@ -200,6 +241,9 @@ class AgentLoop:
                     message=result.message[:160],
                 )
             )
+            context_history.append(
+                self._context_action_summary(decision.action, observation, result)
+            )
             if result.terminal:
                 status, reason = self._terminal_action_status(decision.action, result.message)
                 return self._result(
@@ -229,7 +273,12 @@ class AgentLoop:
 
             observation = result.observation
             fingerprint = self._observation_fingerprint(observation)
-            no_progress = no_progress + 1 if fingerprint == prior_fingerprint else 0
+            hidden_form_progress = result.success and isinstance(
+                decision.action, (FillAction, SelectAction)
+            )
+            no_progress = (
+                0 if hidden_form_progress or fingerprint != prior_fingerprint else no_progress + 1
+            )
             prior_fingerprint = fingerprint
             if no_progress > budget.max_no_progress:
                 await self._safe_close(session_id)
@@ -313,6 +362,38 @@ class AgentLoop:
     def _action_signature(action: BrowserAction) -> str:
         payload = action.model_dump(mode="json", exclude={"action_id"})
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+    @staticmethod
+    def _context_action_summary(
+        action: BrowserAction,
+        observation: Observation,
+        result: ActionResult,
+    ) -> str:
+        target = ""
+        if isinstance(action, (ClickAction, FillAction, SelectAction, ReadAction, ScrollAction)):
+            target = next(
+                (
+                    element.name
+                    for element in observation.interactive_elements
+                    if element.element_ref == action.element_ref
+                ),
+                "unknown element",
+            )
+        elif isinstance(action, NavigateAction):
+            target = action.url
+        elif isinstance(action, WaitAction):
+            target = f"{action.duration_ms}ms"
+        elif isinstance(action, FinishAction):
+            target = "finish"
+        elif isinstance(action, FailAction):
+            target = action.category
+        payload = {
+            "action": action.type,
+            "target": target[:120],
+            "success": result.success,
+            "error_category": result.error_category,
+        }
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
     @staticmethod
     def _observation_fingerprint(observation: Observation) -> str:

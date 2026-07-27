@@ -12,7 +12,7 @@ flowchart LR
     Caller["Trusted acceptance caller\nReset/Seed · brief · grade"] --> Arena["W3 Arena API"]
     Caller --> Agent["DOM Agent\nstrict bounded ReAct"]
     Agent --> Worker["Browser Worker\ntyped actions only"]
-    Agent -. "authorized profile only" .-> Provider["OpenAI Responses\ngpt-5.6-terra"]
+    Agent -. "authorization-gated profile" .-> Provider["Zhipu Chat Completions\nglm-5.2"]
     Worker --> Web["sandbox_web\nfive business pages"]
     Web --> Business["W2 business APIs"]
     Arena --> Specs["10 immutable W3 specs"]
@@ -44,7 +44,7 @@ API. Normal `up` does not start it.
 
 The separately authorized `real-acceptance` profile uses a second instance of
 the same Agent image plus a five-task caller. Only that Agent instance joins a
-non-internal `model-egress` bridge and calls the fixed OpenAI Responses URL.
+non-internal `model-egress` bridge and calls the fixed Zhipu Chat Completions URL.
 It is not joined to Sandbox or control networks; the caller has management
 networks but no model key. Default Compose and CI remain fake-only.
 
@@ -133,15 +133,21 @@ not Sandbox Web/API or PostgreSQL. The authorized profile-only instance also
 joins `model-egress`, but still has no Sandbox/control network or client.
 
 The model context is limited to a human-facing task brief, the current
-observation, six bounded action summaries, and remaining budgets. Model output
-must validate as `w4-model-decision/1.0` containing one typed action. Hard caps
-cover steps, model calls, repeated identical actions, no-progress states,
-wall time, input/output tokens, and provider-reported micro-USD cost.
+observation, up to 24 bounded action summaries, and remaining budgets. The
+summaries retain safe field/button names and success state but omit filled
+values. Successful fill/select actions count as progress even though input
+values are deliberately absent from observations. The provider returns a
+strict minimal typed action choice; the trusted adapter adds transport-only
+schema version, action ID, and current observation ID, then validates the full
+`w4-model-decision/1.0` action. Hard caps cover steps, model calls, repeated
+identical actions, no-progress states, wall time, input/output tokens, and
+provider-reported micro-USD cost.
 
-CI and default Compose supply deterministic fake scenarios. The authorized
-profile additionally fixes OpenAI Responses, exact `gpt-5.6-terra`, strict
-JSON Schema, medium reasoning, `store=false`, no provider tools, no retries,
-and environment-only credentials. `AgentRunResult` has no
+CI and default Compose supply deterministic fake scenarios. The authorization-
+gated profile additionally fixes Zhipu Chat Completions, exact `glm-5.2`, JSON-
+object output plus strict local schema validation, enabled thinking with high
+reasoning effort, deterministic sampling, no provider tools, no retries, and
+environment-only `ZHIPU_API_KEY`. `AgentRunResult` has no
 `success`, `passed`, `score`, or Grader field. `finish` produces
 `finished_ungraded`; an independent caller must invoke the unchanged W3 Grader.
 

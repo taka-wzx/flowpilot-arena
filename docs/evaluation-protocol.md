@@ -59,9 +59,26 @@ or cost as observed use and do not claim the Agent completed the tasks.
 Authorization was received on 2026-07-26 for OpenAI `gpt-5.6-terra`, prompt
 config `w4-dom-react-openai/1.0`, tasks 001-005, no retries, and revised hard
 aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens,
-900 seconds, and USD 3.25. The revision followed an observed minimum of 18
-typed decisions per task, which made the initially disclosed 12-call cap
-incapable of completing the four required business records.
+900 seconds, and USD 3.25. The 2026-07-27 run was observed at 0/5 and is kept
+as historical evidence. The user then directed implementation of GLM scheme B.
+That direction authorizes offline implementation, not a paid GLM call; the
+fixed GLM model/prompt/cost-accounting details and hard caps must be disclosed
+and explicitly authorized before GLM acceptance runs.
+
+The separately authorized GLM `w4-dom-react-glm/1.0` and `1.1` runs were each
+observed at 0/5; the separately authorized `1.2` and `1.3` runs were observed
+at 3/5 and 4/5; the separately authorized 1.4 run was observed at 5/5. All
+remain historical evidence and all authorizations have been consumed. The
+successful 1.4 configuration is Zhipu `glm-5.2` Chat Completions, JSON-object
+output parsed as a compact strict action choice before
+trusted transport metadata is added and the full action is locally validated.
+It additionally normalizes only an explicitly typed direct action or exact
+legacy transport metadata, discards only a validated bounded non-finish
+summary, bounds finish summary to 300 characters, and emits sanitized
+validation type/path on failure.
+Enabled thinking, high reasoning effort, deterministic sampling, no tools,
+zero retries, and at most 2,048 output tokens per call remain fixed. No further
+paid run is active without a new exact disclosure and explicit authorization.
 
 ## Five-task run protocol after authorization
 

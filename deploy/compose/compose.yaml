@@ -185,7 +185,7 @@ services:
       dockerfile: Dockerfile
     environment:
       BROWSER_WORKER_URL: http://browser-worker:8002
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ZHIPU_API_KEY: ${ZHIPU_API_KEY:-}
     depends_on:
       browser-worker:
         condition: service_healthy
@@ -208,7 +208,7 @@ services:
           "CMD",
           "python",
           "-c",
-          "import os; from urllib.request import urlopen; assert os.environ.get('OPENAI_API_KEY'); urlopen('http://127.0.0.1:8003/healthz').read()",
+          "import os; from urllib.request import urlopen; assert os.environ.get('ZHIPU_API_KEY'); urlopen('http://127.0.0.1:8003/healthz').read()",
         ]
       interval: 10s
       timeout: 3s

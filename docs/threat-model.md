@@ -8,13 +8,13 @@ process/session integrity; bounded DOM observations and opaque references;
 typed action integrity; and Agent budget/termination integrity. There are no
 real identities, enterprise systems, personal data, screenshots, or visual
 models. A separately authorized profile may send bounded synthetic DOM/task
-text to one fixed OpenAI model endpoint; default Compose and CI stay fake-only.
+text to one fixed Zhipu model endpoint; default Compose and CI stay fake-only.
 
 ## Trust boundaries
 
 ```mermaid
 flowchart LR
-    Model["Untrusted model output\nfake or authorized OpenAI"] --> Loop["Strict DOM Agent loop"]
+    Model["Untrusted model output\nfake or authorized GLM"] --> Loop["Strict DOM Agent loop"]
     Loop --> Worker["Typed Browser Worker API"]
     Worker --> Page["Untrusted Sandbox page text"]
     Page --> Web["sandbox_web same origin"]
@@ -59,8 +59,9 @@ plane. Local published W1/W2 ports remain development-only and unauthenticated.
 - OS entropy generates session/observation/reference identifiers only. These
   are runtime isolation tokens, not task facts or score inputs.
 - Wall-clock budgets use monotonic time. Fake responses are deterministic and
-  cost zero; authorized usage is bounded by revised 125-call/500k-input/
-  100k-output/900-second/USD 3.25 aggregate caps.
+  cost zero. The historical OpenAI run used the authorized USD 3.25 envelope;
+  the inactive GLM proposal uses 125 calls, 500k input, 100k output, 900
+  seconds, zero retries, and a conservative USD 1.75 aggregate envelope.
 - Browser navigation reaches only Sandbox Web. Same-origin business writes are
   caused by typed UI actions, never direct Worker/Agent business API calls.
 - Reset/Seed and Grader remain outside the Agent loop. Grade reads database

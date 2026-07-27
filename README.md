@@ -67,10 +67,17 @@ and the independently graded untouched initial task at 30/100 with
 `passed=false`. That is evidence that `finish` cannot bypass grading, not task
 completion.
 
-A separately authorized `real-acceptance` profile fixes OpenAI
-`gpt-5.6-terra`, prompt/config `w4-dom-react-openai/1.0`, strict action JSON,
-no provider tools or retries, and the recorded aggregate call/token/time/cost
-caps. It is not part of default Compose or CI.
+An authorization-gated `real-acceptance` profile fixes Zhipu `glm-5.2`,
+prompt/config `w4-dom-react-glm/1.4`, JSON-object output plus strict local action
+validation, no provider tools or retries, and hard call/token/time/cost caps.
+The proposed five-task caps are 125 calls, 500,000 input tokens, 100,000 output
+tokens, 900 seconds, zero retries, and a conservative USD 1.75 envelope. It
+uses only `ZHIPU_API_KEY` and is not part of default Compose or CI. The prior
+`1.0` and `1.1` authorizations were each consumed by observed 0/5 runs; the
+separately authorized `1.2` run was observed at 3/5. All authorizations are
+consumed after the separately authorized 1.3 and 1.4 runs were observed at 4/5
+and 5/5. Version 1.4 is the successful W4 Development acceptance configuration;
+any further paid run requires separate explicit authorization.
 
 Stop and remove the disposable synthetic volume after acceptance:
 
@@ -125,9 +132,11 @@ sequence is frozen in [docs/plans/week-04-dom-agent.md](docs/plans/week-04-dom-a
 
 No real or paid model is configured or called by default. Before any such call,
 the user must separately authorize the provider, exact model, prompt/config,
-tasks 001-005, and hard call/token/time/cost limits. The authorized W4 profile
-uses aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens,
-900 seconds, and USD 3.25. Agent `finish` remains ungraded.
+tasks 001-005, and hard call/token/time/cost limits. The prior OpenAI run used
+aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens, 900
+seconds, and USD 3.25 but passed 0/5. The GLM profile requires a new explicit
+authorization after its exact cost-accounting configuration is disclosed.
+Agent `finish` remains ungraded.
 
 W5 screenshot/OCR/VLM/visual grounding, W6 routing, W7 planning/verifier, W8
 recovery, and all later roadmap systems are not started. See

@@ -42,12 +42,14 @@ Grader as the sole success authority. The authoritative boundary is
 9. Run every W1-W4 lock, lint, format, type, test, build, Compose, migration,
    smoke, secret, and diff gate available on the host; fill evidence from
    observed outputs and clean Compose volumes.
-10. Real-model acceptance was separately authorized for fixed OpenAI
-    `gpt-5.6-terra`, prompt/config `w4-dom-react-openai/1.0`, tasks 001-005,
-    zero retries, and revised aggregate caps of 125 calls, 500,000 input,
-    100,000 output, 900 seconds, and USD 3.25. Run only through the profile-only
-    Agent after offline/provider-readiness gates pass; otherwise record the
-    credential or execution blocker without fabricating results.
+10. The authorized OpenAI and GLM `w4-dom-react-glm/1.0` and `1.1` real-model
+    attempts were each observed at 0/5; the separately authorized GLM 1.2 run
+    was observed at 3/5. Keep all results as historical evidence and obtain new
+    explicit authorization before any paid rerun. Apply strict compatibility
+    normalization and sanitized validation paths offline as prompt/config 1.3.
+    Record its authorized 4/5 outcome and apply bounded summary normalization
+    offline as prompt/config 1.4. Record the separately authorized 1.4 outcome
+    at 5/5 and stop before W5.
 11. Review the exact contract-owned diff, explicitly stage allowlisted files,
     create a local commit only if every available gate passes, and stop before
     W5.

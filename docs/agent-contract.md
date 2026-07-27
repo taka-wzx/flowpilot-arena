@@ -118,7 +118,7 @@ apps/dom_agent/uv.lock
 apps/dom_agent/src/flowpilot_dom_agent/__init__.py
 apps/dom_agent/src/flowpilot_dom_agent/schemas.py
 apps/dom_agent/src/flowpilot_dom_agent/model.py
-apps/dom_agent/src/flowpilot_dom_agent/openai_model.py
+apps/dom_agent/src/flowpilot_dom_agent/glm_model.py
 apps/dom_agent/src/flowpilot_dom_agent/client.py
 apps/dom_agent/src/flowpilot_dom_agent/loop.py
 apps/dom_agent/src/flowpilot_dom_agent/main.py
@@ -133,6 +133,12 @@ tests/integration/w4_compose_smoke.py
 tests/integration/w4_real_model_acceptance.py
 tests/integration/Dockerfile
 ```
+
+The superseded intermediate W4 path
+`apps/dom_agent/src/flowpilot_dom_agent/openai_model.py` was listed by the
+provider-readiness contract before the user-directed GLM replacement. It is
+authorized only as an explicit deletion in the final GLM delta and must not
+exist in the released W4 tree.
 
 The W1-W3 source, W2/W3 migrations, ten Task Specs, their checksums, and W3
 manual-baseline evidence are regression inputs only and are not on this change
@@ -208,29 +214,52 @@ the current `observation_id` and `element_ref`.
 ## DOM Agent loop contract
 
 - Model context contains only the human-facing task brief, current strict DOM
-  observation, a bounded summary of prior actions, and remaining step/call/
-  token/cost/time budgets.
+  observation, up to 24 bounded summaries of prior actions, and remaining
+  step/call/token/cost/time budgets. Summaries may retain the safe accessible
+  name of an acted-on field or button and success/error state, but omit filled
+  values and stale element references.
 - Model output is JSON validated as a strict typed action envelope. Invalid
   JSON, unknown fields/actions, invalid types, stale references, and invalid
-  budget usage fail safely.
+  budget usage fail safely. The provider owns only the minimal action choice;
+  the trusted adapter generates transport-only schema version, action ID, and
+  current observation ID before validating the complete action envelope.
 - The model interface has no Browser, HTTP, database, Reset/Seed, Grader,
   filesystem, shell, SQL, or JavaScript method. The loop can call only the
   Browser Worker client after local validation.
 - Hard caps cover steps, model calls, repeated identical actions, no-progress
   observations, duration, input/output tokens, and actual provider-reported
   cost. Cap exhaustion closes the browser session and returns a non-success
-  terminal reason.
+  terminal reason. A successful fill/select resets no-progress because its
+  intentionally hidden form-state change cannot appear in the observation
+  fingerprint.
 - W4 implements no planner, verifier, checkpoint, replay, recovery, memory,
   dynamic router, approval, or visual fallback.
 - CI and default Compose use deterministic fake models. The user authorized a
   one-off OpenAI `gpt-5.6-terra` five-task run on 2026-07-26 after disclosure
-  of prompt/config `w4-dom-react-openai/1.0`. After a documented minimum-action
-  audit, the user separately authorized revised 125-call, 500,000-input,
-  100,000-output, 900-second, zero-retry, USD 3.25 aggregate caps.
-- The authorized provider adapter uses only the fixed OpenAI Responses URL,
-  exact model, strict JSON Schema output, `store=false`, no provider tools,
-  and medium reasoning. The API key is environment-only and never logged,
-  returned, mounted from a file, or committed.
+  of prompt/config `w4-dom-react-openai/1.0` and revised aggregate caps. That
+  run was observed at 0/5. On 2026-07-27 the user separately authorized GLM
+  scheme B prompt/config 1.0 through 1.4 runs after exact disclosures. The
+  results were 0/5, 0/5, 3/5, 4/5, and 5/5 respectively, all with zero
+  retries. No additional paid-model run is authorized.
+- The current provider adapter uses only the fixed Zhipu Chat Completions URL,
+  exact `glm-5.2`, JSON-object mode followed by strict local schema validation,
+  enabled thinking with high reasoning effort, deterministic sampling, and no
+  provider tools. Its offline-remediated prompt/config is
+  `w4-dom-react-glm/1.4` with at most 2,048 output tokens per call. Because
+  provider JSON-object mode guarantees JSON rather than this repository's full
+  action schema, the adapter validates a compact strict provider choice and
+  generates transport metadata locally. It may normalize an explicitly typed
+  direct action or legacy transport fields only when versions, action ID, and
+  current observation ID validate exactly; every other unknown field remains
+  forbidden. A non-finish `summary` is treated only as bounded string metadata
+  and discarded; a finish summary is bounded to the full action's 300-character
+  limit. Validation errors expose only sanitized schema error type/path.
+  `ZHIPU_API_KEY` is environment-only and never logged, returned, mounted from
+  a file, or committed.
+- The authorized GLM aggregate hard caps were 125 calls, 500,000 input tokens,
+  100,000 output tokens, 900 seconds, zero retries, and a conservative USD 1.75
+  cost envelope derived from official CNY list prices at 4 CNY per budget USD.
+  All five one-off GLM authorizations have been consumed.
 - A profile-only real Agent may additionally use one outbound bridge solely
   so its fixed adapter can reach the authorized provider. It remains absent
   from default Compose and has no Sandbox API/PostgreSQL network or client.

@@ -40,11 +40,13 @@ shape. The loop can call only Browser Worker HTTP. It has no Sandbox API or
 database network and no Reset/Seed/Grader client. Default runtime and all CI
 paths use a deterministic fake model.
 
-After the separately disclosed user authorization on 2026-07-26, one
-profile-only real Agent instance may use the same image and loop. Its only code
-path beyond the Browser Worker is a fixed HTTPS call to OpenAI Responses with
-exact model `gpt-5.6-terra`, strict action JSON Schema, no provider tools, no
-retries, and environment-only credentials. It never accepts a provider URL.
+After separate disclosure and user authorization, one profile-only real Agent
+instance may use the same image and loop. The initial OpenAI path was observed
+at 0/5 on 2026-07-27 and was superseded by the user-directed GLM scheme B. The
+current path beyond the Browser Worker is a fixed HTTPS call to Zhipu Chat
+Completions with exact model `glm-5.2`, JSON-object output followed by strict
+local action validation, no provider tools, no retries, and environment-only
+credentials. It never accepts a provider URL.
 
 Keep task lifecycle management outside both components. An acceptance caller
 uses W3 management APIs to load a fixed task, compare two Reset/Seed results,

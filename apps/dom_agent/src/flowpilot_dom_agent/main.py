@@ -6,9 +6,9 @@ from fastapi import FastAPI, HTTPException, Request
 
 from flowpilot_dom_agent import __version__
 from flowpilot_dom_agent.client import BrowserWorkerClient
+from flowpilot_dom_agent.glm_model import GLMChatCompletionsModel
 from flowpilot_dom_agent.loop import AgentLoop
 from flowpilot_dom_agent.model import DeterministicFakeModel, ModelClient
-from flowpilot_dom_agent.openai_model import OpenAIResponsesModel
 from flowpilot_dom_agent.schemas import AgentRunRequest, AgentRunResult
 
 
@@ -35,11 +35,11 @@ async def run_agent(payload: AgentRunRequest, request: Request) -> AgentRunResul
     if payload.model == "deterministic-fake":
         model = DeterministicFakeModel(payload.fake_scenario)
     else:
-        api_key = environ.get("OPENAI_API_KEY", "")
+        api_key = environ.get("ZHIPU_API_KEY", "")
         if not api_key:
             raise HTTPException(
                 status_code=503, detail="Authorized model credential is unavailable"
             )
-        model = OpenAIResponsesModel(api_key)
+        model = GLMChatCompletionsModel(api_key)
     loop = AgentLoop(request.app.state.browser_client, model)
     return await loop.run(payload.task_id, payload.instruction, payload.budget)

@@ -2,92 +2,118 @@
 
 ## Purpose and current boundary
 
-This document freezes evidence and future evaluation invariants. W3 now has a
-deterministic Arena foundation, but it still has no Agent, browser automation,
-benchmark run, experimental comparison, success-rate claim, or ROI result.
+This document freezes W4 DOM-only evidence without converting deterministic
+fake tests into Agent success claims. W3 database-fact grading remains the sole
+task-success authority. W4 has no screenshot, vision path, Reporting run,
+external benchmark, success-rate result, recovery result, or ROI claim.
 
-## W3 task foundation protocol
+## Preserved W3 task protocol
 
-The W3 dataset contains exactly ten original synthetic joiner Task Specs. Each
-has provenance, schema/fixture version, human instructions, fixed initial facts,
-structured expected final facts, ordered grader predicates, split, and a
-canonical SHA-256 checksum. Run results are never written into a spec.
+The ten W3 specs, canonical checksums, catalog checksum, fixture version,
+6/2/2 Development/Validation/Reporting allocation, Reset/Seed semantics,
+grader predicates, and manual baseline remain unchanged. Reporting tasks 009
+and 010 remain frozen and unused for W4 tuning.
 
-The conservative fixed split is:
+W4 acceptance candidates are only `w3-joiner-001` through
+`w3-joiner-005`. Task 006 remains Development in the W3 catalog but is outside
+the user-authorized five-task W4 acceptance set. Validation/Reporting results
+must not influence W4 implementation or prompts.
 
-- Development: `w3-joiner-001` through `w3-joiner-006`;
-- Validation: `w3-joiner-007` and `w3-joiner-008`;
-- Reporting: `w3-joiner-009` and `w3-joiner-010`.
+## Deterministic fake-model protocol
 
-This is a small foundation set, not the roadmap's final 30 templates. The two
-Reporting specs and their checksums freeze on the first W3 commit. They must not
-be changed or used for tuning before W15; an essential correction requires a
-new spec/fixture version and explicit evidence rather than silent replacement.
+Unit tests and CI use fake model output with declared zero external cost. They
+must cover:
 
-## Deterministic acceptance protocol
+1. strict session, observation, action, result, model-decision, budget, and run
+   schemas, including unknown fields/types/actions;
+2. origin allowlist, dangerous schemes, direct API paths, external redirects,
+   and local network isolation;
+3. stable DOM-order observation, hidden/value filtering, text/node/element/
+   serialized limits, and absence of visual/selector/credential fields;
+4. current, forged, and stale `element_ref` behaviour;
+5. success and failure for navigate, click, fill, select, read, scroll, wait,
+   finish, and fail/escalate, plus unconditional cleanup;
+6. valid fake action, invalid JSON, invalid action, repetition, no progress,
+   step/call/time/token/cost exhaustion, and safe termination;
+7. a Compose smoke that Reset/Seeds twice, invokes the fake Agent through an
+   actual isolated Chromium session, then grades independently;
+8. proof that fake `finish` leaves untouched initial state at its database-
+   derived non-passing score rather than producing Agent-declared success.
 
-For each of the ten tasks:
+The fake Compose smoke is infrastructure/contract evidence only. It is not one
+of the five real-model task runs and is not an Agent success-rate sample.
 
-1. Validate the strict schema, references, predicate weights, split, fixture,
-   per-spec checksum, and catalog checksum.
-2. Execute Reset/Seed twice and compare the complete stable fact summary and
-   checksum. No task-owned residue may remain; unrelated W2/manual rows must
-   remain unchanged.
-3. Grade the untouched initial state and confirm it does not pass.
-4. Create the exact expected facts through supported business operations and
-   confirm a 100/100 passing grade.
-5. Grade again and compare serialized results and before/after facts.
+## Real-model authorization gate
 
-The deterministic test suite must also prove that partial completion, a wrong
-employee link, duplicate task-owned business records, an elevated IAM role,
-and complete non-completion cannot score 100. A human or future Agent cannot
-declare completion; only the database-fact grader result is authoritative.
+Before any real or paid model call, stop and obtain separate explicit user
+authorization after disclosing:
 
-Grading excludes browser/page/DOM/screenshot/log/model output, baseline notes,
-and task prose. No external API or model may contribute to task facts or scores.
+- provider and exact model;
+- prompt/config version and human-brief construction;
+- planned tasks 001-005;
+- maximum model calls, input/output tokens, wall time, retries, and cost.
 
-## Human baseline protocol
+Without authorization, record all five runs as not run. Do not estimate tokens
+or cost as observed use and do not claim the Agent completed the tasks.
 
-W3 proves only that a manual record can be stored. It does not establish an
-efficiency gain or enterprise ROI. A record contains:
+Authorization was received on 2026-07-26 for OpenAI `gpt-5.6-terra`, prompt
+config `w4-dom-react-openai/1.0`, tasks 001-005, no retries, and revised hard
+aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens,
+900 seconds, and USD 3.25. The 2026-07-27 run was observed at 0/5 and is kept
+as historical evidence. The user then directed implementation of GLM scheme B.
+That direction authorizes offline implementation, not a paid GLM call; the
+fixed GLM model/prompt/cost-accounting details and hard caps must be disclosed
+and explicitly authorized before GLM acceptance runs.
 
-- catalog `task_id` and synthetic record ID;
-- an anonymous `anon-...` operator alias;
-- offset-aware start/end time and derived duration;
-- manually counted actions;
-- final score derived from the deterministic grader at record time;
-- optional synthetic notes.
+The separately authorized GLM `w4-dom-react-glm/1.0` and `1.1` runs were each
+observed at 0/5; the separately authorized `1.2` and `1.3` runs were observed
+at 3/5 and 4/5; the separately authorized 1.4 run was observed at 5/5. All
+remain historical evidence and all authorizations have been consumed. The
+successful 1.4 configuration is Zhipu `glm-5.2` Chat Completions, JSON-object
+output parsed as a compact strict action choice before
+trusted transport metadata is added and the full action is locally validated.
+It additionally normalizes only an explicitly typed direct action or exact
+legacy transport metadata, discards only a validated bounded non-finish
+summary, bounds finish summary to 300 characters, and emits sanitized
+validation type/path on failure.
+Enabled thinking, high reasoning effort, deterministic sampling, no tools,
+zero retries, and at most 2,048 output tokens per call remain fixed. No further
+paid run is active without a new exact disclosure and explicit authorization.
 
-The tool captures no personal identity, key content, screenshot, page state,
-selector, extension data, or browser telemetry, and performs no browser action.
+## Five-task run protocol after authorization
 
-## Future evaluation invariants
+For each task 001-005:
 
-Later milestones must preserve these roadmap rules:
+1. load and record task ID, spec checksum, fixture version, prompt/config, and
+   model identity;
+2. execute Reset/Seed twice and require identical full results/seed checksum;
+3. render only the title, human instructions, and immutable supplied synthetic
+   values into the human-facing brief; do not pass grader predicates;
+4. create a fresh Browser/Context/Page at HRIS;
+5. allow the Agent to act only through typed actions on the five W2 pages;
+6. record every step/action/model call, actual input/output tokens, actual
+   provider-reported cost, invalid output, failure, retry, timeout, repetition,
+   and human intervention;
+7. close browser resources, then invoke W3 Grader independently;
+8. count completion only when Grader returns exactly 100/100 and `passed=true`.
 
-1. Use resettable deterministic facts rather than self-reported completion.
-2. Split by task template/specification, never random task instances.
-3. Keep Reporting configuration/spec hashes frozen and do not tune against them
-   before W15.
-4. Record task provenance/licence, fixture/reset version, model identity,
-   prompt/configuration version, exclusions, retries, and actual cost.
-5. Keep security ablations isolated from real write operations.
-6. Run declared baselines/ablations under comparable conditions and report
-   uncertainty and failures rather than filtering them away.
+Do not filter failed runs, alter W3 facts/predicates/checksums, tune against
+Validation/Reporting, or treat model `finish`/natural language as evidence.
+
+## Result interpretation
+
+W4 may show that five fixed simple Development tasks are runnable only after
+their actual authorized results exist. Five observations do not establish a
+general success rate. W4 never claims planner quality, failure recovery,
+production reliability, security against malicious pages, or enterprise ROI.
 
 ## Weekly evidence format
 
-Every weekly report records:
+Every weekly report records exact scope, changed artifacts, dependency/browser
+versions and image IDs, isolation settings, schema versions and limits, exact
+commands/exit outcomes, W1-W3 regressions, fake-model results, all five
+task/spec/seed rows, real-model authorization/run status, failures/retries,
+secret/diff review, actual paid cost, limitations, and the next prohibited
+boundary.
 
-| Field | Required record |
-|---|---|
-| Scope | Contract reference and explicit non-goals |
-| Inputs | Code/data/model provenance relevant to that week |
-| Commands | Exact validation commands and exit outcomes |
-| Artifacts | Commit/PR context; screenshots/traces only if authorized and created |
-| Results | Measured values only; no unsupported claims |
-| Limits | Missing tools, infrastructure, or intentionally deferred tests |
-| Cost | Paid-model use and actual spend; W1–W3 are zero |
-| Next boundary | What the next week may do and what remains prohibited |
-
-The W3 evidence report is [evidence/week-03-report.md](evidence/week-03-report.md).
+The W4 report is [evidence/week-04-report.md](evidence/week-04-report.md).

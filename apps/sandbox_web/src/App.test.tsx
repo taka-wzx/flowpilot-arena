@@ -28,6 +28,23 @@ describe("Sandbox module routes", () => {
     expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();
     await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
   });
+
+  it("replaces an unknown route with the HRIS default", async () => {
+    window.history.pushState({}, "", "/unknown");
+    render(<App />);
+    expect(window.location.pathname).toBe("/hris");
+    expect(screen.getByRole("heading", { name: "Employee profiles" })).toBeInTheDocument();
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it("navigates between modules without a document reload", async () => {
+    window.history.pushState({}, "", "/hris");
+    render(<App />);
+    await userEvent.click(screen.getByRole("link", { name: "ITSM" }));
+    expect(window.location.pathname).toBe("/itsm");
+    expect(screen.getByRole("heading", { name: "Onboarding tickets" })).toBeInTheDocument();
+    await waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+  });
 });
 
 it("submits the synthetic HRIS employee and refreshes the list", async () => {

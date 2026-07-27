@@ -1,79 +1,88 @@
-# W3 threat model — Arena Foundation
+# W4 threat model — DOM Agent Foundation
 
 ## Scope and assets
 
-W3 protects the integrity and availability of ten source-controlled synthetic
-Task Specs, canonical checksums, task-owned Sandbox facts, deterministic grade
-results, and anonymous manual-baseline records. W1/W2 source, locks, migrations,
-and local runtime remain assets. There are no real identities, tenants,
-credentials, enterprise systems, browser sessions, models, or production data.
+W4 protects the W1-W3 source and locks; ten immutable synthetic Task Specs and
+checksums; task-owned Sandbox facts and deterministic grades; Browser Worker
+process/session integrity; bounded DOM observations and opaque references;
+typed action integrity; and Agent budget/termination integrity. There are no
+real identities, enterprise systems, personal data, screenshots, or visual
+models. A separately authorized profile may send bounded synthetic DOM/task
+text to one fixed Zhipu model endpoint; default Compose and CI stay fake-only.
 
 ## Trust boundaries
 
 ```mermaid
 flowchart LR
-    Human["Local human operator"] --> Web["Five Sandbox pages"]
-    Human --> Arena["Arena management API"]
-    Web --> Business["Business APIs"]
-    Arena --> Catalog["Versioned Task Specs"]
-    Arena --> DB["Local PostgreSQL"]
-    Business --> DB
-    Repo["Source and locks"] --> CI["GitHub Actions"]
-    Build["Package/container builds"] --> Registries["Public registries"]
+    Model["Untrusted model output\nfake or authorized GLM"] --> Loop["Strict DOM Agent loop"]
+    Loop --> Worker["Typed Browser Worker API"]
+    Worker --> Page["Untrusted Sandbox page text"]
+    Page --> Web["sandbox_web same origin"]
+    Web --> API["W2 business API"]
+    Caller["Trusted acceptance caller"] --> Arena["W3 Reset/Seed + Grader"]
+    Caller --> Loop
+    Arena --> DB["Synthetic PostgreSQL"]
+    API --> DB
 ```
 
-The management API is trusted to select only catalog tasks, but its path/body
-inputs are untrusted. Task resources are reviewed source, not operator data.
-Database ownership markers are the destructive-scope enforcement point. Local
-ports and the Compose network are not a production security perimeter.
+Model JSON and page text are untrusted. Browser Worker is a separate process
+and container. Docker internal networks, not application naming, enforce that
+Worker lacks API/DB routes and Agent lacks all Sandbox routes. The acceptance
+caller is trusted W4 test orchestration, not a model tool or production control
+plane. Local published W1/W2 ports remain development-only and unauthenticated.
 
-## Threats and W3 controls
+## Threats and W4 controls
 
-| Threat | W3 impact | Control in W3 | Remaining limitation |
+| Threat | W4 impact | Control in W4 | Remaining limitation |
 |---|---|---|---|
-| Global or arbitrary reset | Destruction of unrelated Sandbox facts | Exact catalog ID; task marker filter; fixed model deletes; one transaction; no table/query input | Unauthenticated local caller may reset any of the ten synthetic tasks |
-| Partial reset/seed | Non-replayable state | Transaction rollback; dependency-ordered deletion; fixed seed facts; two-pass tests | Host/database failure testing is W8 |
-| Ownership spoofing | Unrelated row deleted or graded | Marker is never accepted in business payloads; downstream row inherits employee marker | Direct database administrators remain outside the app boundary |
-| Spec tampering or ambiguity | Invalid grading or split leakage | Strict unknown-field rejection, fixed references/predicates, per-spec and catalog SHA-256 | Review still governs authorized source changes |
-| Natural-language grader injection | False success | Grader reads structured expected state/predicate kinds only; prose is never evaluated | Prompt injection testing belongs to W14 |
-| Self-reported completion | Inflated result | Grade derives only from DB facts; baseline score is derived by the same grader | Human action counts and notes are self-recorded observations |
-| Duplicate/wrong/elevated records | Unsafe false positive | Explicit counts, association checks, ordinary-role predicate, negative tests | W3 is not a production authorization system |
-| Grader side effect | State changes during verification | Read-only query implementation; repeated result and before/after state tests | Database read isolation uses the local session defaults |
-| Personal/browser data in baseline | Privacy or premature telemetry | Anonymous alias pattern; narrow strict fields; no capture integration | Free-text notes require operator discipline |
-| Real data entered in W2 forms | Privacy exposure | `.invalid` validation, `SYN-` assets, synthetic task data and policy | Free-text business fields cannot prove provenance |
-| Arbitrary execution input | Host or DB compromise | No SQL, shell, file, selector, URL, task-payload, or command field/endpoint | Local operators retain normal host tooling outside the app |
-| Public exposure | Unauthorized mutation | Documented local-only synthetic use | OIDC/RBAC/tenancy wait for W10; never expose publicly |
-| Supply-chain or secret leak | Build compromise/credential exposure | Four locks, CI quality gates, Dependabot, Gitleaks | No SBOM/image signing yet |
+| External navigation / SSRF | Browser reaches arbitrary host | Exact local hostname/origin and five paths; scheme/credential/query rejection; request interception; final URL check; internal network without gateway | W14 performs adversarial page testing |
+| Redirect escape | Allowlisted URL redirects outside | Every request is intercepted and every final navigation revalidated | No general proxy or redirect feature exists |
+| Arbitrary browser execution | Model runs JS/Playwright/selectors | Strict discriminated actions; extra fields forbidden; no code/selector/options endpoint; opaque refs only | Fixed internal extraction code remains trusted source |
+| Shell/SQL/file execution | Host/DB compromise | No corresponding schema, endpoint, dependency, mount, Docker socket, or credential | Local developer host tools are outside service boundary |
+| Forged/stale element reference | Wrong element action | Fresh observation nonce; in-memory current map; observation/ref/action match before execution | DOM races after observation can still cause a safe Playwright failure |
+| Cross-task browser state | Cookie/form leakage or wrong action | Fresh Browser/Context/Page per session; close on every terminal/error path; no storage return | Crash recovery is W8, not W4 |
+| Credential/form leakage | Secret in observation/log | No input values, password data, Cookie/Local Storage, trace, full form dump, or screenshot fields; bounded sanitized messages | W2 free text still requires synthetic-data discipline |
+| Prompt injection in page text | Page controls Agent policy | Page text remains tagged untrusted data in model context and cannot create tools/actions without strict validation | Malicious-page dataset/effectiveness evaluation is W14 |
+| Input of real/secret data | Privacy exposure | `.invalid` emails, password-control rejection, credential/card/control-character filters, max length | Heuristic filter cannot prove provenance of arbitrary names |
+| Resource exhaustion | Host instability | Per-session action/navigation/wait/time limits; Agent step/call/token/cost/time/repetition/no-progress limits; pids/shm/tmpfs bounds | Load/concurrency testing waits for W12 |
+| Model credential leakage | Paid-call abuse | Key is environment-only on the profile Agent; never logged, returned, repository-mounted, or given to the caller/model context | Docker environment metadata is trusted-host visible during the one-off run |
+| Provider egress abuse | Agent reaches arbitrary internet host | Default Agent has no egress; authorized adapter fixes URL/model and accepts no provider URL or tools | Docker bridge cannot domain-allowlist; profile lifecycle and application policy are the containment |
+| Model self-reported success | False positive | Result has no pass/score; finish means ungraded; independent unchanged W3 Grader; only 100 passes | Five fixed observations do not establish general reliability |
+| Direct Agent access to facts/grade | Tuning or bypass | No DB/Arena/business client or network; real profile adds provider egress only | Trusted acceptance caller can manage fixed synthetic tasks |
+| Browser container breakout | Host compromise | Non-root user, read-only root, no binds/socket, all caps dropped, no-new-privileges, internal networks | This is development hardening, not a formal sandbox proof |
+| Supply-chain drift | Reproducibility/compromise | uv locks, Playwright 1.60.0, Python 3.13.5 tag, observed image IDs, CI, Dependabot, Gitleaks | No SBOM/image signing until later release work |
 
-## Deterministic data-flow rules
+## Deterministic data and control rules
 
-- Task facts use only fixed source values, `.invalid` emails, `SYN-W3-...`
-  assets, fixed dates/IDs/timestamps, and no random/current-time/network/model
-  input.
-- Reset deletes only exact ownership-marker matches and returns a stable fact
-  checksum. Null-marked W2 records are outside its scope.
-- The API rejects arbitrary Reset/Grade bodies and unknown baseline fields.
-- Business APIs derive ownership from the employee row. The caller cannot set
-  or transfer ownership.
-- Grading reads business tables only. It ignores pages, logs, screenshots,
-  browser state, baseline notes, and task instructions.
-- Baseline records contain no personal identity or browser/keyboard telemetry;
-  their score is not caller-supplied.
+- W3 task facts/checksums remain fixed; W4 does not write observations, actions,
+  model output, or results into specs.
+- OS entropy generates session/observation/reference identifiers only. These
+  are runtime isolation tokens, not task facts or score inputs.
+- Wall-clock budgets use monotonic time. Fake responses are deterministic and
+  cost zero. The historical OpenAI run used the authorized USD 3.25 envelope;
+  the inactive GLM proposal uses 125 calls, 500k input, 100k output, 900
+  seconds, zero retries, and a conservative USD 1.75 aggregate envelope.
+- Browser navigation reaches only Sandbox Web. Same-origin business writes are
+  caused by typed UI actions, never direct Worker/Agent business API calls.
+- Reset/Seed and Grader remain outside the Agent loop. Grade reads database
+  facts only and ignores browser/model claims.
 
 ## Explicitly deferred threats
 
-Browser isolation and malicious pages begin W4/W14; screenshot/model leakage
-begins W5; router safety W6; planner/verifier risks W7; workflow recovery and
-fault injection W8; memory/knowledge poisoning W9; identity, cross-tenant, and
-RBAC W10; approval bypass and audit chain W11; production worker/monitoring/load
-risks W12+. W3 makes no control claim for absent components.
+Screenshot/model leakage and visual grounding begin W5; DOM/vision routing W6;
+planner/verifier risks W7; checkpoint/recovery/fault injection W8; context and
+knowledge poisoning W9; identity/cross-tenant/RBAC W10; approval/audit W11;
+production worker, monitoring, tracing, and load W12+; malicious-page security
+evaluation W14; external benchmarks and Reporting evaluation W15.
 
 ## Security operating rules
 
-- Never expose this unauthenticated environment on a public/shared network.
-- Never enter or commit real people, accounts, assets, credentials, endpoints,
-  or enterprise-derived data.
-- Never add a generic reset, arbitrary fixture, SQL, shell, file, or browser
-  execution interface under the Arena label.
-- Keep Reporting specs/checksums frozen after the first W3 commit.
-- Record unavailable scanners honestly; do not weaken CI or acceptance gates.
+- Never expose local unauthenticated W1-W3 ports on a public/shared interface.
+- Never add a default network, host mount, Docker socket, database/API secret,
+  external origin, raw selector, or arbitrary execution parameter to Worker or
+  Agent.
+- Never enter or commit real identities, accounts, assets, credentials,
+  endpoints, form contents, browser traces, or enterprise-derived data.
+- Call a real model only under the recorded authorization, fixed provider/model
+  and prompt version, five task IDs, zero retries, and hard aggregate caps.
+- Keep W3 Reporting specs/checksums frozen and stop before W5.

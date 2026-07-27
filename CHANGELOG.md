@@ -22,6 +22,45 @@ and this project follows [Semantic Versioning](https://semver.org/).
   with grader-derived scores.
 - W3 Alembic ownership/baseline migration and deterministic catalog, reset,
   grading, negative-state, baseline, and API tests.
+- W4 isolated non-root Playwright Browser Worker with local-origin policy,
+  bounded DOM/accessibility observations, opaque observation-scoped element
+  references, typed browser actions, and unconditional resource cleanup.
+- W4 separate DOM Agent service with strict model JSON, deterministic fake
+  scenarios, fixed Browser Worker client, and step/call/repetition/progress/
+  time/token/cost budgets.
+- W4 isolated Compose networks, one-off fake-model acceptance caller, pinned
+  Python/uv/Playwright/Chromium runtime, CI jobs, dependency locks, and
+  deterministic Worker/Agent/security/smoke tests.
+- W4 authorization-gated profile-only Zhipu `glm-5.2` adapter and five-task
+  caller with JSON-object output, strict local action validation, fixed
+  endpoint, no tools/retries, environment-only key, and hard aggregate
+  call/token/time/cost caps.
+
+### Changed
+
+- Superseded the unsuccessful OpenAI W4 real-model path with user-directed GLM
+  scheme B while preserving the observed OpenAI 0/5 evidence.
+- Remediated the observed GLM 0/5 path offline as prompt/config 1.1: successful
+  hidden form fills now count as progress, bounded action history retains safe
+  field/button names without values, strict output instructions are explicit,
+  and the per-call output ceiling is 2,048 tokens.
+- After prompt/config 1.1 was again observed at 0/5 from strict-schema
+  rejection, added offline prompt/config 1.2: GLM returns a compact strict
+  action choice while the trusted adapter generates transport-only versions,
+  action IDs, and current observation IDs before full action validation.
+- Recorded the separately authorized prompt/config 1.2 five-task outcome at
+  3/5: tasks 001, 004, and 005 graded 100 while 002 and 003 graded 45; all
+  calls remained within caps with zero retries.
+- Added offline prompt/config 1.3 strict compatibility normalization for a
+  direct typed action and exact legacy transport metadata, plus sanitized
+  Pydantic error type/path reporting; unknown fields and stale observation IDs
+  remain rejected.
+- Recorded the separately authorized prompt/config 1.3 outcome at 4/5 and used
+  its sanitized diagnostics to add offline 1.4 handling for bounded,
+  non-executable summary metadata and deterministic finish-summary truncation.
+- Recorded the separately authorized prompt/config 1.4 Development acceptance
+  at 5/5: all five tasks independently graded 100 with zero retries and all
+  aggregate call/token/time/cost limits respected.
 
 ### Security
 
@@ -32,3 +71,7 @@ and this project follows [Semantic Versioning](https://semver.org/).
 - Restricted W3 reset to exact catalog task IDs and ownership markers; rejected
   unknown spec/API fields and caller-supplied baseline scores; kept grading
   read-only and based only on structured database facts.
+- Isolated W4 Browser Worker from Sandbox API/PostgreSQL and host resources;
+  isolated DOM Agent from every Sandbox/Arena/Grader route; rejected dangerous
+  origins, redirects, selectors/code/commands, stale references, password/real
+  email/credential-like input, and unbounded actions or waits.

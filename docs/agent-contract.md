@@ -1,192 +1,301 @@
-# W3 agent contract — Arena Foundation
+# W4 agent contract — DOM Agent Foundation
 
 ## Authority and objective
 
-This contract translates the W3 row of
-[project-roadmap.md](project-roadmap.md) and the user-authorized W3 brief into a
-bounded implementation agreement for `week/03-arena`.
+This contract translates the W4 row of
+[project-roadmap.md](project-roadmap.md) and the user-authorized W4 brief into a
+bounded implementation agreement for `week/04-dom-agent`.
 
-The sole outcome is a versioned and deterministic local Arena foundation for
-ten fixed synthetic joiner tasks. A human can select a task, Reset/Seed its
-owned Sandbox facts, perform work through the existing five business pages,
-request a database-fact grade, and store an anonymous manual-baseline record.
-W3 does not execute an Agent or automate a browser.
+The sole outcome is a minimal DOM-only Agent foundation: an isolated
+Playwright Browser Worker exposes strict observations and typed actions to a
+separate bounded ReAct loop. The acceptance caller resets fixed W3 Development
+tasks before a run and grades database facts afterward. Only the unchanged W3
+Grader may declare success.
 
-## Baseline observed before W3 edits
+The roadmap's final “start W1” paragraph is historical bootstrap guidance. The
+specific W4 schedule row, completed W1-W3 releases, and this explicit W4
+authorization govern the current branch. Future roadmap architecture remains
+non-authorizing; W5+ is still prohibited.
 
-- W2 PR #13 is merged into `main` at merge commit `5d4647b`.
-- The final W2 pull-request checks passed, including both `Secret scan` jobs.
-- The annotated `w02-sandbox` tag object is present locally and on `origin`; it
-  dereferences locally to the W2 merge commit.
-- `main` and `origin/main` were synchronized with `git pull --ff-only`.
-- `week/03-arena` was recreated from synchronized `main`.
+## Baseline observed before W4 edits
+
+- W3 PR #20 is merged into `main` at `11c4494`.
+- Both final W3 push and pull-request CI runs completed successfully, including
+  both `Secret scan` jobs.
+- Remote annotated tag object `1d4cc6f` exists as `w03-arena` and dereferences
+  to `11c4494`.
+- `git pull --ff-only` reported `main` already up to date with `origin/main`.
+- `week/04-dom-agent` was created from synchronized `main`.
 - No tracked or contract-eligible untracked changes existed at the boundary.
-- The excluded `%SystemDrive%/` entry was not inspected, copied, modified,
-  staged, scanned, ignored, or deleted. No `code_review_agent` repository was
-  accessed.
+- `%SystemDrive%/` and every `code_review_agent` repository remained outside
+  all reads, scans, diffs, staging, and modifications.
 
-## Conservative W3 architecture decisions
+## Conservative W4 architecture decisions
 
-1. Arena remains an explicit package and `/api/arena` router inside the single
-   W2 `sandbox_api` deployment. It does not enter `control_api`, create a new
-   service, or mix management endpoints into the five business routers.
-2. Task Specs are ten repository-versioned JSON resources validated into
-   strict Pydantic models. Their canonical SHA-256 checksum covers the
-   normalized spec excluding only the checksum field itself.
-3. Each Sandbox business row gains a nullable `arena_task_id`. Null continues
-   to mean W2 manual/development data. W3 Reset deletes, in dependency order,
-   only rows whose marker exactly equals the requested task ID and then inserts
-   the task's fixed initial facts in one transaction.
-4. Downstream records created through existing business APIs inherit the
-   selected employee's `arena_task_id`; the caller cannot supply ownership.
-   Every task seeds a target and a clearly labelled decoy employee so wrong
-   associations remain observable, task-owned, and safely resettable.
-5. Specs are source-controlled resources, not mutable database rows. Test or
-   runtime results are never written into the specs.
-6. The grader uses only SQLAlchemy reads over Sandbox fact tables. It evaluates
-   enumerated predicate kinds and structured expected state; it never infers
-   conditions from titles, actor instructions, notes, logs, pages, or models.
-7. Human baseline entries use caller-supplied anonymous aliases and timestamps.
-   They store task ID, start/end, derived duration, action count, a final score
-   derived from the read-only Grader at record time, and optional synthetic
-   notes only. The caller cannot declare the score. Entries collect no keyboard,
-   screenshot, page, selector, browser, or personal telemetry.
-8. No frontend change is needed for Arena management. Reset/Seed, grade, task
-   catalog, and baseline recording use narrow local management APIs; the five
-   W2 pages remain the only manual business-action surfaces.
+1. `apps/browser_worker` is an independent FastAPI process/container. It owns
+   Playwright, Browser/Page/Context resources, observation construction,
+   action validation, URL policy, session budgets, and cleanup. It has no
+   database credential, repository mount, Docker socket, arbitrary execution
+   endpoint, or network route to `sandbox-api`.
+2. `apps/dom_agent` is a second independent FastAPI process/container. It owns
+   the minimal ReAct loop and deterministic fake model. It communicates only
+   with the Browser Worker and has no network route, library dependency, or
+   credential for Sandbox APIs, PostgreSQL, Reset/Seed, or Grader.
+3. An outer acceptance caller owns the W3 management sequence: fetch immutable
+   task metadata, Reset/Seed twice, build the human-facing instruction brief,
+   invoke the Agent, close resources, then call the W3 Grader. Those management
+   calls are never model tools and never enter Browser Worker actions.
+4. The W3 prose says to use “supplied synthetic identifiers” but does not spell
+   all identifiers out in its `instructions` array. The acceptance caller may
+   deterministically render a human-facing brief from the immutable Task Spec's
+   title, `instructions`, and expected synthetic business values. The loop
+   receives only that text, current observation, bounded action summaries, and
+   remaining budgets—not grader predicates, database facts, or management API
+   access. Specs/checksums remain unchanged.
+5. Browser Worker and Agent use versioned JSON over narrow local HTTP APIs.
+   There is no shared runtime package, dynamic code loading, selector input,
+   or generic proxy. Both sides validate unknown fields strictly.
+6. Compose uses three explicit internal networks. Browser Worker shares one
+   network only with `sandbox-web` and one only with DOM Agent. `sandbox-web`
+   alone bridges browser traffic to the existing Sandbox backend network.
+7. No W4 database state is required. No W2/W3 migration or schema changes.
+8. Playwright is pinned to `1.60.0`, whose bundled Chromium is
+   `148.0.7778.96`. Python is pinned to the 3.13 line, uv to `0.11.14`, and
+   container bases/tags and resolved digests are recorded in evidence.
 
 These decisions are detailed in
-[adr/0003-w3-embedded-task-owned-arena.md](adr/0003-w3-embedded-task-owned-arena.md).
+[adr/0004-w4-isolated-dom-worker-and-agent.md](adr/0004-w4-isolated-dom-worker-and-agent.md).
 
-## Fixed task allocation and freeze rule
+## Exact W4 file allowlist
 
-The ten specs are distinct fixed joiner tasks, not claims about the final
-30-template dataset:
-
-| Split | Task IDs | W3 rule |
-|---|---|---|
-| Development | `w3-joiner-001` through `w3-joiner-006` | May change only while completing W3, with checksum updates and evidence |
-| Validation | `w3-joiner-007`, `w3-joiner-008` | Used only for W3 validation; later changes require a new fixture/spec version |
-| Reporting | `w3-joiner-009`, `w3-joiner-010` | Content and canonical checksums freeze when first committed; do not tune against results before W15 |
-
-All ten use `schema_version = "1.0"` and `fixture_version = "w3-fixture-v1"`.
-The catalog additionally has a deterministic checksum derived from the sorted
-`task_id`/canonical-checksum pairs. Splits are by these fixed specifications;
-no randomized instance split exists.
-
-## Exact W3 file allowlist
-
-Only the following paths may be created or modified in W3:
+Only the following paths may be created or modified in W4:
 
 ```text
 AGENTS.md
 README.md
 CHANGELOG.md
 
+.github/dependabot.yml
 .github/workflows/ci.yml
 
 docs/agent-contract.md
 docs/architecture.md
 docs/threat-model.md
 docs/evaluation-protocol.md
-docs/adr/0003-w3-embedded-task-owned-arena.md
-docs/plans/week-03-arena.md
-docs/evidence/week-03-report.md
+docs/adr/0004-w4-isolated-dom-worker-and-agent.md
+docs/plans/week-04-dom-agent.md
+docs/evidence/week-04-report.md
 
-apps/sandbox_api/pyproject.toml
-apps/sandbox_api/uv.lock
-apps/sandbox_api/migrations/versions/20260726_0002_arena_foundation.py
-apps/sandbox_api/src/flowpilot_sandbox_api/main.py
-apps/sandbox_api/src/flowpilot_sandbox_api/models.py
-apps/sandbox_api/src/flowpilot_sandbox_api/schemas.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/__init__.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/schemas.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/catalog.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/service.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/grader.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/baselines.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/router.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-001.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-002.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-003.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-004.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-005.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-006.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-007.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-008.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-009.json
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/tasks/w3-joiner-010.json
-apps/sandbox_api/tests/conftest.py
-apps/sandbox_api/tests/test_api.py
-apps/sandbox_api/tests/test_models.py
-apps/sandbox_api/tests/test_arena_catalog.py
-apps/sandbox_api/tests/test_arena_service.py
-apps/sandbox_api/tests/test_arena_grader.py
-apps/sandbox_api/tests/test_arena_baselines.py
-apps/sandbox_api/tests/test_arena_api.py
+deploy/compose/compose.yaml
+
+apps/sandbox_web/package.json
+apps/sandbox_web/package-lock.json
+apps/sandbox_web/src/App.tsx
+apps/sandbox_web/src/App.test.tsx
+
+apps/browser_worker/.dockerignore
+apps/browser_worker/Dockerfile
+apps/browser_worker/pyproject.toml
+apps/browser_worker/uv.lock
+apps/browser_worker/src/flowpilot_browser_worker/__init__.py
+apps/browser_worker/src/flowpilot_browser_worker/config.py
+apps/browser_worker/src/flowpilot_browser_worker/schemas.py
+apps/browser_worker/src/flowpilot_browser_worker/policy.py
+apps/browser_worker/src/flowpilot_browser_worker/observation.py
+apps/browser_worker/src/flowpilot_browser_worker/runtime.py
+apps/browser_worker/src/flowpilot_browser_worker/main.py
+apps/browser_worker/tests/conftest.py
+apps/browser_worker/tests/test_schemas.py
+apps/browser_worker/tests/test_policy.py
+apps/browser_worker/tests/test_observation.py
+apps/browser_worker/tests/test_runtime.py
+apps/browser_worker/tests/test_api.py
+
+apps/dom_agent/.dockerignore
+apps/dom_agent/Dockerfile
+apps/dom_agent/pyproject.toml
+apps/dom_agent/uv.lock
+apps/dom_agent/src/flowpilot_dom_agent/__init__.py
+apps/dom_agent/src/flowpilot_dom_agent/schemas.py
+apps/dom_agent/src/flowpilot_dom_agent/model.py
+apps/dom_agent/src/flowpilot_dom_agent/glm_model.py
+apps/dom_agent/src/flowpilot_dom_agent/client.py
+apps/dom_agent/src/flowpilot_dom_agent/loop.py
+apps/dom_agent/src/flowpilot_dom_agent/main.py
+apps/dom_agent/tests/conftest.py
+apps/dom_agent/tests/test_schemas.py
+apps/dom_agent/tests/test_client.py
+apps/dom_agent/tests/test_loop.py
+apps/dom_agent/tests/test_api.py
+apps/dom_agent/tests/test_model.py
+
+tests/integration/w4_compose_smoke.py
+tests/integration/w4_real_model_acceptance.py
+tests/integration/Dockerfile
 ```
 
-Frontend manifests and locks remain in the acceptance gates but are not on the
-change allowlist because W3 adds no browser dependency or frontend behaviour.
-Compose already starts the only services W3 needs, so it is validated but not
-modified unless a concrete runtime defect is first added here. Any newly
-necessary path must be added before it changes. A path that broadens W3 scope
-requires user direction rather than an implicit contract edit.
+The superseded intermediate W4 path
+`apps/dom_agent/src/flowpilot_dom_agent/openai_model.py` was listed by the
+provider-readiness contract before the user-directed GLM replacement. It is
+authorized only as an explicit deletion in the final GLM delta and must not
+exist in the released W4 tree.
 
-## Task Spec contract
+The W1-W3 source, W2/W3 migrations, ten Task Specs, their checksums, and W3
+manual-baseline evidence are regression inputs only and are not on this change
+allowlist. Any newly necessary path must be added before it changes. A path
+that broadens W4 scope requires user direction rather than an implicit edit.
 
-Each JSON document must contain exactly:
+## Browser Worker contract
 
-- `task_id`, `schema_version`, `title`, and `business_process`;
-- structured `synthetic_actor` and human `instructions`;
-- `split` and a `fixture` ID/version reference;
-- structured `initial_state` with fixed target and decoy employees;
-- structured `expected_final_state` separate from prose;
-- an ordered list of recognized `grader_predicates` with integer weights that
-  total 100;
-- its lower-case hexadecimal `canonical_checksum`.
+- `POST /api/browser/sessions` accepts only schema version and a configured
+  initial local Sandbox path. The worker generates the session ID.
+- `POST /api/browser/sessions/{session_id}/actions` accepts one discriminated,
+  strict typed action. The path session and body session, observation, and
+  short-lived element references must agree where applicable.
+- `DELETE /api/browser/sessions/{session_id}` idempotently closes Page,
+  Context, and Browser. Finish, fail/escalate, timeout, and budget exhaustion
+  also close them.
+- No endpoint accepts JavaScript, Playwright source, CSS/XPath selector, shell,
+  SQL, file path, command, eval, upload, download, Cookie, storage, arbitrary
+  header, proxy target, or raw browser option.
+- Navigation accepts only configured relative Sandbox routes or an exact URL
+  on the configured origin. It rejects credentials, non-HTTP schemes, unknown
+  hosts/ports, query-based proxying, and external redirect requests.
+- Each task launches a fresh Browser, Context, and Page. Hard limits cover
+  navigations, actions, waits, fill length, observation size, and wall time.
 
-Validation rejects unknown fields, duplicate task or predicate IDs, unsupported
-schema/fixture versions, invalid references, unrecognized predicate kinds,
-weight totals other than 100, inconsistent task/split allocation, any email
-outside `.invalid`, and any asset identifier outside the fixed `SYN-W3-...`
-namespace. Selectors, DOM, screenshots, browser actions, prompts, model
-parameters, planner structures, run results, and mutable execution state are
-not schema fields and are therefore rejected.
+## Observation and element reference contract
 
-## Reset/Seed and grading rules
+Observation schema `w4-dom-observation/1.0` contains only:
 
-- Reset/Seed accepts only a catalog `task_id`, never SQL, table names, paths,
-  commands, arbitrary fixtures, or caller-supplied records.
-- One transaction deletes only the exact task marker from Mail, Asset, IAM,
-  ITSM, and HRIS rows, then inserts the frozen initial state.
-- Fixed primary keys and values make the observable initial fact summary
-  identical across repeated runs. The response contains task ID, fixture
-  version, spec checksum, and a stable fact summary/checksum.
-- Rollback leaves the prior state intact on failure.
-- Grading performs no flush, commit, mutation, network, browser, log, file,
-  model, or external call. Its result contains total score, pass/fail, ordered
-  per-predicate results, and short structured-fact explanations.
-- The same database facts and spec produce byte-equivalent serialized results.
-- Correct, partial, wrong-association, elevated-role, duplicate-record, and
-  untouched states are tested. Only 100/100 passes.
+- worker-generated `session_id` and `observation_id`;
+- current URL and page title;
+- bounded, normalized semantic DOM text nodes;
+- bounded interactive elements with worker-generated `element_ref`, role,
+  accessible name, safe state, and allowed actions;
+- the last structured action result, sanitized page/action error, and a
+  truncation flag.
+
+The worker uses fixed internal extraction code only. Page text is untrusted
+data. Script/style/noscript/template, hidden nodes, irrelevant attributes,
+input values, password controls, credentials, Cookie/Local Storage, and long
+text are excluded. Node count, per-text length, element count, and serialized
+byte limits apply with stable DOM-order traversal and normalization.
+
+Every new observation invalidates the previous reference table. References
+contain an observation-scoped nonce and index generated inside the worker.
+Unknown, forged, missing, and cross-observation references fail without
+executing a browser action. No selector or locator recipe is returned.
+
+Observation models deliberately have no screenshot, image, pixel, OCR, VLM,
+visual feature, image path, selector, browser code, network log, trace, form
+value dump, Cookie, or storage field.
+
+## Typed action contract
+
+Action schema `w4-dom-action/1.0` is a strict discriminated union containing
+`navigate`, `click`, `fill`, `select`, `read`, `scroll`, `wait`, `finish`, and
+`fail`. Every action has a constrained `action_id`; element actions also carry
+the current `observation_id` and `element_ref`.
+
+- `navigate` accepts one allowed URL/path and is navigation-budgeted.
+- `click`, `fill`, `select`, `read`, and element `scroll` resolve only the
+  current reference table. `fill` rejects password controls, non-synthetic
+  email/account patterns, control characters, and overlong text.
+- `wait` is millisecond-bounded. It cannot wait indefinitely.
+- `finish` ends the loop and closes the session. It has no `passed` or
+  `success` field and cannot invoke or substitute for grading.
+- `fail` records a constrained category/reason, closes resources, and does not
+  claim a grade.
+- Results contain structured success/failure, an enumerated error category,
+  a sanitized message, and a new observation only while the session remains
+  active.
+
+## DOM Agent loop contract
+
+- Model context contains only the human-facing task brief, current strict DOM
+  observation, up to 24 bounded summaries of prior actions, and remaining
+  step/call/token/cost/time budgets. Summaries may retain the safe accessible
+  name of an acted-on field or button and success/error state, but omit filled
+  values and stale element references.
+- Model output is JSON validated as a strict typed action envelope. Invalid
+  JSON, unknown fields/actions, invalid types, stale references, and invalid
+  budget usage fail safely. The provider owns only the minimal action choice;
+  the trusted adapter generates transport-only schema version, action ID, and
+  current observation ID before validating the complete action envelope.
+- The model interface has no Browser, HTTP, database, Reset/Seed, Grader,
+  filesystem, shell, SQL, or JavaScript method. The loop can call only the
+  Browser Worker client after local validation.
+- Hard caps cover steps, model calls, repeated identical actions, no-progress
+  observations, duration, input/output tokens, and actual provider-reported
+  cost. Cap exhaustion closes the browser session and returns a non-success
+  terminal reason. A successful fill/select resets no-progress because its
+  intentionally hidden form-state change cannot appear in the observation
+  fingerprint.
+- W4 implements no planner, verifier, checkpoint, replay, recovery, memory,
+  dynamic router, approval, or visual fallback.
+- CI and default Compose use deterministic fake models. The user authorized a
+  one-off OpenAI `gpt-5.6-terra` five-task run on 2026-07-26 after disclosure
+  of prompt/config `w4-dom-react-openai/1.0` and revised aggregate caps. That
+  run was observed at 0/5. On 2026-07-27 the user separately authorized GLM
+  scheme B prompt/config 1.0 through 1.4 runs after exact disclosures. The
+  results were 0/5, 0/5, 3/5, 4/5, and 5/5 respectively, all with zero
+  retries. No additional paid-model run is authorized.
+- The current provider adapter uses only the fixed Zhipu Chat Completions URL,
+  exact `glm-5.2`, JSON-object mode followed by strict local schema validation,
+  enabled thinking with high reasoning effort, deterministic sampling, and no
+  provider tools. Its offline-remediated prompt/config is
+  `w4-dom-react-glm/1.4` with at most 2,048 output tokens per call. Because
+  provider JSON-object mode guarantees JSON rather than this repository's full
+  action schema, the adapter validates a compact strict provider choice and
+  generates transport metadata locally. It may normalize an explicitly typed
+  direct action or legacy transport fields only when versions, action ID, and
+  current observation ID validate exactly; every other unknown field remains
+  forbidden. A non-finish `summary` is treated only as bounded string metadata
+  and discarded; a finish summary is bounded to the full action's 300-character
+  limit. Validation errors expose only sanitized schema error type/path.
+  `ZHIPU_API_KEY` is environment-only and never logged, returned, mounted from
+  a file, or committed.
+- The authorized GLM aggregate hard caps were 125 calls, 500,000 input tokens,
+  100,000 output tokens, 900 seconds, zero retries, and a conservative USD 1.75
+  cost envelope derived from official CNY list prices at 4 CNY per budget USD.
+  All five one-off GLM authorizations have been consumed.
+- A profile-only real Agent may additionally use one outbound bridge solely
+  so its fixed adapter can reach the authorized provider. It remains absent
+  from default Compose and has no Sandbox API/PostgreSQL network or client.
+
+## Five-task and evidence rules
+
+- Only `w3-joiner-001` through `w3-joiner-005` are W4 acceptance candidates.
+- Before each authorized real-model run, the caller compares two Reset/Seed
+  results, starts at HRIS in a fresh browser session, and records task/spec/seed
+  checksum and prompt/config version.
+- The Agent acts only through the five W2 pages. It cannot call business APIs
+  directly or read database facts to choose actions.
+- After termination, the caller invokes the W3 Grader independently. Only
+  100/100 is a completion. Record steps, actions, calls, tokens, actual cost,
+  score, failures, retries, timeouts, and human intervention.
+- Without separate real-model authorization, record all five real runs as not
+  run. Fake-model unit/smoke results are not presented as five-task success.
+- Do not tune against Validation or Reporting tasks and do not modify any W3
+  Task Spec/checksum based on W4 outcomes.
 
 ## Explicit prohibitions
 
-W3 must not contain W4 browser automation, observations, typed actions, or
-Agent loop; W5 screenshots/OCR/VLM; W6 routing; W7 planner/verifier/budgets;
-W8 Temporal/recovery/faults; W9 context/knowledge/memory; W10 identity/RBAC/
-tenancy; W11+ approvals/audit chain/production workers/monitoring/load tests;
-real systems, real accounts, personal data, external APIs, paid models,
-arbitrary shell/SQL/file interfaces, benchmark execution, UI randomization,
-login faults, prompt injection, or malicious page content.
+W4 must not contain W5 screenshots/OCR/VLM/pixel actions; W6 routers/hybrid
+observations; W7 planning/verifier/JML expansion; W8 Temporal/checkpoints/
+recovery/faults; W9 context engines/retrieval/memory; W10 identity/RBAC/
+tenancy; W11+ approvals/audit/production workers/monitoring/load; W14 malicious
+page evaluation; W15 external benchmarks/reporting evaluation; real systems,
+real accounts, personal data, real mail, arbitrary execution interfaces, or
+unauthorized external APIs/models.
 
 ## Handoff and Git rules
 
-- Preserve the W1 control paths and W2 five-module manual flow.
-- Do not edit the released W2 migration.
+- Preserve all W1-W3 paths and behaviours as regression contracts.
 - Do not access `code_review_agent` or `%SystemDrive%/`.
-- Do not push, create a PR, merge, tag, or force-push without authorization.
-- Explicitly stage only contract paths after all locally available W3 gates
-  pass and the evidence report matches observed facts.
-- Stop at W3 completion.
+- Do not push, create a PR, merge, tag, force-push, or call a real model without
+  explicit authorization.
+- Explicitly stage only contract paths after all locally available W4 gates
+  pass and evidence matches observed facts.
+- Stop at W4 completion.

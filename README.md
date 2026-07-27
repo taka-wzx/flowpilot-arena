@@ -4,111 +4,111 @@
 > evaluation environment.
 > 面向企业级 Computer-Use Agent 与独立合成评测环境的受治理项目。
 
-**Current status: W3 — Arena Foundation.** Ten fixed synthetic onboarding
-tasks can be strictly validated, transactionally Reset/Seed, completed by a
-human through the five W2 pages, and deterministically graded from database
-facts. W3 does not run an Agent or automate a browser.
+**Current status: W4 — DOM Agent Foundation.** The repository now has an
+isolated Playwright Browser Worker, strict DOM/accessibility observations,
+typed browser actions, and a separate bounded DOM-only ReAct loop. W3's
+database-fact Grader remains the only success authority. Default tests and
+Compose use a deterministic fake model with zero external cost.
 
-## What works in W3
+## What works in W4
 
 | Component | Current capability | Deliberately absent |
 |---|---|---|
-| `apps/control_api` | W1 static `GET /healthz` | Database, tasks, Agent, external calls |
-| `apps/control_web` | W1 static foundation page | API calls or business workflow |
-| Sandbox business API | W2 manual create/list for HRIS, ITSM, IAM, Asset, and Mail | Auth, tenancy, production workflow, real integrations |
-| Arena API | Strict task catalog/detail, task-only Reset/Seed, read-only grade, anonymous baseline records | Browser control, arbitrary reset/query, benchmark execution |
-| `apps/sandbox_web` | Five explicit manual business routes | Playwright, Agent loop, screenshots, telemetry |
-| PostgreSQL/Alembic | Five task-markable fact tables plus baseline records | Control-plane state or real enterprise data |
+| W1 control paths | Static control web and `GET /healthz` | Tasks, DB, Agent behaviour |
+| W2 Sandbox | Five manual HRIS/ITSM/IAM/Asset/Mail pages and APIs | Real systems/data, auth, production workflow |
+| W3 Arena | Ten strict specs, task-only Reset/Seed, DB-only grade, baseline records | Browser/model-derived success |
+| Browser Worker | Isolated Chromium session, bounded DOM observation, opaque refs, typed actions | External web, selectors/code, DB/API credentials, screenshots/uploads/downloads |
+| DOM Agent | Strict fake-model decision loop and step/call/repetition/progress/time/token/cost limits | Planner, verifier, recovery, memory, visual routing, real provider by default |
+| Acceptance smoke | Two Reset/Seeds → fake Agent → independent grade | Five-task real-model evaluation or success claim |
 
 ```mermaid
 flowchart LR
-    Human["Human operator"] --> Arena["/api/arena\ntask · reset-seed · grade · baseline"]
-    Human --> Web["sandbox_web\nHRIS · ITSM · IAM · Asset · Mail"]
-    Arena --> Catalog["10 versioned JSON Task Specs"]
-    Arena --> DB["PostgreSQL\ntask-owned synthetic facts"]
-    Web --> Business["Five W2 business APIs"]
-    Business --> DB
-    Grader["Deterministic predicate grader"] --> DB
-    Arena --> Grader
+    Caller["Acceptance caller"] --> Arena["W3 Reset/Seed + Grader"]
+    Caller --> Agent["DOM Agent"]
+    Agent --> Worker["Typed Browser Worker"]
+    Worker --> Web["Five Sandbox pages"]
+    Web --> API["W2 business APIs"]
+    API --> DB["Synthetic PostgreSQL"]
+    Arena --> DB
 ```
 
 ## Quick start
 
-Prerequisite: Docker Compose. The committed database value is local-only for
-this disposable synthetic environment and must never be reused elsewhere.
+Prerequisite: Docker Compose. Published ports bind to loopback. Browser Worker
+and DOM Agent have no host port and live only on internal Docker networks.
 
 ```powershell
 docker compose -f deploy/compose/compose.yaml up --build -d
 docker compose -f deploy/compose/compose.yaml ps
 ```
 
-The Sandbox API applies `alembic upgrade head` before becoming healthy. Open:
+On a host that provides the standalone compatible executable instead:
+
+```powershell
+docker-compose -f deploy/compose/compose.yaml up --build -d
+docker-compose -f deploy/compose/compose.yaml ps
+```
+
+Open:
 
 - Sandbox web: `http://127.0.0.1:5174/hris`
 - Sandbox API docs: `http://127.0.0.1:8001/docs`
 - W1 control web: `http://127.0.0.1:5173`
 - W1 control API health: `http://127.0.0.1:8000/healthz`
 
-Stop and discard the entire local development volume only when explicitly
-desired:
+Run the deterministic fake-model smoke inside its one-off trusted profile:
 
 ```powershell
-docker compose -f deploy/compose/compose.yaml down -v
+docker compose -f deploy/compose/compose.yaml --profile acceptance run --build --rm acceptance-smoke
 ```
 
-That operator command is distinct from W3 task Reset/Seed. The W3 API never
-truncates the database or touches rows outside one selected task marker.
+The expected proof is `agent_status=finished_ungraded`, external model cost 0,
+and the independently graded untouched initial task at 30/100 with
+`passed=false`. That is evidence that `finish` cannot bypass grading, not task
+completion.
 
-## Run one manual Arena task
+An authorization-gated `real-acceptance` profile fixes Zhipu `glm-5.2`,
+prompt/config `w4-dom-react-glm/1.4`, JSON-object output plus strict local action
+validation, no provider tools or retries, and hard call/token/time/cost caps.
+The proposed five-task caps are 125 calls, 500,000 input tokens, 100,000 output
+tokens, 900 seconds, zero retries, and a conservative USD 1.75 envelope. It
+uses only `ZHIPU_API_KEY` and is not part of default Compose or CI. The prior
+`1.0` and `1.1` authorizations were each consumed by observed 0/5 runs; the
+separately authorized `1.2` run was observed at 3/5. All authorizations are
+consumed after the separately authorized 1.3 and 1.4 runs were observed at 4/5
+and 5/5. Version 1.4 is the successful W4 Development acceptance configuration;
+any further paid run requires separate explicit authorization.
 
-The following uses task `w3-joiner-001`; task detail contains the human
-instructions, initial facts, expected identifiers, predicates, fixture version,
-and canonical checksum.
+Stop and remove the disposable synthetic volume after acceptance:
 
 ```powershell
-$task = Invoke-RestMethod http://127.0.0.1:8001/api/arena/tasks/w3-joiner-001
-$seed = Invoke-RestMethod -Method Post `
-  http://127.0.0.1:8001/api/arena/tasks/w3-joiner-001/reset-seed
+docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 ```
 
-Use the target employee ID from `$seed.seed_summary` and complete exactly one
-ticket, ordinary IAM account, laptop, and mailbox through `/hris`, `/itsm`,
-`/iam`, `/assets`, and `/mail`. The decoy employee exists only to make incorrect
-links observable. Then grade from database facts:
+## Browser and Agent safety boundary
 
-```powershell
-$grade = Invoke-RestMethod -Method Post `
-  http://127.0.0.1:8001/api/arena/tasks/w3-joiner-001/grade
-$grade | ConvertTo-Json -Depth 5
-```
-
-A baseline record accepts only a synthetic record ID, catalog task ID,
-anonymous alias, offset-aware start/end timestamps, manual action count, and
-optional synthetic notes. Its final score is derived by the Grader at record
-time; the operator cannot self-report success. See the OpenAPI page for the
-request shape.
-
-## Determinism and frozen splits
-
-- Task Specs reject unknown fields, invalid references, duplicate IDs,
-  deliverable email domains, non-synthetic assets, unsupported predicates, and
-  checksum mismatch.
-- Fixed IDs, dates, values, and timestamps make repeated Reset/Seed facts
-  stable. No random, current-time, network, model, or external-service input
-  creates task facts.
-- Tasks 001–006 are Development, 007–008 Validation, and 009–010 Reporting.
-  Reporting spec content/checksums freeze on the first W3 commit and must not
-  be tuned against results before W15.
-- This ten-task joiner set is not the roadmap's final 30-template dataset and
-  is not an Agent benchmark result.
+- Browser Worker runs non-root with a read-only root filesystem, no bind mount
+  or Docker socket, all capabilities dropped, no-new-privileges, bounded
+  tmpfs/shm/pids, and no database environment.
+- It can resolve only Sandbox Web and DOM Agent networks; it cannot resolve
+  `sandbox-api` or PostgreSQL. Navigation is restricted to the five local page
+  paths and redirect requests are rechecked.
+- API/model input cannot contain selectors, XPath, JavaScript, Playwright,
+  shell, SQL, files, uploads, downloads, or raw browser options.
+- Observations exclude form values, passwords, Cookies, Local Storage,
+  screenshots, pixels, images, OCR, VLM, selectors, and traces.
+- Every observation replaces the prior opaque element-reference map.
+- DOM Agent can resolve only Browser Worker and has no Arena, business API,
+  database, Reset/Seed, or Grader client.
+- Agent `finish` is `finished_ungraded`; only W3 Grader 100/100 is success.
 
 ## Local development and quality
 
-Python targets 3.13 and uses `uv`; both frontends use committed npm locks. On
-Windows systems where PowerShell blocks `npm.ps1`, use `npm.cmd`.
+Python targets 3.13 and uses `uv`; both frontends use committed npm locks.
+Playwright is pinned to 1.60.0 with Chromium 148.0.7778.96.
 
 ```powershell
-Push-Location apps/sandbox_api
+Push-Location apps/browser_worker
 uv sync --locked --all-groups
 uv run ruff check .
 uv run ruff format --check .
@@ -116,28 +116,33 @@ uv run mypy src
 uv run pytest
 Pop-Location
 
-Push-Location apps/sandbox_web
-npm.cmd ci
-npm.cmd run lint
-npm.cmd run typecheck
-npm.cmd run test
-npm.cmd run build
+Push-Location apps/dom_agent
+uv sync --locked --all-groups
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src
+uv run pytest
 Pop-Location
 ```
 
-The complete W1/W2/W3 regression, migration, Compose, secret-scan, and diff
-sequence is frozen in [docs/plans/week-03-arena.md](docs/plans/week-03-arena.md).
+The complete W1-W4 regression, migration, Compose, secret-scan, and diff
+sequence is frozen in [docs/plans/week-04-dom-agent.md](docs/plans/week-04-dom-agent.md).
 
-## Safety and milestone boundary
+## Model authorization and milestone boundary
 
-W3 uses no paid model and connects to no real enterprise system or external
-API. It contains no Playwright/Selenium, browser worker, DOM/accessibility
-observation, typed browser action, Agent loop, screenshot/OCR/VLM, faults,
-router, planner, verifier, Temporal/recovery, memory, approval, OIDC/RBAC,
-tenancy, arbitrary SQL/Shell/file interface, or benchmark execution. See
+No real or paid model is configured or called by default. Before any such call,
+the user must separately authorize the provider, exact model, prompt/config,
+tasks 001-005, and hard call/token/time/cost limits. The prior OpenAI run used
+aggregate caps of 125 calls, 500,000 input tokens, 100,000 output tokens, 900
+seconds, and USD 3.25 but passed 0/5. The GLM profile requires a new explicit
+authorization after its exact cost-accounting configuration is disclosed.
+Agent `finish` remains ungraded.
+
+W5 screenshot/OCR/VLM/visual grounding, W6 routing, W7 planning/verifier, W8
+recovery, and all later roadmap systems are not started. See
 [docs/agent-contract.md](docs/agent-contract.md) and
 [docs/threat-model.md](docs/threat-model.md).
 
-Development occurs only on `week/03-arena`. No push, PR, merge, or W3 tag is
-authorized by these instructions. Licensed under the
-[Apache License 2.0](LICENSE).
+Development occurs only on `week/04-dom-agent`. No push, PR, merge, or tag is
+authorized; real-model authorization is limited to the recorded W4 profile.
+Licensed under the [Apache License 2.0](LICENSE).

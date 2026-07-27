@@ -1,4 +1,4 @@
-name: flowpilot-arena-w4
+name: flowpilot-arena-w5
 
 services:
   control-api:
@@ -113,6 +113,11 @@ services:
       MAX_WAIT_MS: "5000"
       MAX_FILL_CHARS: "300"
       MAX_SESSION_SECONDS: "300"
+      VISION_VIEWPORT_WIDTH: "960"
+      VISION_VIEWPORT_HEIGHT: "540"
+      MAX_VISION_SCREENSHOT_BYTES: "184320"
+      MAX_VISION_SCREENSHOTS: "24"
+      MAX_VISION_CAPTURE_MS: "3000"
     depends_on:
       sandbox-web:
         condition: service_healthy
@@ -171,6 +176,40 @@ services:
           "python",
           "-c",
           "from urllib.request import urlopen; urlopen('http://127.0.0.1:8003/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  vision-agent:
+    build:
+      context: ../../apps/vision_agent
+      dockerfile: Dockerfile
+    environment:
+      BROWSER_WORKER_URL: http://browser-worker:8002
+    depends_on:
+      browser-worker:
+        condition: service_healthy
+    networks:
+      - agent-worker
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-vision:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8004/healthz').read()",
         ]
       interval: 10s
       timeout: 3s
@@ -270,6 +309,43 @@ services:
       browser-worker:
         condition: service_healthy
       real-agent:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - sandbox-backend
+      - agent-worker
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
+  vision-acceptance-smoke:
+    profiles:
+      - vision-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w5_vision_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      VISION_AGENT_URL: http://vision-agent:8004
+      SANDBOX_WEB_URL: http://sandbox-web
+    depends_on:
+      control-api:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      sandbox-web:
+        condition: service_healthy
+      browser-worker:
+        condition: service_healthy
+      vision-agent:
         condition: service_healthy
     networks:
       - control-backend

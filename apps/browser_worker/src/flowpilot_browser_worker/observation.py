@@ -93,6 +93,80 @@ class ObservationBuild:
     references: dict[str, ElementTarget]
 
 
+def allowed_actions(metadata: dict[str, object]) -> tuple[AllowedElementAction, ...]:
+    if bool(metadata["disabled"]):
+        return ()
+    tag = str(metadata["tag"])
+    role = str(metadata["role"])
+    input_type = str(metadata["inputType"]).lower()
+    if tag == "select" or role == "combobox":
+        return ("select", "read", "scroll")
+    if tag in {"input", "textarea"} and input_type not in {
+        "button",
+        "submit",
+        "checkbox",
+        "radio",
+    }:
+        return ("fill", "read", "scroll")
+    if tag in {"a", "button"} or role in {"button", "link", "checkbox", "radio"}:
+        return ("click", "read", "scroll")
+    return ("read", "scroll")
+
+
+async def extract_interactive_elements(
+    page: Page, nonce: str, limits: WorkerLimits
+) -> tuple[list[InteractiveElement], dict[str, ElementTarget], bool]:
+    locator = page.locator(INTERACTIVE_SELECTOR)
+    count = await locator.count()
+    truncated = count > limits.max_interactive_elements
+    elements: list[InteractiveElement] = []
+    references: dict[str, ElementTarget] = {}
+    for index in range(min(count, limits.max_interactive_elements)):
+        item = locator.nth(index)
+        try:
+            if not await item.is_visible():
+                continue
+            metadata = await item.evaluate(_ELEMENT_METADATA_SCRIPT)
+        except PlaywrightError:
+            continue
+        actions = allowed_actions(metadata)
+        if not actions:
+            continue
+        element_ref = f"ref_{nonce}_{index + 1}"
+        name = normalize_text(str(metadata["name"]), limits.max_node_text_chars)
+        options = {
+            normalize_text(str(option["label"]), 120): str(option["value"])
+            for option in metadata["options"]
+            if normalize_text(str(option["label"]), 120)
+        }
+        state = ElementState(
+            disabled=bool(metadata["disabled"]),
+            checked=metadata["checked"],
+            selected=metadata["selected"],
+            expanded=metadata["expanded"],
+            readonly=bool(metadata["readonly"]),
+            required=bool(metadata["required"]),
+        )
+        elements.append(
+            InteractiveElement(
+                element_ref=element_ref,
+                role=str(metadata["role"])[:40],
+                name=name,
+                state=state,
+                allowed_actions=actions,
+                options=tuple(options),
+            )
+        )
+        references[element_ref] = ElementTarget(
+            locator=item,
+            allowed_actions=actions,
+            input_type=str(metadata["inputType"]),
+            safe_name=name,
+            option_values=options,
+        )
+    return elements, references, truncated
+
+
 class ObservationBuilder:
     def __init__(
         self,
@@ -112,8 +186,8 @@ class ObservationBuilder:
         nonce = self._nonce_factory()
         observation_id = f"obs_{nonce}"
         semantic_nodes, semantic_truncated = await self._semantic_nodes(page)
-        interactive, references, interactive_truncated = await self._interactive_elements(
-            page, nonce
+        interactive, references, interactive_truncated = await extract_interactive_elements(
+            page, nonce, self._limits
         )
         title = normalize_text(await page.title(), self._limits.max_page_title_chars)
         error = normalize_text(page_error, 300) if page_error else None
@@ -152,79 +226,6 @@ class ObservationBuilder:
             except PlaywrightError:
                 continue
         return nodes, truncated
-
-    async def _interactive_elements(
-        self, page: Page, nonce: str
-    ) -> tuple[list[InteractiveElement], dict[str, ElementTarget], bool]:
-        locator = page.locator(INTERACTIVE_SELECTOR)
-        count = await locator.count()
-        truncated = count > self._limits.max_interactive_elements
-        elements: list[InteractiveElement] = []
-        references: dict[str, ElementTarget] = {}
-        for index in range(min(count, self._limits.max_interactive_elements)):
-            item = locator.nth(index)
-            try:
-                if not await item.is_visible():
-                    continue
-                metadata = await item.evaluate(_ELEMENT_METADATA_SCRIPT)
-            except PlaywrightError:
-                continue
-            actions = self._allowed_actions(metadata)
-            if not actions:
-                continue
-            element_ref = f"ref_{nonce}_{index + 1}"
-            name = normalize_text(str(metadata["name"]), self._limits.max_node_text_chars)
-            options = {
-                normalize_text(str(option["label"]), 120): str(option["value"])
-                for option in metadata["options"]
-                if normalize_text(str(option["label"]), 120)
-            }
-            state = ElementState(
-                disabled=bool(metadata["disabled"]),
-                checked=metadata["checked"],
-                selected=metadata["selected"],
-                expanded=metadata["expanded"],
-                readonly=bool(metadata["readonly"]),
-                required=bool(metadata["required"]),
-            )
-            elements.append(
-                InteractiveElement(
-                    element_ref=element_ref,
-                    role=str(metadata["role"])[:40],
-                    name=name,
-                    state=state,
-                    allowed_actions=actions,
-                    options=tuple(options),
-                )
-            )
-            references[element_ref] = ElementTarget(
-                locator=item,
-                allowed_actions=actions,
-                input_type=str(metadata["inputType"]),
-                safe_name=name,
-                option_values=options,
-            )
-        return elements, references, truncated
-
-    @staticmethod
-    def _allowed_actions(metadata: dict[str, object]) -> tuple[AllowedElementAction, ...]:
-        if bool(metadata["disabled"]):
-            return ()
-        tag = str(metadata["tag"])
-        role = str(metadata["role"])
-        input_type = str(metadata["inputType"]).lower()
-        if tag == "select" or role == "combobox":
-            return ("select", "read", "scroll")
-        if tag in {"input", "textarea"} and input_type not in {
-            "button",
-            "submit",
-            "checkbox",
-            "radio",
-        }:
-            return ("fill", "read", "scroll")
-        if tag in {"a", "button"} or role in {"button", "link", "checkbox", "radio"}:
-            return ("click", "read", "scroll")
-        return ("read", "scroll")
 
     def _fit_serialized_limit(
         self, observation: Observation, references: dict[str, ElementTarget]

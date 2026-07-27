@@ -144,6 +144,28 @@ jobs:
       - run: uv run mypy src
       - run: uv run pytest
 
+  vision-agent-quality:
+    name: Vision Agent lint, type-check, and unit test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/vision_agent
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          version: "0.11.14"
+          enable-cache: true
+          cache-dependency-glob: apps/vision_agent/uv.lock
+      - run: uv sync --locked --all-groups
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src
+      - run: uv run pytest
+
   compose-config:
     name: Compose configuration
     runs-on: ubuntu-latest
@@ -163,6 +185,22 @@ jobs:
         run: >-
           docker compose -f deploy/compose/compose.yaml --profile acceptance
           run --build --rm acceptance-smoke
+      - name: Stop stack and remove synthetic volume
+        if: always()
+        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
+
+  vision-compose-smoke:
+    name: W5 deterministic Vision-only Compose smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and start isolated W1-W5 stack
+        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
+      - name: Run fake Vision-only smoke and verify independent grading
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile vision-acceptance
+          run --build --rm vision-acceptance-smoke
       - name: Stop stack and remove synthetic volume
         if: always()
         run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans

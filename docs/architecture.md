@@ -1,19 +1,26 @@
 # Architecture
 
-## W4 current-state architecture
+## W5 current-state architecture
 
-W4 preserves the W1 stateless control paths, W2 five-module Sandbox, and W3
-deterministic Arena. Browser execution and Agent reasoning are new independent
-services. Neither service is part of `sandbox_api`, has a database credential,
-or can declare task success.
+W5 preserves the released W1 stateless control paths, W2 five-module Sandbox,
+W3 deterministic Arena, and W4 DOM Worker/Agent behavior. It adds two distinct
+browser observation paths in the same isolated Browser Worker:
 
-```mermaid
+- the unchanged W4 DOM-session API for the DOM Agent;
+- a new W5 visual-session API for the Vision-only Agent.
+
+The paths are deliberately not routed, merged, or automatically selected in
+W5. Neither Agent nor the Worker has a database credential or may declare task
+success.
+
+~~~mermaid
 flowchart LR
-    Caller["Trusted acceptance caller\nReset/Seed · brief · grade"] --> Arena["W3 Arena API"]
-    Caller --> Agent["DOM Agent\nstrict bounded ReAct"]
-    Agent --> Worker["Browser Worker\ntyped actions only"]
-    Agent -. "authorization-gated profile" .-> Provider["Zhipu Chat Completions\nglm-5.2"]
-    Worker --> Web["sandbox_web\nfive business pages"]
+    Caller["Trusted acceptance caller<br/>Reset/Seed · brief · grade"] --> Arena["W3 Arena API"]
+    Caller --> DomAgent["W4 DOM Agent<br/>strict bounded ReAct"]
+    Caller --> VisionAgent["W5 Vision Agent<br/>strict bounded fake ReAct"]
+    DomAgent --> Worker["Isolated Browser Worker<br/>DOM sessions + visual sessions"]
+    VisionAgent --> Worker
+    Worker --> Web["sandbox_web<br/>five business pages"]
     Web --> Business["W2 business APIs"]
     Arena --> Specs["10 immutable W3 specs"]
     Arena --> Grader["W3 DB-fact Grader"]
@@ -21,7 +28,8 @@ flowchart LR
     Grader --> DB
 
     subgraph AgentNetwork["internal agent-worker network"]
-        Agent
+        DomAgent
+        VisionAgent
         Worker
     end
     subgraph BrowserNetwork["internal browser-sandbox network"]
@@ -35,131 +43,153 @@ flowchart LR
         Grader
         DB
     end
-```
+~~~
 
-The one-off `acceptance-smoke` profile is the trusted caller for deterministic
-Compose acceptance. It connects to W1 health, W3 management, and DOM Agent
-networks, but contains no model, Browser, database driver, or general execution
-API. Normal `up` does not start it.
+The one-off W4 acceptance-smoke profile remains the trusted caller for the
+released DOM regression. W5 adds a separate fake-only Vision acceptance caller.
+Both may reach management APIs and their respective Agent service but contain
+no Browser driver, database driver, model key, or general execution API.
+Normal Compose starts neither profile.
 
-The separately authorized `real-acceptance` profile uses a second instance of
-the same Agent image plus a five-task caller. Only that Agent instance joins a
-non-internal `model-egress` bridge and calls the fixed Zhipu Chat Completions URL.
-It is not joined to Sandbox or control networks; the caller has management
-networks but no model key. Default Compose and CI remain fake-only.
-
-| Boundary | W4 responsibility | W4 deliberately excludes |
+| Boundary | Responsibility | Deliberately excluded |
 |---|---|---|
-| `apps/control_api`, `apps/control_web` | Preserve W1 health/static behaviour | Agent, browser, database |
-| Sandbox API/web/PostgreSQL | Preserve W2 pages and W3 Arena facts | Browser/Agent embedding |
-| Browser Worker | Per-task Browser/Context/Page, URL guard, bounded observation, typed action, cleanup | DB/API credentials, selector/code input, external origin, uploads/downloads, screenshots |
-| DOM Agent | Strict model-decision parsing, Worker client, action/history/budget loop | Sandbox/Arena/Grader client, planner, verifier, memory, real provider by default |
-| Acceptance caller | Two Reset/Seed calls, human brief, Agent invocation, independent grade | Model tool access or success override |
+| Control API/web | Preserve W1 health/static behavior | Agent, browser, database change |
+| Sandbox API/web/PostgreSQL | Preserve W2 pages and W3 facts | Worker/Agent embedding |
+| Browser Worker DOM sessions | Released W4 DOM extraction and typed actions | Screenshot field or visual fallback in W4 schema |
+| Browser Worker visual sessions | Fixed synthetic viewport JPEG, visual observation, grounding validation, cleanup | Image storage/path/URL, arbitrary pixels/selectors/code, provider access |
+| DOM Agent | Released strict DOM ReAct loop | Vision input, router, planner, verifier |
+| Vision Agent | Visual-only strict fake ReAct loop and numeric budgets | DOM/AX input, Sandbox/Arena/Grader client, real provider by default |
+| Acceptance caller | Reset/Seed twice, brief, Agent invocation, independent grade | Model tool or success override |
 
 ## Browser Worker process and network boundary
 
-`apps/browser_worker` is a non-root FastAPI container with a read-only root
-filesystem, all Linux capabilities dropped, `no-new-privileges`, bounded
-process/shared-memory/tmpfs limits, no bind mount, and no Docker socket. It is
-attached only to:
+The Browser Worker remains a non-root FastAPI container with read-only root
+filesystem, dropped capabilities, no-new-privileges, bounded pids/shared
+memory/tmpfs, no bind mount, no Docker socket, no database credential, and no
+route to Sandbox API/PostgreSQL. It connects only to:
 
-- `browser-sandbox`, shared with `sandbox-web`;
-- `agent-worker`, shared with `dom-agent`.
+- browser-sandbox with sandbox-web;
+- agent-worker with DOM Agent and Vision Agent.
 
-Both networks are Docker-internal and have no gateway. Browser Worker cannot
-resolve `sandbox-api` or PostgreSQL. Same-origin page JavaScript reaches the W2
-business API through the existing `sandbox-web` reverse proxy; Worker code does
-not call business endpoints.
+Those Worker networks are Docker-internal. The configured Sandbox origin is
+exactly local Sandbox Web and navigation permits only /hris, /itsm, /iam,
+/assets, and /mail. Request interception permits same-origin page resources and
+blocks external requests/redirect escape. URL credentials, non-HTTP schemes,
+query/fragment proxying, unknown hosts/ports, and direct API paths are
+rejected.
 
-The configured origin is exactly `http://sandbox-web`. Navigation policy allows
-only `/hris`, `/itsm`, `/iam`, `/assets`, and `/mail`. Request interception
-allows same-origin assets/API fetches and aborts other origins, including
-redirect escape. URL user information and query/fragment components are also
-rejected, as are the `file`, `data`, and `javascript` schemes, external HTTP(S),
-and direct API paths.
+Every DOM or visual session launches a separate Playwright process, Browser
+Context, and Page. Finish, fail/escalate, timeout, cap exhaustion, explicit
+delete, startup error, cancellation, and service shutdown close Page, Context,
+Browser, and Playwright handles.
 
-Each session starts a separate Playwright process, Browser Context, and Page.
-Finish, failure, timeout, budget exhaustion, explicit delete, startup error,
-and service shutdown all close Page, Context, Browser, and Playwright handles.
+## Released DOM observation path
 
-## DOM/accessibility observation
+The W4 DOM contract stays unchanged:
 
-Schema `w4-dom-observation/1.0` includes:
+- schema w4-dom-observation/1.0;
+- semantic DOM/accessibility nodes and opaque element_ref values;
+- schema w4-dom-action/1.0 and strict typed action result;
+- no screenshot, OCR, image, visual feature, coordinate, or image storage
+  field.
 
-- internal session and observation identifiers;
-- local current URL and normalized title;
-- stable DOM-order semantic nodes with bounded role/name/text;
-- stable DOM-order interactive elements with role, accessible name, safe
-  state, exposed select labels, allowed actions, and opaque `element_ref`;
-- sanitized last-action result/page error and a truncation flag.
+The DOM Agent remains a separate service and its W4 fake smoke stays a required
+regression. W5 does not expose its DOM observations to Vision Agent.
 
-The internal extractor uses fixed source code and fixed selectors that are
-never API/model inputs or outputs. It excludes hidden nodes, script/style-like
-content by construction, attributes, input values, password contents, Cookies,
-Local Storage, and long text. Limits are 120 semantic nodes, 80 interactives,
-240 characters per node, and 32 KiB serialized observation by default.
+## W5 visual observation path
 
-Every observation has a fresh worker-generated nonce. References are held only
-in the session's current in-memory map and are replaced after every action or
-failed action. Observation mismatch, unknown reference, or action/ref mismatch
-fails before Playwright execution. No selector or locator recipe leaves the
-Worker.
+Visual sessions use separate routes and w5-vision-observation/1.0. A visual
+observation holds one current in-memory image only:
 
-There is no screenshot, pixel, image path, OCR, VLM, visual feature, trace,
-network log, or image storage field.
+| Field class | W5 contents | Exclusions |
+|---|---|---|
+| Identity | Worker session, observation, screenshot references | Task fact, URL, page title |
+| Image metadata | image/jpeg, 960 × 540, byte count, capture duration | File path, URL, other MIME, full page/browser UI |
+| Image data | One bounded encoded current JPEG | Persistent store, fixture, trace, log |
+| Grounding | Opaque ref, output-only clipped rectangle, allowed action kinds | DOM name/role/text, selector, locator recipe, element_ref |
+| Result state | Sanitized generic last-action/error state, truncation | OCR text, input values, Cookie, Local Storage |
 
-## Typed browser actions
+The fixed capture envelope is one 960 × 540 JPEG at quality 60, no more than
+184,320 bytes and 3,000 ms per attempt. Each session permits at most 24
+attempts, 4,423,680 image bytes, and 72,000 capture milliseconds. A cap failure
+cannot fall back to DOM or another image source; it fails safely and cleanup
+runs.
 
-Schema `w4-dom-action/1.0` is a strict discriminated union:
+The Worker takes a viewport screenshot only after validating the current
+top-level Sandbox route and retaining request interception. Playwright viewport
+screenshots exclude browser chrome and host desktop by construction. No visual
+route offers a raw-image fetch, arbitrary image target, file path, or screenshot
+option.
 
-- `navigate` with one allowed URL/path;
-- `click`, `fill`, `select`, `read`, and `scroll` with current observation and
-  element reference;
-- bounded `wait`;
-- terminal `finish` and `fail`/escalate.
+## Grounding and visual actions
 
-Unknown fields/actions and wrong JSON types are rejected. `fill` rejects
-password controls, real email domains, credential-like words, payment-number-
-like values, control characters, multiline input, and text above 300
-characters. Select accepts only labels exposed in the current observation.
-Structured results use `w4-dom-action-result/1.0` and return a new observation
-for every non-terminal result.
+The Worker internally finds visible interactive elements and emits only
+current-screen visual grounding candidates. A rectangle is an output-only,
+integer CSS-pixel, nonzero, in-viewport area clipped to the fixed image. It
+helps a model associate what it sees with an opaque grounding_ref.
 
-## Minimal DOM Agent loop
+The visual model must return current observation_id, screenshot_ref, and
+grounding_ref for click, fill, select, read, and scroll. The Worker verifies
+all three, checks action permission, and then resolves its internal locator.
+The model can never return an x/y coordinate, a rectangle, selector, locator,
+browser source, JavaScript, or arbitrary URL. New observations replace the
+entire screenshot/grounding table; unknown and stale values fail before
+Playwright execution.
 
-`apps/dom_agent` is a separate non-root/read-only container. The default
-instance is attached only to `agent-worker`; it can resolve Browser Worker but
-not Sandbox Web/API or PostgreSQL. The authorized profile-only instance also
-joins `model-egress`, but still has no Sandbox/control network or client.
+Schema w5-vision-action/1.0 is a strict discriminated union for navigate,
+grounding-bound click/fill/select/read/scroll, bounded wait, finish, and fail.
+Schema w5-vision-action-result/1.0 returns a new visual observation only for a
+non-terminal result. Result text is generic so it cannot leak DOM names or OCR
+content.
 
-The model context is limited to a human-facing task brief, the current
-observation, up to 24 bounded action summaries, and remaining budgets. The
-summaries retain safe field/button names and success state but omit filled
-values. Successful fill/select actions count as progress even though input
-values are deliberately absent from observations. The provider returns a
-strict minimal typed action choice; the trusted adapter adds transport-only
-schema version, action ID, and current observation ID, then validates the full
-`w4-model-decision/1.0` action. Hard caps cover steps, model calls, repeated
-identical actions, no-progress states, wall time, input/output tokens, and
-provider-reported micro-USD cost.
+## Vision Agent and restricted VLM/OCR input
 
-CI and default Compose supply deterministic fake scenarios. The authorization-
-gated profile additionally fixes Zhipu Chat Completions, exact `glm-5.2`, JSON-
-object output plus strict local schema validation, enabled thinking with high
-reasoning effort, deterministic sampling, no provider tools, no retries, and
-environment-only `ZHIPU_API_KEY`. `AgentRunResult` has no
-`success`, `passed`, `score`, or Grader field. `finish` produces
-`finished_ungraded`; an independent caller must invoke the unchanged W3 Grader.
+apps/vision_agent is a separate non-root/read-only Python 3.13 FastAPI
+container. It joins agent-worker only, can resolve Browser Worker only, and has
+no Sandbox Web/API/PostgreSQL/Arena/Grader route, credential, Docker socket,
+repository mount, or provider egress.
+
+The model context has a human-facing task brief, the one current visual
+observation, generic bounded prior action summaries, and remaining budgets. It
+does not have a DOM/accessibility tree, URL/title, selector, page text, input
+value, Cookie, Local Storage, or service/tool object. The encoded JPEG is the
+only OCR/VLM input. Any visual text or instruction inference is untrusted data
+and cannot create tools or override the strict action schema.
+
+The only W5 runtime model is deterministic-fake-vision. It has no network and
+zero external cost. Its default scenario demonstrates one typed
+image/grounding action before finishing. Its test-only `complete_joiner`
+scenario parses only the fixed supplied-values grammar in the trusted human
+brief and selects current opaque Groundings by geometry/allowed action kind;
+it has no task-fact lookup, DOM/AX input, OCR, VLM inference, router, or
+planner. No real VLM provider, adapter, key, endpoint, or egress exists in
+default Compose or CI.
+
+W5 budgets cap 24 steps/calls/images, total image bytes/pixels/capture time,
+input/output tokens, cost, duration, repetition, and no progress. Model result
+records only numeric image/call/token/cost/latency totals plus bounded action
+metadata; it never persists pixels or text.
 
 ## Task input and grading boundary
 
-The acceptance caller may render the W3 title/instructions plus immutable
-synthetic expected values into the human-readable “supplied identifiers” brief.
-It does not modify a spec/checksum or pass grader predicates. For authorized
-real runs it must use tasks 001-005, compare two Reset/Seed results, start at
-HRIS, invoke the Agent, then grade. The model never receives Reset/Seed,
-database, business API, or Grader tools.
+The outer caller may render immutable W3 title/instructions and supplied
+synthetic values into a human-readable brief. It must not modify a task,
+checksum, predicate, or manual baseline, and must not send grader predicates to
+the model. For W5 Development candidates it runs two equal Reset/Seed calls,
+starts a fresh session at HRIS, invokes the Vision Agent, ensures cleanup, and
+then calls the W3 Grader independently.
 
-No W4 migration exists. The released W2/W3 heads and all ten W3 specs remain
-unchanged. See
-[adr/0004-w4-isolated-dom-worker-and-agent.md](adr/0004-w4-isolated-dom-worker-and-agent.md).
+Agent finish produces finished_ungraded. Only an unchanged W3 100/100 grade is
+a pass. The W5 fake acceptance first proves that the untouched read/finish
+subrun remains 30/100 and non-passing, then Reset/Seeds again and requires the
+bounded `complete_joiner` subrun to receive an independent 100/100,
+`passed=true` grade. That latter fact proves the outer grading boundary still
+decides the outcome for the deterministic test policy; it is not a real
+Vision-only VLM/OCR result, a success-rate sample, or proof of visual
+understanding.
+
+## Explicit W6 boundary
+
+There is no DOM/Vision Router, DOM-quality signal, hybrid context, modality
+switch, planner, verifier, checkpoint, recovery, memory, or routing policy in
+this architecture. Those choices remain future work.

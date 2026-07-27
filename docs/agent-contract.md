@@ -1,301 +1,309 @@
-# W4 agent contract — DOM Agent Foundation
+# W5 agent contract — Vision Agent Foundation
 
-## Authority and objective
+## Authority, baseline, and sole objective
 
-This contract translates the W4 row of
-[project-roadmap.md](project-roadmap.md) and the user-authorized W4 brief into a
-bounded implementation agreement for `week/04-dom-agent`.
+This contract translates the W5 row of [project-roadmap.md](project-roadmap.md)
+and the user-authorized W5 brief into a bounded implementation agreement for
+the branch week/05-vision.
 
-The sole outcome is a minimal DOM-only Agent foundation: an isolated
-Playwright Browser Worker exposes strict observations and typed actions to a
-separate bounded ReAct loop. The acceptance caller resets fixed W3 Development
-tasks before a run and grades database facts afterward. Only the unchanged W3
-Grader may declare success.
+The verified source baseline is main commit
+c7a3e5a26477c1a92aa401b4f60f3eea333e1a02. HEAD, origin/main, and the
+dereferenced annotated tag w04-dom-agent all resolved to that commit before
+the branch was created. The contract-eligible worktree was empty. The
+pre-existing untracked %SystemDrive%/ directory remains outside every read,
+scan, diff, staging, and modification.
 
-The roadmap's final “start W1” paragraph is historical bootstrap guidance. The
-specific W4 schedule row, completed W1-W3 releases, and this explicit W4
-authorization govern the current branch. Future roadmap architecture remains
-non-authorizing; W5+ is still prohibited.
+W5 has one outcome: retain all released W1-W4 behavior while adding bounded
+in-memory screenshots, strict visual observations, opaque visual grounding,
+and a separate Vision-only ReAct baseline. The unchanged W3 Grader remains the
+only task-success authority.
 
-## Baseline observed before W4 edits
+The W4 historical rules in the prior contract are superseded for this branch
+only. W1-W4 behavior and evidence remain regression inputs. Future roadmap
+architecture is non-authorizing: W6 and later features remain prohibited.
 
-- W3 PR #20 is merged into `main` at `11c4494`.
-- Both final W3 push and pull-request CI runs completed successfully, including
-  both `Secret scan` jobs.
-- Remote annotated tag object `1d4cc6f` exists as `w03-arena` and dereferences
-  to `11c4494`.
-- `git pull --ff-only` reported `main` already up to date with `origin/main`.
-- `week/04-dom-agent` was created from synchronized `main`.
-- No tracked or contract-eligible untracked changes existed at the boundary.
-- `%SystemDrive%/` and every `code_review_agent` repository remained outside
-  all reads, scans, diffs, staging, and modifications.
+## W5 scope
 
-## Conservative W4 architecture decisions
+W5 may add only:
 
-1. `apps/browser_worker` is an independent FastAPI process/container. It owns
-   Playwright, Browser/Page/Context resources, observation construction,
-   action validation, URL policy, session budgets, and cleanup. It has no
-   database credential, repository mount, Docker socket, arbitrary execution
-   endpoint, or network route to `sandbox-api`.
-2. `apps/dom_agent` is a second independent FastAPI process/container. It owns
-   the minimal ReAct loop and deterministic fake model. It communicates only
-   with the Browser Worker and has no network route, library dependency, or
-   credential for Sandbox APIs, PostgreSQL, Reset/Seed, or Grader.
-3. An outer acceptance caller owns the W3 management sequence: fetch immutable
-   task metadata, Reset/Seed twice, build the human-facing instruction brief,
-   invoke the Agent, close resources, then call the W3 Grader. Those management
-   calls are never model tools and never enter Browser Worker actions.
-4. The W3 prose says to use “supplied synthetic identifiers” but does not spell
-   all identifiers out in its `instructions` array. The acceptance caller may
-   deterministically render a human-facing brief from the immutable Task Spec's
-   title, `instructions`, and expected synthetic business values. The loop
-   receives only that text, current observation, bounded action summaries, and
-   remaining budgets—not grader predicates, database facts, or management API
-   access. Specs/checksums remain unchanged.
-5. Browser Worker and Agent use versioned JSON over narrow local HTTP APIs.
-   There is no shared runtime package, dynamic code loading, selector input,
-   or generic proxy. Both sides validate unknown fields strictly.
-6. Compose uses three explicit internal networks. Browser Worker shares one
-   network only with `sandbox-web` and one only with DOM Agent. `sandbox-web`
-   alone bridges browser traffic to the existing Sandbox backend network.
-7. No W4 database state is required. No W2/W3 migration or schema changes.
-8. Playwright is pinned to `1.60.0`, whose bundled Chromium is
-   `148.0.7778.96`. Python is pinned to the 3.13 line, uv to `0.11.14`, and
-   container bases/tags and resolved digests are recorded in evidence.
+1. a versioned Browser Worker visual-session API that captures the current
+   synthetic Sandbox Web viewport in bounded JPEG form;
+2. a strict visual observation with screenshot metadata, a transient encoded
+   image, and Worker-generated visual grounding candidates;
+3. strict typed visual actions that refer only to a current opaque grounding
+   reference and never contain a selector or arbitrary coordinate;
+4. a separate non-root Vision Agent service with a deterministic fake vision
+   model, bounded ReAct loop, and no DOM/accessibility observation field;
+5. a fake-only Compose smoke, CI coverage, documentation, and observed W5
+   evidence.
 
-These decisions are detailed in
-[adr/0004-w4-isolated-dom-worker-and-agent.md](adr/0004-w4-isolated-dom-worker-and-agent.md).
+W5 preserves the W4 DOM session/action API and DOM Agent unchanged. It adds no
+browser route outside the five released Sandbox paths, no database migration,
+and no Sandbox API, PostgreSQL, Reset/Seed, or Grader capability to Browser
+Worker, Vision Agent, or model.
 
-## Exact W4 file allowlist
+## Explicit W5 non-goals
 
-Only the following paths may be created or modified in W4:
+W5 does not add a DOM/Vision Router, DOM-quality heuristics, automatic
+fallback, hybrid observation, planner DAG, verifier, recovery, checkpoint,
+Temporal, fault injection, memory, retrieval, identity, RBAC, approval, audit
+chain, production worker, monitoring, tracing, load test, external benchmark,
+malicious-page suite, real enterprise integration, upload, download, general
+proxy, arbitrary execution, or future-stage placeholder abstraction.
 
-```text
+W5 does not add a model provider adapter, a model key, provider egress, a real
+OCR service, image storage, a screenshot fixture, a trace, a raw OCR-text API,
+or an image artifact in the repository. VLM/OCR is restricted to the typed
+image input described below. A future real VLM adapter requires separate user
+direction, exact disclosure, offline implementation, and fake-model gates
+before any network call.
+
+## Exact W5 file allowlist
+
+Only the following paths may be created or modified in W5:
+
+~~~text
 AGENTS.md
 README.md
 CHANGELOG.md
 
-.github/dependabot.yml
 .github/workflows/ci.yml
 
 docs/agent-contract.md
 docs/architecture.md
 docs/threat-model.md
 docs/evaluation-protocol.md
-docs/adr/0004-w4-isolated-dom-worker-and-agent.md
-docs/plans/week-04-dom-agent.md
-docs/evidence/week-04-report.md
+docs/adr/0005-w5-bounded-vision-worker-and-agent.md
+docs/plans/week-05-vision.md
+docs/evidence/week-05-report.md
 
 deploy/compose/compose.yaml
 
-apps/sandbox_web/package.json
-apps/sandbox_web/package-lock.json
-apps/sandbox_web/src/App.tsx
-apps/sandbox_web/src/App.test.tsx
-
-apps/browser_worker/.dockerignore
-apps/browser_worker/Dockerfile
-apps/browser_worker/pyproject.toml
-apps/browser_worker/uv.lock
-apps/browser_worker/src/flowpilot_browser_worker/__init__.py
 apps/browser_worker/src/flowpilot_browser_worker/config.py
 apps/browser_worker/src/flowpilot_browser_worker/schemas.py
-apps/browser_worker/src/flowpilot_browser_worker/policy.py
 apps/browser_worker/src/flowpilot_browser_worker/observation.py
+apps/browser_worker/src/flowpilot_browser_worker/vision.py
 apps/browser_worker/src/flowpilot_browser_worker/runtime.py
 apps/browser_worker/src/flowpilot_browser_worker/main.py
 apps/browser_worker/tests/conftest.py
-apps/browser_worker/tests/test_schemas.py
-apps/browser_worker/tests/test_policy.py
+apps/browser_worker/tests/test_api.py
 apps/browser_worker/tests/test_observation.py
 apps/browser_worker/tests/test_runtime.py
-apps/browser_worker/tests/test_api.py
+apps/browser_worker/tests/test_schemas.py
+apps/browser_worker/tests/test_vision.py
 
-apps/dom_agent/.dockerignore
-apps/dom_agent/Dockerfile
-apps/dom_agent/pyproject.toml
-apps/dom_agent/uv.lock
-apps/dom_agent/src/flowpilot_dom_agent/__init__.py
-apps/dom_agent/src/flowpilot_dom_agent/schemas.py
-apps/dom_agent/src/flowpilot_dom_agent/model.py
-apps/dom_agent/src/flowpilot_dom_agent/glm_model.py
-apps/dom_agent/src/flowpilot_dom_agent/client.py
-apps/dom_agent/src/flowpilot_dom_agent/loop.py
-apps/dom_agent/src/flowpilot_dom_agent/main.py
-apps/dom_agent/tests/conftest.py
-apps/dom_agent/tests/test_schemas.py
-apps/dom_agent/tests/test_client.py
-apps/dom_agent/tests/test_loop.py
-apps/dom_agent/tests/test_api.py
-apps/dom_agent/tests/test_model.py
+apps/vision_agent/.dockerignore
+apps/vision_agent/Dockerfile
+apps/vision_agent/pyproject.toml
+apps/vision_agent/uv.lock
+apps/vision_agent/src/flowpilot_vision_agent/__init__.py
+apps/vision_agent/src/flowpilot_vision_agent/schemas.py
+apps/vision_agent/src/flowpilot_vision_agent/client.py
+apps/vision_agent/src/flowpilot_vision_agent/model.py
+apps/vision_agent/src/flowpilot_vision_agent/loop.py
+apps/vision_agent/src/flowpilot_vision_agent/main.py
+apps/vision_agent/tests/conftest.py
+apps/vision_agent/tests/test_api.py
+apps/vision_agent/tests/test_client.py
+apps/vision_agent/tests/test_loop.py
+apps/vision_agent/tests/test_model.py
+apps/vision_agent/tests/test_schemas.py
 
-tests/integration/w4_compose_smoke.py
-tests/integration/w4_real_model_acceptance.py
 tests/integration/Dockerfile
-```
+tests/integration/w5_vision_compose_smoke.py
+~~~
 
-The superseded intermediate W4 path
-`apps/dom_agent/src/flowpilot_dom_agent/openai_model.py` was listed by the
-provider-readiness contract before the user-directed GLM replacement. It is
-authorized only as an explicit deletion in the final GLM delta and must not
-exist in the released W4 tree.
+Released W1-W4 source, Dockerfiles, locks, migrations, task facts, predicates,
+checksums, manual baseline, W4 ADR, and W4 evidence are not W5 change targets.
+The existing W4 files are regression inputs. Any additional path must be added
+to this contract before it changes. Any requested path that broadens W5 beyond
+this contract requires user direction before it is added.
 
-The W1-W3 source, W2/W3 migrations, ten Task Specs, their checksums, and W3
-manual-baseline evidence are regression inputs only and are not on this change
-allowlist. Any newly necessary path must be added before it changes. A path
-that broadens W4 scope requires user direction rather than an implicit edit.
+## Visual Browser Worker contract
 
-## Browser Worker contract
+The existing W4 DOM API stays versioned and unchanged. W5 adds separate narrow
+visual-session routes:
 
-- `POST /api/browser/sessions` accepts only schema version and a configured
-  initial local Sandbox path. The worker generates the session ID.
-- `POST /api/browser/sessions/{session_id}/actions` accepts one discriminated,
-  strict typed action. The path session and body session, observation, and
-  short-lived element references must agree where applicable.
-- `DELETE /api/browser/sessions/{session_id}` idempotently closes Page,
-  Context, and Browser. Finish, fail/escalate, timeout, and budget exhaustion
-  also close them.
-- No endpoint accepts JavaScript, Playwright source, CSS/XPath selector, shell,
-  SQL, file path, command, eval, upload, download, Cookie, storage, arbitrary
-  header, proxy target, or raw browser option.
-- Navigation accepts only configured relative Sandbox routes or an exact URL
-  on the configured origin. It rejects credentials, non-HTTP schemes, unknown
-  hosts/ports, query-based proxying, and external redirect requests.
-- Each task launches a fresh Browser, Context, and Page. Hard limits cover
-  navigations, actions, waits, fill length, observation size, and wall time.
+- POST /api/browser/vision-sessions accepts only w5-vision-session/1.0 and the
+  fixed initial path /hris;
+- POST /api/browser/vision-sessions/{session_id}/actions accepts only one
+  discriminated w5-vision-action/1.0 action;
+- DELETE /api/browser/vision-sessions/{session_id} idempotently closes the
+  current Browser, Context, and Page.
 
-## Observation and element reference contract
+The Worker still creates a fresh Playwright process, Browser Context, and Page
+per task. It uses the released exact local Sandbox origin policy, request
+interception, final-navigation validation, service-worker blocking,
+download rejection, resource limits, and unconditional terminal/startup/
+shutdown cleanup. The visual routes have no browser-option, JavaScript,
+selector, XPath, CSS, shell, SQL, file, URL, Cookie, Local Storage, upload,
+download, proxy, credential, or raw binary endpoint.
 
-Observation schema `w4-dom-observation/1.0` contains only:
+Screenshot capture is permitted only after the Worker verifies that the current
+top-level URL is the configured Sandbox origin and one of the five business
+paths. Request interception blocks external subresources and redirect escape.
+The Worker captures the page viewport only, never host desktop or browser UI.
+No full-page, browser-chrome, cross-origin, other-session, or host image can
+be requested.
 
-- worker-generated `session_id` and `observation_id`;
-- current URL and page title;
-- bounded, normalized semantic DOM text nodes;
-- bounded interactive elements with worker-generated `element_ref`, role,
-  accessible name, safe state, and allowed actions;
-- the last structured action result, sanitized page/action error, and a
-  truncation flag.
+The immutable W5 capture envelope is:
 
-The worker uses fixed internal extraction code only. Page text is untrusted
-data. Script/style/noscript/template, hidden nodes, irrelevant attributes,
-input values, password controls, credentials, Cookie/Local Storage, and long
-text are excluded. Node count, per-text length, element count, and serialized
-byte limits apply with stable DOM-order traversal and normalization.
+| Limit | Value |
+|---|---:|
+| Image MIME and encoding | image/jpeg only |
+| Viewport | 960 × 540 CSS pixels |
+| Maximum pixels per image | 518,400 |
+| JPEG quality | fixed Worker value 60 |
+| Maximum image bytes | 184,320 |
+| Maximum capture attempts per session | 24 |
+| Maximum capture duration per attempt | 3,000 ms |
+| Maximum total image bytes per session | 4,423,680 |
+| Maximum total capture duration per session | 72,000 ms |
 
-Every new observation invalidates the previous reference table. References
-contain an observation-scoped nonce and index generated inside the worker.
-Unknown, forged, missing, and cross-observation references fail without
-executing a browser action. No selector or locator recipe is returned.
+Capture count includes a failed or oversized capture attempt, so an error path
+cannot bypass the cap. The Worker rejects an oversized image or exhausted
+visual budget, closes the session where it cannot make another compliant
+observation, and returns only a bounded error category/message. Environment
+settings may reduce these limits but cannot increase them.
 
-Observation models deliberately have no screenshot, image, pixel, OCR, VLM,
-visual feature, image path, selector, browser code, network log, trace, form
-value dump, Cookie, or storage field.
+## Visual observation, OCR/VLM input, and lifecycle
 
-## Typed action contract
+Visual observation schema w5-vision-observation/1.0 contains only:
 
-Action schema `w4-dom-action/1.0` is a strict discriminated union containing
-`navigate`, `click`, `fill`, `select`, `read`, `scroll`, `wait`, `finish`, and
-`fail`. Every action has a constrained `action_id`; element actions also carry
-the current `observation_id` and `element_ref`.
+- Worker-generated session_id, observation_id, and screenshot_ref;
+- JPEG MIME type, encoded current image, pixel width/height, byte count, and
+  capture duration;
+- bounded Worker-generated visual grounding candidates, each containing only
+  grounding_ref, an in-viewport integer rectangle, and allowed action kinds;
+- sanitized last-action outcome, a truncation flag, and no DOM semantic field.
 
-- `navigate` accepts one allowed URL/path and is navigation-budgeted.
-- `click`, `fill`, `select`, `read`, and element `scroll` resolve only the
-  current reference table. `fill` rejects password controls, non-synthetic
-  email/account patterns, control characters, and overlong text.
-- `wait` is millisecond-bounded. It cannot wait indefinitely.
-- `finish` ends the loop and closes the session. It has no `passed` or
-  `success` field and cannot invoke or substitute for grading.
-- `fail` records a constrained category/reason, closes resources, and does not
-  claim a grade.
-- Results contain structured success/failure, an enumerated error category,
-  a sanitized message, and a new observation only while the session remains
-  active.
+The encoded image is the single transient VLM/OCR input. It is passed directly
+from the current observation to the Vision Agent's model interface; it is not
+written to a file, log, Task Spec, test fixture, database, cache, long-term
+store, or action history. There is no image URL, file path, arbitrary MIME
+type, raw OCR text endpoint, or model-provided image input.
 
-## DOM Agent loop contract
+OCR is not a trusted tool or Worker API. Any text a vision model infers from
+the JPEG is untrusted page data, cannot change system instructions, and is
+discarded with the model call. The fake model makes no OCR-capability claim.
+The Vision Agent model context contains the human task brief, one current
+bounded visual observation, generic bounded prior action summaries, and
+remaining budgets. It receives no DOM, accessibility tree, page title, current
+URL, selector, input value, Cookie, Local Storage, Reset/Seed, Grader, database
+fact, filesystem, shell, SQL, JavaScript, or browser object.
 
-- Model context contains only the human-facing task brief, current strict DOM
-  observation, up to 24 bounded summaries of prior actions, and remaining
-  step/call/token/cost/time budgets. Summaries may retain the safe accessible
-  name of an acted-on field or button and success/error state, but omit filled
-  values and stale element references.
-- Model output is JSON validated as a strict typed action envelope. Invalid
-  JSON, unknown fields/actions, invalid types, stale references, and invalid
-  budget usage fail safely. The provider owns only the minimal action choice;
-  the trusted adapter generates transport-only schema version, action ID, and
-  current observation ID before validating the complete action envelope.
-- The model interface has no Browser, HTTP, database, Reset/Seed, Grader,
-  filesystem, shell, SQL, or JavaScript method. The loop can call only the
-  Browser Worker client after local validation.
-- Hard caps cover steps, model calls, repeated identical actions, no-progress
-  observations, duration, input/output tokens, and actual provider-reported
-  cost. Cap exhaustion closes the browser session and returns a non-success
-  terminal reason. A successful fill/select resets no-progress because its
-  intentionally hidden form-state change cannot appear in the observation
-  fingerprint.
-- W4 implements no planner, verifier, checkpoint, replay, recovery, memory,
-  dynamic router, approval, or visual fallback.
-- CI and default Compose use deterministic fake models. The user authorized a
-  one-off OpenAI `gpt-5.6-terra` five-task run on 2026-07-26 after disclosure
-  of prompt/config `w4-dom-react-openai/1.0` and revised aggregate caps. That
-  run was observed at 0/5. On 2026-07-27 the user separately authorized GLM
-  scheme B prompt/config 1.0 through 1.4 runs after exact disclosures. The
-  results were 0/5, 0/5, 3/5, 4/5, and 5/5 respectively, all with zero
-  retries. No additional paid-model run is authorized.
-- The current provider adapter uses only the fixed Zhipu Chat Completions URL,
-  exact `glm-5.2`, JSON-object mode followed by strict local schema validation,
-  enabled thinking with high reasoning effort, deterministic sampling, and no
-  provider tools. Its offline-remediated prompt/config is
-  `w4-dom-react-glm/1.4` with at most 2,048 output tokens per call. Because
-  provider JSON-object mode guarantees JSON rather than this repository's full
-  action schema, the adapter validates a compact strict provider choice and
-  generates transport metadata locally. It may normalize an explicitly typed
-  direct action or legacy transport fields only when versions, action ID, and
-  current observation ID validate exactly; every other unknown field remains
-  forbidden. A non-finish `summary` is treated only as bounded string metadata
-  and discarded; a finish summary is bounded to the full action's 300-character
-  limit. Validation errors expose only sanitized schema error type/path.
-  `ZHIPU_API_KEY` is environment-only and never logged, returned, mounted from
-  a file, or committed.
-- The authorized GLM aggregate hard caps were 125 calls, 500,000 input tokens,
-  100,000 output tokens, 900 seconds, zero retries, and a conservative USD 1.75
-  cost envelope derived from official CNY list prices at 4 CNY per budget USD.
-  All five one-off GLM authorizations have been consumed.
-- A profile-only real Agent may additionally use one outbound bridge solely
-  so its fixed adapter can reach the authorized provider. It remains absent
-  from default Compose and has no Sandbox API/PostgreSQL network or client.
+Every visual observation creates a fresh screenshot_ref and grounding table.
+The Worker keeps only current grounding handles in memory. A success, failed
+action, new observation, timeout, terminal action, explicit deletion, startup
+failure, or service shutdown invalidates references and clears temporary
+visual data. Unknown, forged, cross-session, stale-observation, and
+stale-screenshot references fail before Playwright execution.
 
-## Five-task and evidence rules
+## Grounding and typed visual action contract
 
-- Only `w3-joiner-001` through `w3-joiner-005` are W4 acceptance candidates.
-- Before each authorized real-model run, the caller compares two Reset/Seed
-  results, starts at HRIS in a fresh browser session, and records task/spec/seed
-  checksum and prompt/config version.
-- The Agent acts only through the five W2 pages. It cannot call business APIs
-  directly or read database facts to choose actions.
-- After termination, the caller invokes the W3 Grader independently. Only
-  100/100 is a completion. Record steps, actions, calls, tokens, actual cost,
-  score, failures, retries, timeouts, and human intervention.
-- Without separate real-model authorization, record all five real runs as not
-  run. Fake-model unit/smoke results are not presented as five-task success.
-- Do not tune against Validation or Reporting tasks and do not modify any W3
-  Task Spec/checksum based on W4 outcomes.
+A visual grounding rectangle is Worker-generated metadata that identifies a
+visible, nonzero, in-viewport interactive element in the current viewport.
+Coordinates are output-only, integer CSS-pixel rectangles clipped to the
+960 × 540 image. They help the model associate screenshot content with an
+opaque grounding_ref; they are not accepted back as coordinates and do not
+reveal a selector, locator, element name, role, DOM text, or input value.
 
-## Explicit prohibitions
+For click, fill, select, read, and scroll, model output must carry the current
+observation_id, screenshot_ref, and grounding_ref. The Worker resolves that
+current opaque reference to its internal locator, verifies that the chosen
+action is allowed, and then uses the existing typed browser operation. A
+visual action can never contain x/y, bounding box, selector, locator recipe,
+JavaScript, Playwright source, or arbitrary URL. Navigate remains constrained
+to the five fixed local paths; wait remains bounded; fill uses the released
+synthetic-data and credential-rejection policy; select is checked against the
+Worker's current internal option list; finish and fail close the session.
 
-W4 must not contain W5 screenshots/OCR/VLM/pixel actions; W6 routers/hybrid
-observations; W7 planning/verifier/JML expansion; W8 Temporal/checkpoints/
-recovery/faults; W9 context engines/retrieval/memory; W10 identity/RBAC/
-tenancy; W11+ approvals/audit/production workers/monitoring/load; W14 malicious
-page evaluation; W15 external benchmarks/reporting evaluation; real systems,
-real accounts, personal data, real mail, arbitrary execution interfaces, or
-unauthorized external APIs/models.
+W5 action and result schemas are w5-vision-action/1.0 and
+w5-vision-action-result/1.0. Unknown fields, action kinds, output types,
+coordinates, code, stale references, unsupported paths, and oversized strings
+are rejected strictly. Result messages are generic and do not return a DOM
+label or OCR text.
 
-## Handoff and Git rules
+## Vision Agent, fake model, and budgets
 
-- Preserve all W1-W3 paths and behaviours as regression contracts.
-- Do not access `code_review_agent` or `%SystemDrive%/`.
-- Do not push, create a PR, merge, tag, force-push, or call a real model without
-  explicit authorization.
-- Explicitly stage only contract paths after all locally available W4 gates
-  pass and evidence matches observed facts.
-- Stop at W4 completion.
+apps/vision_agent is a separate Python 3.13 FastAPI service. It has only a
+credential-free local Browser Worker URL and only joins the internal
+agent-worker network. It has no Sandbox/API/DB/Arena/Grader client, credential,
+provider egress, repository mount, Docker socket, host mount, or production
+control responsibility.
+
+Its run/result schemas are w5-vision-agent-run/1.0 and
+w5-vision-agent-result/1.0. Its strict model decision schema is
+w5-vision-model-decision/1.0. Default and only W5 runtime model is
+deterministic-fake-vision. It receives the current JPEG data in memory and can
+return only the typed visual action envelope. It has no tool calls. The fake
+has zero external calls and zero actual cost.
+
+The deterministic fake also has one test-only `complete_joiner` scenario for
+the fixed Development surface. It accepts no task database fact, Task Spec,
+expected-state object, or Grader predicate: the trusted caller must place the
+required synthetic identifiers in the human-facing brief. The scenario parses
+only that fixed supplied-values grammar, validates the current JPEG envelope,
+and chooses only current Worker-generated Groundings by their output-only
+geometry and allowed action kinds. Its route and form sequence is deliberately
+deterministic test policy, not OCR, VLM inference, a DOM fallback, or a
+general-purpose planner. It never treats page image/text instructions as
+policy and it does not use the task ID as a fixture-value lookup key.
+
+The default per-run hard limits are 24 steps, 24 model calls, 24 images,
+4,423,680 total image bytes, 12,441,600 total image pixels, 72,000 ms total
+capture duration, 100,000 input tokens, 20,000 output tokens, 300 seconds,
+and zero micro-USD cost. Repetition and no-progress limits are also bounded.
+Model-reported input/output token and cost values are accumulated and compared
+before/after every call using monotonic time. Cap exhaustion fails safely and
+closes the Browser session. Action summaries and results contain only bounded
+metadata plus numeric image/token/cost/latency aggregates, never pixels, OCR,
+or form/page content.
+
+No provider or paid model is authorized by this contract. Before a real VLM or
+OCR-capable model is even called, stop and obtain separate explicit user
+authorization after disclosing the provider, exact model, endpoint,
+prompt/config version, image MIME/max resolution/max image count, exact task
+IDs, call/input/output/image/time/cost caps, and retry count. The W4 ZHIPU key
+and W4 authorization do not authorize W5 VLM use.
+
+## Evaluation and evidence rules
+
+W5 Development candidates are only w3-joiner-001 through w3-joiner-005.
+Existing W2 pages provide the synthetic screenshot surface; W5 does not alter
+them or their W3 facts. Development may inform implementation. Validation may
+not be repeatedly tuned against and Reporting remains frozen for final
+reporting only. If a later W5 evaluation cannot establish visual capability on
+this fixed set, propose a minimal new visual task separately rather than
+changing a released task.
+
+The outer trusted caller alone loads immutable task metadata, executes two
+equal Reset/Seed calls, renders the human-facing brief, invokes Vision Agent,
+and independently invokes the unchanged W3 Grader after cleanup. The model and
+Worker cannot call, receive, or substitute for Reset/Seed or Grader. Finish is
+finished_ungraded, never success.
+
+W5 fake acceptance has two separately Reset/Seed-controlled subruns through a
+real isolated Chromium visual session. The first performs a grounded read then
+finishes, and must independently retain the untouched 30/100, `passed=false`
+grade. The second uses the bounded `complete_joiner` test scenario and must
+finish ungraded before the unchanged W3 Grader independently returns exactly
+100/100 and `passed=true`. Both record zero external calls/cost. The second is
+deterministic fake behavioral evidence for the typed visual circuit only; it
+is not a real VLM/OCR call, a Vision-only success-rate observation, or proof
+of visual understanding. The evidence report must separately record fake
+results, real VLM results, unrun real VLM items, image/call/token/cost/latency
+metrics, failures, cleanup, all available gates, limitations, and the W6
+boundary.
+
+## Git and handoff rules
+
+Work only on week/05-vision. Do not push, create a PR, merge, tag, force-push,
+or call a real model without separate explicit user authorization. Do not
+stage broadly; stage only the final exact W5 allowlist after every locally
+available gate passes and evidence matches observed facts. Never inspect,
+copy, modify, stage, scan, ignore, or delete %SystemDrive%/, and never access
+any code_review_agent repository.
+
+W5 stops after the Vision-only foundation. W6 routing or hybrid behavior is
+explicitly out of scope.

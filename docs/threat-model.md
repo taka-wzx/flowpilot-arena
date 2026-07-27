@@ -1,88 +1,92 @@
-# W4 threat model — DOM Agent Foundation
+# W5 threat model — Vision Agent Foundation
 
 ## Scope and assets
 
-W4 protects the W1-W3 source and locks; ten immutable synthetic Task Specs and
-checksums; task-owned Sandbox facts and deterministic grades; Browser Worker
-process/session integrity; bounded DOM observations and opaque references;
-typed action integrity; and Agent budget/termination integrity. There are no
-real identities, enterprise systems, personal data, screenshots, or visual
-models. A separately authorized profile may send bounded synthetic DOM/task
-text to one fixed Zhipu model endpoint; default Compose and CI stay fake-only.
+W5 protects released W1-W4 source and locks; immutable W3 Task Specs/checksums;
+task-owned synthetic state and deterministic grades; Browser Worker integrity;
+bounded in-memory visual observations; opaque screenshot/grounding references;
+typed visual actions; and Vision Agent budget/termination integrity.
+
+The only new sensitive runtime asset is one current synthetic Sandbox viewport
+JPEG. It is untrusted page content, not a trusted instruction. W5 stores no
+image, OCR text, screenshot trace, image URL/path, real identity, enterprise
+system data, or model credential. Default Compose/CI has no VLM/OCR network
+call.
 
 ## Trust boundaries
 
-```mermaid
+~~~mermaid
 flowchart LR
-    Model["Untrusted model output\nfake or authorized GLM"] --> Loop["Strict DOM Agent loop"]
-    Loop --> Worker["Typed Browser Worker API"]
-    Worker --> Page["Untrusted Sandbox page text"]
+    Model["Untrusted fake vision output<br/>and untrusted visual/OCR inference"] --> Vision["Strict Vision Agent loop"]
+    Vision --> Worker["Typed visual Browser Worker API"]
+    Worker --> Page["Untrusted Sandbox page viewport"]
     Page --> Web["sandbox_web same origin"]
     Web --> API["W2 business API"]
     Caller["Trusted acceptance caller"] --> Arena["W3 Reset/Seed + Grader"]
-    Caller --> Loop
+    Caller --> Vision
     Arena --> DB["Synthetic PostgreSQL"]
     API --> DB
-```
+~~~
 
-Model JSON and page text are untrusted. Browser Worker is a separate process
-and container. Docker internal networks, not application naming, enforce that
-Worker lacks API/DB routes and Agent lacks all Sandbox routes. The acceptance
-caller is trusted W4 test orchestration, not a model tool or production control
-plane. Local published W1/W2 ports remain development-only and unauthenticated.
+The screenshot does not cross a storage boundary: it is returned only in the
+current Worker response and used by the current Vision Agent model call. The
+Worker and Vision Agent are separate containers. Docker internal networks
+enforce that the Worker lacks API/DB routes and Vision Agent lacks all Sandbox
+routes. The caller is trusted test orchestration, not a model tool.
 
-## Threats and W4 controls
+## Threats and W5 controls
 
-| Threat | W4 impact | Control in W4 | Remaining limitation |
+| Threat | W5 impact | W5 control | Remaining limitation |
 |---|---|---|---|
-| External navigation / SSRF | Browser reaches arbitrary host | Exact local hostname/origin and five paths; scheme/credential/query rejection; request interception; final URL check; internal network without gateway | W14 performs adversarial page testing |
-| Redirect escape | Allowlisted URL redirects outside | Every request is intercepted and every final navigation revalidated | No general proxy or redirect feature exists |
-| Arbitrary browser execution | Model runs JS/Playwright/selectors | Strict discriminated actions; extra fields forbidden; no code/selector/options endpoint; opaque refs only | Fixed internal extraction code remains trusted source |
-| Shell/SQL/file execution | Host/DB compromise | No corresponding schema, endpoint, dependency, mount, Docker socket, or credential | Local developer host tools are outside service boundary |
-| Forged/stale element reference | Wrong element action | Fresh observation nonce; in-memory current map; observation/ref/action match before execution | DOM races after observation can still cause a safe Playwright failure |
-| Cross-task browser state | Cookie/form leakage or wrong action | Fresh Browser/Context/Page per session; close on every terminal/error path; no storage return | Crash recovery is W8, not W4 |
-| Credential/form leakage | Secret in observation/log | No input values, password data, Cookie/Local Storage, trace, full form dump, or screenshot fields; bounded sanitized messages | W2 free text still requires synthetic-data discipline |
-| Prompt injection in page text | Page controls Agent policy | Page text remains tagged untrusted data in model context and cannot create tools/actions without strict validation | Malicious-page dataset/effectiveness evaluation is W14 |
-| Input of real/secret data | Privacy exposure | `.invalid` emails, password-control rejection, credential/card/control-character filters, max length | Heuristic filter cannot prove provenance of arbitrary names |
-| Resource exhaustion | Host instability | Per-session action/navigation/wait/time limits; Agent step/call/token/cost/time/repetition/no-progress limits; pids/shm/tmpfs bounds | Load/concurrency testing waits for W12 |
-| Model credential leakage | Paid-call abuse | Key is environment-only on the profile Agent; never logged, returned, repository-mounted, or given to the caller/model context | Docker environment metadata is trusted-host visible during the one-off run |
-| Provider egress abuse | Agent reaches arbitrary internet host | Default Agent has no egress; authorized adapter fixes URL/model and accepts no provider URL or tools | Docker bridge cannot domain-allowlist; profile lifecycle and application policy are the containment |
-| Model self-reported success | False positive | Result has no pass/score; finish means ungraded; independent unchanged W3 Grader; only 100 passes | Five fixed observations do not establish general reliability |
-| Direct Agent access to facts/grade | Tuning or bypass | No DB/Arena/business client or network; real profile adds provider egress only | Trusted acceptance caller can manage fixed synthetic tasks |
-| Browser container breakout | Host compromise | Non-root user, read-only root, no binds/socket, all caps dropped, no-new-privileges, internal networks | This is development hardening, not a formal sandbox proof |
-| Supply-chain drift | Reproducibility/compromise | uv locks, Playwright 1.60.0, Python 3.13.5 tag, observed image IDs, CI, Dependabot, Gitleaks | No SBOM/image signing until later release work |
+| Host desktop/browser UI capture | Personal or host data reaches model | Playwright viewport screenshot only; fresh headless context; no raw screenshot option/endpoint | Browser implementation is trusted; this is not a formal desktop-isolation proof |
+| External/cross-origin capture | Arbitrary web content reaches model | Exact Sandbox origin/path policy, request interception, final URL validation, internal network, no iframe/image URL input | Malicious-page evaluation waits for W14 |
+| Image persistence/leak | Screenshot or OCR retained in repository/log/store | In-memory current response/context only; no file/storage/trace/schema field for paths; generic errors/history | Process memory is not a forensic zeroization guarantee |
+| Prompt injection in image/OCR | Page image controls Agent policy | Image/OCR tagged untrusted; fixed system policy; strict action schema; no tool promotion | W14 measures adversarial effectiveness |
+| Arbitrary coordinate click | Model clicks unknown pixel/element | Coordinates output-only metadata; model returns opaque current grounding ref; Worker maps/validates internal locator | Current DOM may race after observation and fail safely |
+| Forged/stale visual reference | Wrong-element action | Fresh screenshot/observation nonce and in-memory grounding map; reference/session/observation match before action | No recovery path is added in W5 |
+| DOM fallback in Vision-only baseline | Misleading modality claim | Visual schemas/context omit DOM, AX, title, URL, element name/role/text, selector, and element_ref | Task brief still contains allowed immutable human instructions |
+| Fake fixture/value lookup | Scripted fake silently receives task facts or grade logic | `complete_joiner` parses only the fixed supplied-values suffix supplied by the trusted caller; it has no fixture map, task-ID lookup, Task Spec, expected-state, or Grader input | This is still deterministic test policy, not visual understanding |
+| Form/credential leak in image/action | Sensitive data exposure | Synthetic Sandbox only; released fill filters; no image persistence; no result message with names/OCR | Screenshot can show synthetic form values during active task |
+| Resource exhaustion | Excess CPU/RAM/bytes/model cost | Fixed JPEG/viewport/quality, image byte/count/time caps, pids/shm/tmpfs limits, Agent image/call/token/cost/time/repetition/progress caps | Load/concurrency validation is W12 |
+| Model credential/provider abuse | Unapproved spend or egress | W5 has no provider adapter/key/egress; fake only in CI/Compose | A later authorized provider needs a separate threat update |
+| Direct Agent access to task facts/grade | Tuning/bypass | No DB/Arena/business/Grader client or network; caller owns management sequence | Caller remains trusted local test code |
+| Model self-reported success | False pass | Result has no pass/score; finish is ungraded; unchanged W3 Grader is independent | Five Development tasks do not establish general reliability |
+| Cross-task visual state | Prior screenshot/cookie/form leaks | Fresh Browser/Context/Page per task; current-only visual data; terminal cleanup | Crash recovery is W8, not W5 |
+| Browser container breakout | Host compromise | Non-root, read-only root, no mounts/socket, dropped capabilities, no-new-privileges, internal networks | Development hardening, not a formal sandbox proof |
+| Supply-chain drift | Reproducibility/compromise | Existing pinned Python/uv/Playwright locks, CI, Gitleaks, explicit image evidence | SBOM/signing waits for later release work |
 
 ## Deterministic data and control rules
 
-- W3 task facts/checksums remain fixed; W4 does not write observations, actions,
-  model output, or results into specs.
-- OS entropy generates session/observation/reference identifiers only. These
-  are runtime isolation tokens, not task facts or score inputs.
-- Wall-clock budgets use monotonic time. Fake responses are deterministic and
-  cost zero. The historical OpenAI run used the authorized USD 3.25 envelope;
-  the inactive GLM proposal uses 125 calls, 500k input, 100k output, 900
-  seconds, zero retries, and a conservative USD 1.75 aggregate envelope.
+- W3 task facts/checksums remain fixed. W5 never writes images, OCR, model
+  outputs, visual references, or results into Task Specs.
+- Session/observation/screenshot/grounding IDs use OS entropy only as runtime
+  isolation tokens and never as task facts or model inputs.
+- Wall-time budgets use monotonic time. Capture attempts count even on failure.
+  Fake model responses are deterministic and have zero external cost.
+- The fake completion scenario may retain parsed supplied values only in its
+  task-local model instance. It does not persist them, use page text/image
+  instructions as policy, or accept a caller-provided action sequence.
 - Browser navigation reaches only Sandbox Web. Same-origin business writes are
-  caused by typed UI actions, never direct Worker/Agent business API calls.
-- Reset/Seed and Grader remain outside the Agent loop. Grade reads database
-  facts only and ignores browser/model claims.
+  caused only by Worker-validated typed UI actions, never direct Agent/Worker
+  business API calls.
+- Reset/Seed and grading stay outside both Worker and Vision Agent. Grade reads
+  database facts only and ignores model/Agent claims.
 
 ## Explicitly deferred threats
 
-Screenshot/model leakage and visual grounding begin W5; DOM/vision routing W6;
-planner/verifier risks W7; checkpoint/recovery/fault injection W8; context and
-knowledge poisoning W9; identity/cross-tenant/RBAC W10; approval/audit W11;
-production worker, monitoring, tracing, and load W12+; malicious-page security
-evaluation W14; external benchmarks and Reporting evaluation W15.
+DOM/Vision routing and modality policy are W6; planner/verifier risks W7;
+checkpoint/recovery/fault injection W8; context/retrieval W9; identity/RBAC
+W10; approval/audit W11; production worker/monitoring/tracing/load W12+;
+malicious-page evaluation W14; and external Reporting evaluation W15.
 
 ## Security operating rules
 
-- Never expose local unauthenticated W1-W3 ports on a public/shared interface.
+- Never expose local unauthenticated W1-W4 ports publicly.
 - Never add a default network, host mount, Docker socket, database/API secret,
-  external origin, raw selector, or arbitrary execution parameter to Worker or
-  Agent.
-- Never enter or commit real identities, accounts, assets, credentials,
-  endpoints, form contents, browser traces, or enterprise-derived data.
-- Call a real model only under the recorded authorization, fixed provider/model
-  and prompt version, five task IDs, zero retries, and hard aggregate caps.
-- Keep W3 Reporting specs/checksums frozen and stop before W5.
+  external origin, generic image target, raw pixel action, selector, or
+  arbitrary execution parameter to Worker or Vision Agent.
+- Never commit images, OCR text, form contents, DOM trace, identity, account,
+  credential, token, endpoint, or machine path.
+- Call a real visual model only after exact disclosure and separate explicit
+  approval; W4 authorization never carries forward.
+- Keep W3 Validation/Reporting facts/checksums frozen and stop before W6.

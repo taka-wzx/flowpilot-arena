@@ -35,6 +35,17 @@ and this project follows [Semantic Versioning](https://semver.org/).
   caller with JSON-object output, strict local action validation, fixed
   endpoint, no tools/retries, environment-only key, and hard aggregate
   call/token/time/cost caps.
+- W5 separate fake-only Vision Agent, strict versioned visual-session,
+  observation, grounding, action, result, model-decision, budget, and run
+  schemas, plus numeric image/latency/token/cost result metrics.
+- W5 Browser Worker visual-session API with current in-memory JPEG viewport
+  capture, fixed size/encoding/byte/count/time caps, output-only grounding
+  rectangles, screenshot-scoped opaque references, and strict rejection of
+  arbitrary coordinates, selectors, and code.
+- W5 deterministic Vision-only Compose smoke, CI quality/smoke jobs, and
+  fake-model tests proving both untouched-state 30/100 isolation and a
+  separately reset, independently graded 100/100 `complete_joiner` circuit
+  path without a provider call or Vision capability claim.
 
 ### Changed
 
@@ -75,3 +86,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
   isolated DOM Agent from every Sandbox/Arena/Grader route; rejected dangerous
   origins, redirects, selectors/code/commands, stale references, password/real
   email/credential-like input, and unbounded actions or waits.
+- Isolated W5 Vision Agent to the Browser Worker network with no provider
+  credential or egress; restricted visual data to a current synthetic Sandbox
+  JPEG in memory; invalidated screenshot/grounding references after every
+  observation; and rejected persistent image paths/URLs, raw OCR text, DOM
+  fallback fields, arbitrary pixel actions, and stale visual references.

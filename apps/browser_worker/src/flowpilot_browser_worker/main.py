@@ -14,6 +14,11 @@ from flowpilot_browser_worker.schemas import (
     SessionCreate,
     SessionCreated,
     SessionId,
+    VisionActionResult,
+    VisionBrowserAction,
+    VisionSessionClosed,
+    VisionSessionCreate,
+    VisionSessionCreated,
 )
 
 
@@ -25,7 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="FlowPilot W4 DOM Browser Worker",
+    title="FlowPilot W5 Browser Worker",
     version=__version__,
     lifespan=lifespan,
 )
@@ -73,3 +78,49 @@ async def execute_action(
 @app.delete("/api/browser/sessions/{session_id}", response_model=SessionClosed)
 async def close_session(session_id: SessionId, request: Request) -> SessionClosed:
     return await _runtime(request).close_session(session_id)
+
+
+@app.post(
+    "/api/browser/vision-sessions",
+    response_model=VisionSessionCreated,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_vision_session(
+    payload: VisionSessionCreate, request: Request
+) -> VisionSessionCreated:
+    try:
+        return await _runtime(request).create_vision_session(payload.initial_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to start isolated visual browser session",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/vision-sessions/{session_id}/actions",
+    response_model=VisionActionResult,
+)
+async def execute_vision_action(
+    session_id: SessionId,
+    payload: Annotated[VisionBrowserAction, Body(discriminator="type")],
+    request: Request,
+) -> VisionActionResult:
+    try:
+        return await _runtime(request).execute_vision_action(session_id, payload)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visual browser session not found or already closed",
+        ) from exc
+
+
+@app.delete("/api/browser/vision-sessions/{session_id}", response_model=VisionSessionClosed)
+async def close_vision_session(session_id: SessionId, request: Request) -> VisionSessionClosed:
+    try:
+        return await _runtime(request).close_vision_session(session_id)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visual browser session not found or already closed",
+        ) from exc

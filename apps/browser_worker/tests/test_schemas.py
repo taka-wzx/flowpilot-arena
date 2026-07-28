@@ -3,7 +3,12 @@ import json
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from flowpilot_browser_worker.schemas import BrowserAction, Observation
+from flowpilot_browser_worker.schemas import (
+    BrowserAction,
+    HybridActionEnvelope,
+    HybridObservationRequest,
+    Observation,
+)
 
 
 def test_action_union_accepts_typed_navigation() -> None:
@@ -79,3 +84,57 @@ def test_observation_schema_contains_no_visual_or_execution_surface() -> None:
         "local_storage",
     ):
         assert prohibited not in schema
+
+
+def test_hybrid_envelope_requires_a_declared_current_modality_and_no_coordinates() -> None:
+    adapter = TypeAdapter(HybridActionEnvelope)
+    action = adapter.validate_python(
+        {
+            "schema_version": "w6-hybrid-action-envelope/1.0",
+            "session_id": "bw_abcdefghijklmnop",
+            "generation": 1,
+            "modality": "dom",
+            "action": {
+                "action_id": "act_hybrid_read",
+                "type": "read",
+                "observation_id": "obs_abcdefgh",
+                "element_ref": "ref_abcdefgh",
+            },
+        }
+    )
+    assert action.modality == "dom"
+    for missing in ("session_id", "generation"):
+        payload = {
+            "schema_version": "w6-hybrid-action-envelope/1.0",
+            "session_id": "bw_abcdefghijklmnop",
+            "generation": 1,
+            "modality": "dom",
+            "action": {
+                "action_id": "act_hybrid_read",
+                "type": "read",
+                "observation_id": "obs_abcdefgh",
+                "element_ref": "ref_abcdefgh",
+            },
+        }
+        payload.pop(missing)
+        with pytest.raises(ValidationError):
+            adapter.validate_python(payload)
+    with pytest.raises(ValidationError):
+        adapter.validate_python(
+            {
+                "schema_version": "w6-hybrid-action-envelope/1.0",
+                "session_id": "bw_abcdefghijklmnop",
+                "generation": 1,
+                "modality": "vision",
+                "action": {
+                    "action_id": "act_hybrid_bad",
+                    "type": "read",
+                    "observation_id": "vobs_abcdefgh",
+                    "screenshot_ref": "shot_abcdefgh",
+                    "grounding_ref": "gref_abcdefgh",
+                    "x": 4,
+                },
+            }
+        )
+    with pytest.raises(ValidationError):
+        HybridObservationRequest.model_validate({"modality": "dom", "selector": "#unsafe"})

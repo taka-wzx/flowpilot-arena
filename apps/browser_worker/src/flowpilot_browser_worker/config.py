@@ -7,6 +7,8 @@ MAX_VISION_PIXELS = MAX_VISION_VIEWPORT_WIDTH * MAX_VISION_VIEWPORT_HEIGHT
 MAX_VISION_SCREENSHOT_BYTES = 184_320
 MAX_VISION_SCREENSHOTS = 24
 MAX_VISION_CAPTURE_MS = 3_000
+MAX_HYBRID_OBSERVATIONS = 24
+MAX_HYBRID_DOM_OBSERVATION_BYTES = 262_144
 
 
 def _positive_int(name: str, default: int) -> int:
@@ -44,6 +46,8 @@ class WorkerLimits:
     max_vision_screenshot_bytes: int = MAX_VISION_SCREENSHOT_BYTES
     max_vision_screenshots: int = MAX_VISION_SCREENSHOTS
     max_vision_capture_ms: int = MAX_VISION_CAPTURE_MS
+    max_hybrid_observations: int = MAX_HYBRID_OBSERVATIONS
+    max_hybrid_dom_observation_bytes: int = MAX_HYBRID_DOM_OBSERVATION_BYTES
 
     def __post_init__(self) -> None:
         if (
@@ -67,6 +71,16 @@ class WorkerLimits:
             raise ValueError("max_vision_screenshots is outside the W5 capture envelope")
         if self.max_vision_capture_ms <= 0 or self.max_vision_capture_ms > MAX_VISION_CAPTURE_MS:
             raise ValueError("max_vision_capture_ms is outside the W5 capture envelope")
+        if (
+            self.max_hybrid_observations <= 0
+            or self.max_hybrid_observations > MAX_HYBRID_OBSERVATIONS
+        ):
+            raise ValueError("max_hybrid_observations is outside the W6 capture envelope")
+        if (
+            self.max_hybrid_dom_observation_bytes <= 0
+            or self.max_hybrid_dom_observation_bytes > MAX_HYBRID_DOM_OBSERVATION_BYTES
+        ):
+            raise ValueError("max_hybrid_dom_observation_bytes is outside the W6 capture envelope")
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +122,16 @@ class WorkerConfig:
                 ),
                 max_vision_capture_ms=_bounded_positive_int(
                     "MAX_VISION_CAPTURE_MS", MAX_VISION_CAPTURE_MS, MAX_VISION_CAPTURE_MS
+                ),
+                max_hybrid_observations=_bounded_positive_int(
+                    "MAX_HYBRID_OBSERVATIONS",
+                    MAX_HYBRID_OBSERVATIONS,
+                    MAX_HYBRID_OBSERVATIONS,
+                ),
+                max_hybrid_dom_observation_bytes=_bounded_positive_int(
+                    "MAX_HYBRID_DOM_OBSERVATION_BYTES",
+                    MAX_HYBRID_DOM_OBSERVATION_BYTES,
+                    MAX_HYBRID_DOM_OBSERVATION_BYTES,
                 ),
             ),
         )

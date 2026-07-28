@@ -9,6 +9,18 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- W6 bounded Hybrid Browser Worker session with one fresh Browser/Context/Page,
+  selected current DOM or visual observations, safe structural route signals,
+  strict session/generation-bound current-mode action envelopes, and
+  cross-modality reference invalidation.
+- W6 separate fake-only Hybrid Agent with deterministic DOM-first routing,
+  closed reason codes/categories, local versioned DOM compression, total
+  switch/observation/image/token/cost/time budgets, and no Sandbox/Arena/DB/
+  Grader/provider access.
+- W6 Compose/CI Hybrid isolation on a dedicated Hybrid-to-Worker internal
+  network and deterministic DOM-to-Vision fake smoke proving wrong-mode/stale
+  reference rejection, immediate-finish grade isolation, and a fresh
+  independently graded completion circuit without a real model claim.
 - W1 Foundation governance, scope contract, architecture documents, minimal
   API/web startup path, reproducible locks, and CI/security gates.
 - W2 synthetic Sandbox foundation with one FastAPI/PostgreSQL backend,
@@ -75,6 +87,11 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Restricted W6 routing to bounded Worker-derived structural metadata, safe
+  action outcomes, trusted finite categories, and numeric budgets; rejected
+  page/model-directed routing, joined sessions, dual-modal model input,
+  cross-mode/stale references, learning/history/cache, and switching that
+  resets any hard limit.
 - Added ignored secret-file patterns, pre-commit private-key detection, and a
   CI Gitleaks scan.
 - Restricted W2 email fields to `.invalid`, asset tags to `SYN-`, IAM roles to

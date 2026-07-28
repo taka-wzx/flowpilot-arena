@@ -6,10 +6,21 @@ from fastapi import Body, FastAPI, HTTPException, Request, status
 
 from flowpilot_browser_worker import __version__
 from flowpilot_browser_worker.config import WorkerConfig
-from flowpilot_browser_worker.runtime import BrowserRuntime, UnknownSessionError
+from flowpilot_browser_worker.runtime import (
+    BrowserRuntime,
+    HybridObservationError,
+    UnknownSessionError,
+)
 from flowpilot_browser_worker.schemas import (
     ActionResult,
     BrowserAction,
+    HybridActionEnvelope,
+    HybridActionResult,
+    HybridObservation,
+    HybridObservationRequest,
+    HybridSessionClosed,
+    HybridSessionCreate,
+    HybridSessionCreated,
     SessionClosed,
     SessionCreate,
     SessionCreated,
@@ -30,7 +41,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="FlowPilot W5 Browser Worker",
+    title="FlowPilot W6 Browser Worker",
     version=__version__,
     lifespan=lifespan,
 )
@@ -123,4 +134,77 @@ async def close_vision_session(session_id: SessionId, request: Request) -> Visio
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Visual browser session not found or already closed",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/hybrid-sessions",
+    response_model=HybridSessionCreated,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_hybrid_session(
+    payload: HybridSessionCreate,
+    request: Request,
+) -> HybridSessionCreated:
+    try:
+        return await _runtime(request).create_hybrid_session(payload.initial_path)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to start isolated Hybrid browser session",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/hybrid-sessions/{session_id}/observations",
+    response_model=HybridObservation,
+)
+async def request_hybrid_observation(
+    session_id: SessionId,
+    payload: HybridObservationRequest,
+    request: Request,
+) -> HybridObservation:
+    try:
+        return await _runtime(request).request_hybrid_observation(session_id, payload)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hybrid browser session not found or already closed",
+        ) from exc
+    except HybridObservationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Hybrid browser observation is no longer available",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/hybrid-sessions/{session_id}/actions",
+    response_model=HybridActionResult,
+)
+async def execute_hybrid_action(
+    session_id: SessionId,
+    payload: Annotated[HybridActionEnvelope, Body(discriminator="modality")],
+    request: Request,
+) -> HybridActionResult:
+    try:
+        return await _runtime(request).execute_hybrid_action(session_id, payload)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hybrid browser session not found or already closed",
+        ) from exc
+
+
+@app.delete(
+    "/api/browser/hybrid-sessions/{session_id}",
+    response_model=HybridSessionClosed,
+)
+async def close_hybrid_session(session_id: SessionId, request: Request) -> HybridSessionClosed:
+    try:
+        return await _runtime(request).close_hybrid_session(session_id)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Hybrid browser session not found or already closed",
         ) from exc

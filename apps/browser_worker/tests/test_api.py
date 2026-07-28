@@ -2,8 +2,16 @@ import base64
 
 from fastapi.testclient import TestClient
 
+from flowpilot_browser_worker.hybrid import dom_route_signals
 from flowpilot_browser_worker.main import app
 from flowpilot_browser_worker.schemas import (
+    HybridActionEnvelope,
+    HybridActionResult,
+    HybridDomObservation,
+    HybridObservation,
+    HybridObservationRequest,
+    HybridSessionClosed,
+    HybridSessionCreated,
     Observation,
     SessionClosed,
     SessionCreated,
@@ -63,6 +71,51 @@ class StubRuntime:
     async def close_vision_session(self, session_id: str) -> VisionSessionClosed:
         return VisionSessionClosed(session_id=session_id, closed=True)
 
+    async def create_hybrid_session(self, _: str) -> HybridSessionCreated:
+        observation = Observation(
+            session_id="bw_abcdefghijklmnop",
+            observation_id="obs_abcdefgh",
+            current_url="http://sandbox-web/hris",
+            page_title="Synthetic",
+            semantic_nodes=(),
+            interactive_elements=(),
+            truncated=False,
+        )
+        return HybridSessionCreated(
+            session_id="bw_abcdefghijklmnop",
+            observation=HybridDomObservation(
+                session_id="bw_abcdefghijklmnop",
+                generation=1,
+                observation=observation,
+                route_signals=dom_route_signals(observation),
+            ),
+        )
+
+    async def request_hybrid_observation(
+        self,
+        _: str,
+        __: HybridObservationRequest,
+    ) -> HybridObservation:
+        return (await self.create_hybrid_session("/hris")).observation
+
+    async def execute_hybrid_action(
+        self,
+        session_id: str,
+        action: HybridActionEnvelope,
+    ) -> HybridActionResult:
+        return HybridActionResult(
+            session_id=session_id,
+            action_id=action.action.action_id,
+            modality=action.modality,
+            action_type=action.action.type,
+            success=action.action.type == "finish",
+            terminal=True,
+            message="Hybrid Agent loop ended",
+        )
+
+    async def close_hybrid_session(self, session_id: str) -> HybridSessionClosed:
+        return HybridSessionClosed(session_id=session_id, closed=True)
+
     async def close_all(self) -> None:
         pass
 
@@ -118,3 +171,35 @@ def test_api_health_strict_session_and_unknown_action_rejection() -> None:
         assert rejected_coordinate.status_code == 422
         vision_closed = client.delete("/api/browser/vision-sessions/bw_abcdefghijklmnop")
         assert vision_closed.status_code == 200 and vision_closed.json()["closed"] is True
+        hybrid_created = client.post(
+            "/api/browser/hybrid-sessions",
+            json={"schema_version": "w6-hybrid-session/1.0", "initial_path": "/hris"},
+        )
+        assert hybrid_created.status_code == 201
+        assert hybrid_created.json()["observation"]["modality"] == "dom"
+        hybrid_unknown_field = client.post(
+            "/api/browser/hybrid-sessions/bw_abcdefghijklmnop/observations",
+            json={
+                "schema_version": "w6-hybrid-observation-request/1.0",
+                "modality": "vision",
+                "selector": "#unsafe",
+            },
+        )
+        assert hybrid_unknown_field.status_code == 422
+        hybrid_action = client.post(
+            "/api/browser/hybrid-sessions/bw_abcdefghijklmnop/actions",
+            json={
+                "schema_version": "w6-hybrid-action-envelope/1.0",
+                "session_id": "bw_abcdefghijklmnop",
+                "generation": 1,
+                "modality": "dom",
+                "action": {
+                    "action_id": "act_hybrid_finish",
+                    "type": "finish",
+                    "summary": "Synthetic",
+                },
+            },
+        )
+        assert hybrid_action.status_code == 200
+        hybrid_closed = client.delete("/api/browser/hybrid-sessions/bw_abcdefghijklmnop")
+        assert hybrid_closed.status_code == 200 and hybrid_closed.json()["closed"] is True

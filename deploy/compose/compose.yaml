@@ -1,4 +1,4 @@
-name: flowpilot-arena-w5
+name: flowpilot-arena-w6
 
 services:
   control-api:
@@ -118,12 +118,15 @@ services:
       MAX_VISION_SCREENSHOT_BYTES: "184320"
       MAX_VISION_SCREENSHOTS: "24"
       MAX_VISION_CAPTURE_MS: "3000"
+      MAX_HYBRID_OBSERVATIONS: "24"
+      MAX_HYBRID_DOM_OBSERVATION_BYTES: "262144"
     depends_on:
       sandbox-web:
         condition: service_healthy
     networks:
       - browser-sandbox
       - agent-worker
+      - hybrid-worker
     init: true
     read_only: true
     cap_drop:
@@ -210,6 +213,40 @@ services:
           "python",
           "-c",
           "from urllib.request import urlopen; urlopen('http://127.0.0.1:8004/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  hybrid-agent:
+    build:
+      context: ../../apps/hybrid_agent
+      dockerfile: Dockerfile
+    environment:
+      BROWSER_WORKER_URL: http://browser-worker:8002
+    depends_on:
+      browser-worker:
+        condition: service_healthy
+    networks:
+      - hybrid-worker
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-hybrid:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8005/healthz').read()",
         ]
       interval: 10s
       timeout: 3s
@@ -360,12 +397,51 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  hybrid-acceptance-smoke:
+    profiles:
+      - hybrid-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w6_hybrid_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      HYBRID_AGENT_URL: http://hybrid-agent:8005
+      SANDBOX_WEB_URL: http://sandbox-web
+    depends_on:
+      control-api:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      sandbox-web:
+        condition: service_healthy
+      browser-worker:
+        condition: service_healthy
+      hybrid-agent:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - sandbox-backend
+      - hybrid-worker
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
 networks:
   control-backend:
   sandbox-backend:
   browser-sandbox:
     internal: true
   agent-worker:
+    internal: true
+  hybrid-worker:
     internal: true
   model-egress:
 

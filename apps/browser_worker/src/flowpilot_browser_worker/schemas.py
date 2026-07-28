@@ -24,6 +24,19 @@ VISION_ACTION_SCHEMA_VERSION: Final[Literal["w5-vision-action/1.0"]] = "w5-visio
 VISION_ACTION_RESULT_SCHEMA_VERSION: Final[Literal["w5-vision-action-result/1.0"]] = (
     "w5-vision-action-result/1.0"
 )
+HYBRID_SESSION_SCHEMA_VERSION: Final[Literal["w6-hybrid-session/1.0"]] = "w6-hybrid-session/1.0"
+HYBRID_OBSERVATION_SCHEMA_VERSION: Final[Literal["w6-hybrid-observation/1.0"]] = (
+    "w6-hybrid-observation/1.0"
+)
+HYBRID_OBSERVATION_REQUEST_SCHEMA_VERSION: Final[Literal["w6-hybrid-observation-request/1.0"]] = (
+    "w6-hybrid-observation-request/1.0"
+)
+HYBRID_ACTION_ENVELOPE_SCHEMA_VERSION: Final[Literal["w6-hybrid-action-envelope/1.0"]] = (
+    "w6-hybrid-action-envelope/1.0"
+)
+HYBRID_ACTION_RESULT_SCHEMA_VERSION: Final[Literal["w6-hybrid-action-result/1.0"]] = (
+    "w6-hybrid-action-result/1.0"
+)
 
 SESSION_ID_PATTERN = r"^bw_[A-Za-z0-9_-]{16,64}$"
 OBSERVATION_ID_PATTERN = r"^obs_[A-Za-z0-9_-]{8,64}$"
@@ -401,5 +414,316 @@ class VisionActionResult(StrictModel):
 
 class VisionSessionClosed(StrictModel):
     schema_version: Literal["w5-vision-session/1.0"] = VISION_SESSION_SCHEMA_VERSION
+    session_id: SessionId
+    closed: bool
+
+
+HybridModality = Literal["dom", "vision"]
+HybridDomStructure = Literal["usable", "empty", "truncated"]
+SafeRouteErrorCategory = Literal[
+    "invalid_url",
+    "stale_reference",
+    "unknown_reference",
+    "action_not_allowed",
+    "input_rejected",
+    "browser_timeout",
+    "browser_error",
+    "budget_exhausted",
+]
+HybridErrorCategory = Literal[
+    "invalid_url",
+    "invalid_modality",
+    "stale_hybrid_ref",
+    "unknown_hybrid_ref",
+    "action_not_allowed",
+    "action_budget_exhausted",
+    "navigation_budget_exhausted",
+    "session_timeout",
+    "wait_limit_exceeded",
+    "input_rejected",
+    "browser_timeout",
+    "browser_error",
+    "screenshot_budget_exhausted",
+    "screenshot_byte_limit_exceeded",
+    "screenshot_capture_timeout",
+    "hybrid_observation_budget_exhausted",
+    "hybrid_dom_observation_budget_exhausted",
+    "session_closed",
+    "internal_error",
+]
+
+
+class HybridRouteSignals(StrictModel):
+    dom_structure: HybridDomStructure
+    dom_interactive_count: int = Field(ge=0, le=80)
+    dom_observation_bytes: int = Field(ge=0, le=32_768)
+    last_action_error_category: SafeRouteErrorCategory | None = None
+
+
+class HybridSessionCreate(StrictModel):
+    schema_version: Literal["w6-hybrid-session/1.0"] = HYBRID_SESSION_SCHEMA_VERSION
+    initial_path: Literal["/hris"] = "/hris"
+
+
+class HybridObservationRequest(StrictModel):
+    schema_version: Literal["w6-hybrid-observation-request/1.0"] = (
+        HYBRID_OBSERVATION_REQUEST_SCHEMA_VERSION
+    )
+    modality: HybridModality
+
+
+class HybridDomObservation(StrictModel):
+    schema_version: Literal["w6-hybrid-observation/1.0"] = HYBRID_OBSERVATION_SCHEMA_VERSION
+    session_id: SessionId
+    generation: int = Field(ge=1, le=24)
+    modality: Literal["dom"] = "dom"
+    observation: Observation
+    route_signals: HybridRouteSignals
+
+    @model_validator(mode="after")
+    def _validate_current_dom_metadata(self) -> "HybridDomObservation":
+        if self.observation.session_id != self.session_id:
+            raise ValueError("nested DOM observation must belong to the Hybrid session")
+        effective_count = sum(
+            1
+            for element in self.observation.interactive_elements
+            if not element.state.disabled and bool(element.allowed_actions)
+        )
+        if self.route_signals.dom_interactive_count != effective_count:
+            raise ValueError("DOM route count must match effective interactive elements")
+        serialized_bytes = len(self.observation.model_dump_json().encode("utf-8"))
+        if self.route_signals.dom_observation_bytes != serialized_bytes:
+            raise ValueError("DOM route bytes must match the current observation")
+        expected_structure: HybridDomStructure
+        if self.observation.truncated:
+            expected_structure = "truncated"
+        elif effective_count == 0:
+            expected_structure = "empty"
+        else:
+            expected_structure = "usable"
+        if self.route_signals.dom_structure != expected_structure:
+            raise ValueError("DOM route structure must match the current observation")
+        return self
+
+
+class HybridVisionObservation(StrictModel):
+    schema_version: Literal["w6-hybrid-observation/1.0"] = HYBRID_OBSERVATION_SCHEMA_VERSION
+    session_id: SessionId
+    generation: int = Field(ge=1, le=24)
+    modality: Literal["vision"] = "vision"
+    observation: VisionObservation
+    route_signals: HybridRouteSignals
+
+    @model_validator(mode="after")
+    def _validate_current_visual_metadata(self) -> "HybridVisionObservation":
+        if self.observation.session_id != self.session_id:
+            raise ValueError("nested visual observation must belong to the Hybrid session")
+        return self
+
+
+type HybridObservation = Annotated[
+    HybridDomObservation | HybridVisionObservation,
+    Field(discriminator="modality"),
+]
+
+
+class HybridSessionCreated(StrictModel):
+    schema_version: Literal["w6-hybrid-session/1.0"] = HYBRID_SESSION_SCHEMA_VERSION
+    session_id: SessionId
+    observation: HybridObservation
+
+    @model_validator(mode="after")
+    def _validate_initial_observation(self) -> "HybridSessionCreated":
+        if self.observation.session_id != self.session_id:
+            raise ValueError("initial observation must belong to the created Hybrid session")
+        return self
+
+
+class HybridDomNavigateAction(StrictModel):
+    action_id: ActionId
+    type: Literal["navigate"]
+    url: Annotated[str, StringConstraints(min_length=1, max_length=500)]
+
+
+class HybridDomElementAction(StrictModel):
+    action_id: ActionId
+    observation_id: ObservationId
+    element_ref: ElementRef
+
+
+class HybridDomClickAction(HybridDomElementAction):
+    type: Literal["click"]
+
+
+class HybridDomFillAction(HybridDomElementAction):
+    type: Literal["fill"]
+    text: Annotated[str, StringConstraints(max_length=300)]
+
+
+class HybridDomSelectAction(HybridDomElementAction):
+    type: Literal["select"]
+    option: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+
+
+class HybridDomReadAction(HybridDomElementAction):
+    type: Literal["read"]
+
+
+class HybridDomScrollAction(HybridDomElementAction):
+    type: Literal["scroll"]
+    direction: Literal["up", "down"]
+    amount: Literal["small", "page"] = "small"
+
+
+class HybridDomWaitAction(StrictModel):
+    action_id: ActionId
+    type: Literal["wait"]
+    duration_ms: int = Field(ge=1, le=5_000)
+
+
+class HybridDomFinishAction(StrictModel):
+    action_id: ActionId
+    type: Literal["finish"]
+    summary: Annotated[str, StringConstraints(max_length=300)] = ""
+
+
+class HybridDomFailAction(StrictModel):
+    action_id: ActionId
+    type: Literal["fail"]
+    category: Literal["failed", "escalated"]
+    reason: ShortText
+
+
+type HybridDomAction = Annotated[
+    HybridDomNavigateAction
+    | HybridDomClickAction
+    | HybridDomFillAction
+    | HybridDomSelectAction
+    | HybridDomReadAction
+    | HybridDomScrollAction
+    | HybridDomWaitAction
+    | HybridDomFinishAction
+    | HybridDomFailAction,
+    Field(discriminator="type"),
+]
+
+
+class HybridVisionNavigateAction(StrictModel):
+    action_id: ActionId
+    type: Literal["navigate"]
+    url: Annotated[str, StringConstraints(min_length=1, max_length=500)]
+
+
+class HybridVisionGroundingAction(StrictModel):
+    action_id: ActionId
+    observation_id: VisionObservationId
+    screenshot_ref: ScreenshotRef
+    grounding_ref: GroundingRef
+
+
+class HybridVisionClickAction(HybridVisionGroundingAction):
+    type: Literal["click"]
+
+
+class HybridVisionFillAction(HybridVisionGroundingAction):
+    type: Literal["fill"]
+    text: Annotated[str, StringConstraints(max_length=300)]
+
+
+class HybridVisionSelectAction(HybridVisionGroundingAction):
+    type: Literal["select"]
+    option: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+
+
+class HybridVisionReadAction(HybridVisionGroundingAction):
+    type: Literal["read"]
+
+
+class HybridVisionScrollAction(HybridVisionGroundingAction):
+    type: Literal["scroll"]
+    direction: Literal["up", "down"]
+    amount: Literal["small", "page"] = "small"
+
+
+class HybridVisionWaitAction(StrictModel):
+    action_id: ActionId
+    type: Literal["wait"]
+    duration_ms: int = Field(ge=1, le=5_000)
+
+
+class HybridVisionFinishAction(StrictModel):
+    action_id: ActionId
+    type: Literal["finish"]
+    summary: Annotated[str, StringConstraints(max_length=300)] = ""
+
+
+class HybridVisionFailAction(StrictModel):
+    action_id: ActionId
+    type: Literal["fail"]
+    category: Literal["failed", "escalated"]
+    reason: ShortText
+
+
+type HybridVisionAction = Annotated[
+    HybridVisionNavigateAction
+    | HybridVisionClickAction
+    | HybridVisionFillAction
+    | HybridVisionSelectAction
+    | HybridVisionReadAction
+    | HybridVisionScrollAction
+    | HybridVisionWaitAction
+    | HybridVisionFinishAction
+    | HybridVisionFailAction,
+    Field(discriminator="type"),
+]
+
+
+class HybridDomActionEnvelope(StrictModel):
+    schema_version: Literal["w6-hybrid-action-envelope/1.0"] = HYBRID_ACTION_ENVELOPE_SCHEMA_VERSION
+    session_id: SessionId
+    generation: int = Field(ge=1, le=24)
+    modality: Literal["dom"] = "dom"
+    action: HybridDomAction
+
+
+class HybridVisionActionEnvelope(StrictModel):
+    schema_version: Literal["w6-hybrid-action-envelope/1.0"] = HYBRID_ACTION_ENVELOPE_SCHEMA_VERSION
+    session_id: SessionId
+    generation: int = Field(ge=1, le=24)
+    modality: Literal["vision"] = "vision"
+    action: HybridVisionAction
+
+
+type HybridActionEnvelope = Annotated[
+    HybridDomActionEnvelope | HybridVisionActionEnvelope,
+    Field(discriminator="modality"),
+]
+
+
+class HybridActionResult(StrictModel):
+    schema_version: Literal["w6-hybrid-action-result/1.0"] = HYBRID_ACTION_RESULT_SCHEMA_VERSION
+    session_id: SessionId
+    action_id: ActionId
+    modality: HybridModality
+    action_type: ActionType
+    success: bool
+    terminal: bool
+    error_category: HybridErrorCategory | None = None
+    message: Annotated[str, StringConstraints(max_length=300)]
+    observation: HybridObservation | None = None
+
+    @model_validator(mode="after")
+    def _validate_result_observation(self) -> "HybridActionResult":
+        if self.terminal and self.observation is not None:
+            raise ValueError("terminal Hybrid results cannot retain an observation")
+        if not self.terminal and self.observation is None:
+            raise ValueError("non-terminal Hybrid results require a current observation")
+        if self.observation is not None and self.observation.session_id != self.session_id:
+            raise ValueError("result observation must belong to the Hybrid session")
+        return self
+
+
+class HybridSessionClosed(StrictModel):
+    schema_version: Literal["w6-hybrid-session/1.0"] = HYBRID_SESSION_SCHEMA_VERSION
     session_id: SessionId
     closed: bool

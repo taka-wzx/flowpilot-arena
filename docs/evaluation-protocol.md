@@ -2,115 +2,86 @@
 
 ## Purpose and current boundary
 
-This document freezes W5 Vision-only evaluation discipline without turning a
-deterministic fake into a visual-capability claim. W3 database-fact grading
-remains the sole task-success authority. W5 adds bounded screenshot/grounding
-plumbing but no real VLM/OCR result unless separately authorized.
+This document freezes W6 Hybrid evaluation discipline without turning a
+deterministic fake route into a Hybrid capability claim. W3 database-fact
+grading remains the sole task-success authority. W6 adds route, compression,
+and cross-modality validation only; no real model is authorized.
 
-## Preserved W3 task protocol
+## Preserved task protocol
 
 The ten W3 specs, canonical checksums, catalog checksum, fixture version,
-6/2/2 Development/Validation/Reporting allocation, Reset/Seed semantics,
-grader predicates, and manual baseline remain unchanged. W5 Development
-candidates are only w3-joiner-001 through w3-joiner-005. Task 006 stays
-outside this W5 acceptance set. Validation and Reporting must not influence W5
-implementation, prompt/config, or visual tuning.
+6/2/2 allocation, Reset/Seed semantics, grader predicates, and manual
+baseline remain unchanged. W6 Development candidates are only
+w3-joiner-001 through w3-joiner-005. Validation and Reporting do not influence
+W6 implementation, policy, fake behavior, or compression limits.
 
-Existing W2 pages are the synthetic screenshot surface. If those fixed tasks
-later prove insufficient for a valid visual evaluation, do not alter them:
-submit a minimum W5 visual-task proposal and obtain user direction first.
+The same fixed synthetic pages support paired DOM-only, Vision-only, and
+Hybrid fake circuit runs. If they cannot establish a required routing,
+compression, or action-validation property, propose the smallest separate W6
+evaluation design and obtain user direction; do not alter a task or grader.
 
-## Deterministic fake-vision protocol
+## Deterministic fake protocol
 
-Unit tests and CI use deterministic fake vision output with declared zero
-external cost. They must cover:
+Unit tests and CI use deterministic fakes with zero external cost. They cover:
 
-1. strict visual session, observation, grounding, action, result, model
-   decision, budget, and run schemas, including unknown fields/types/actions;
-2. current local-origin path policy, dangerous schemes, direct API paths,
-   redirects, and no external/cross-origin capture;
-3. fixed JPEG encoding, viewport/pixel size, image byte/count/time limits,
-   failed-attempt accounting, no screenshot file/URL path, and capture cleanup;
-4. no DOM/AX/title/URL/name/role/text/selector/element_ref/form/Cookie/storage
-   field in a Vision Agent observation or model context;
-5. current, forged, mismatched, and stale screenshot/grounding behavior;
-6. success and failure for navigate, grounded click/fill/select/read/scroll,
-   bounded wait, finish, fail, and unconditional cleanup;
-7. strict rejection of arbitrary x/y/rectangle, selector, code, path, URL,
-   unknown field, unsupported target, and stale reference;
-8. fake valid grounded action, invalid JSON/action, repetition, no progress,
-   image/count/bytes/pixels/capture-time/step/call/time/token/cost exhaustion,
-   and safe termination;
-9. a W4 DOM fake Compose smoke regression and a W5 Compose smoke that
-   Reset/Seeds twice, invokes fake Vision Agent through actual isolated
-   Chromium, and grades independently;
-10. proof that fake finish leaves untouched initial state at its non-passing
-    database-derived grade rather than producing Agent-declared success;
-11. after a second equal Reset/Seed pair, the bounded `complete_joiner` fake
-    scenario must use current visual Grounding references and a fixed
-    supplied-values brief, finish ungraded, and receive an unchanged W3
-    100/100, `passed=true` grade.
+1. strict Hybrid session, observation request/response, route decision,
+   compression, action envelope/result, model decision, budget, and run/result
+   schemas including unknown fields/types/actions;
+2. one Browser/Context/Page per Hybrid task, current modality only, and no W4
+   or W5 API regression;
+3. fixed DOM structural signal bounds without page content and deterministic
+   compression byte/node/element/history truncation;
+4. DOM-first route default, closed reason codes, refusal rules, switch hard
+   cap, and no cross-task/learned route state;
+5. one-model-modality isolation: DOM model context contains no JPEG/grounding;
+   visual context contains no DOM/AX/title/URL/element ref/page text;
+6. current, forged, wrong-mode, cross-session, stale-generation, stale-observation,
+   stale-screenshot, and stale-grounding rejection before Playwright;
+7. success/failure for current DOM and visual typed actions, observation
+   switching, action failure refresh, and unconditional cleanup;
+8. total step/call/switch/repetition/progress/DOM/image/token/cost/time limits
+   that cannot reset after a switch;
+9. W4 fake DOM Compose regression, W5 fake Vision Compose regression, and W6
+   Hybrid Compose smoke through actual isolated Chromium; and
+10. proof that finish remains ungraded and independent W3 grading sees actual
+    task facts only.
 
-The fake W5 smoke is infrastructure/contract evidence only. Its 100/100
-completion subrun proves that Agent finish cannot substitute for the external
-Grader even when the deterministic test policy creates the required synthetic
-records. It is not a real VLM/OCR call, a five-task Vision-only success rate,
-or proof of visual understanding.
+## W6 fake Hybrid smoke
 
-## Real VLM/OCR authorization gate
+The trusted outer caller uses the same task ID, human brief construction, and
+equal Reset/Seed protocol as W4/W5. It runs two fresh subruns:
 
-Before any real or paid visual/OCR model call, stop and obtain separate explicit
-user authorization after disclosing:
+1. immediate finish must return finished_ungraded at zero external cost and
+   independently grade untouched state at exactly 30/100, passed=false;
+2. after a fresh equal Reset/Seed pair, deterministic completion under the
+   closed visual_recovery route category must make a real Worker DOM-to-Vision
+   switch, deliberately reject wrong-mode and stale visual references, use
+   current references for completion, respect compression and total budgets,
+   clean up, return finished_ungraded, and independently grade exactly
+   100/100, passed=true.
 
-- provider, exact model, and fixed endpoint;
-- prompt/config version and human-brief construction;
-- image MIME, maximum resolution/pixels, maximum image count, and in-memory
-  data handling;
-- exact planned task IDs;
-- maximum model calls, input/output tokens, images/bytes/capture time, wall
-  time, retries, and cost.
+The smoke records only task/spec/seed checksums, safe route reasons/count,
+numeric DOM/compression/image/action/call/token/cost/latency metrics, terminal
+state, and independent grade. It records no raw DOM, screenshot, OCR, page
+text, or form value. These fake results prove a bounded circuit and Grade
+isolation, not real DOM, Vision, Hybrid, OCR, or VLM performance.
 
-The W4 ZHIPU key, endpoint, prompts, and DOM results do not authorize a W5
-visual call. Without W5 authorization, record all real VLM/OCR runs as not run
-with zero observed W5 calls/tokens/cost. Do not estimate unobserved use or
-represent a DOM-only result as Vision-only.
+## Real-model authorization gate
 
-## Five-task protocol after authorization
+No W6 real DOM/Vision/Hybrid, VLM, or OCR call is authorized. Before any
+provider call, stop and obtain separate explicit user approval after
+disclosing provider, exact model, endpoint, prompt/config, selected-modality
+input handling, image MIME/resolution/count, task IDs, retries, call/token/
+image/DOM/time/cost caps, and the planned independent grade sequence.
 
-For each authorized task among w3-joiner-001 through w3-joiner-005:
+Without authorization, final evidence records all real model rows as not run
+with zero observed calls/tokens/cost. W4 historical DOM authorization and W5
+fake result do not carry forward.
 
-1. record task ID, spec checksum, fixture version, model identity, prompt/config,
-   image envelope, and hard caps;
-2. execute Reset/Seed twice and require identical full result/seed checksum;
-3. render only title, human instructions, and immutable supplied synthetic
-   values into the human-facing brief; never pass grader predicates;
-4. create a fresh Browser/Context/Page at HRIS and confirm only the bounded
-   visual observation reaches Vision Agent;
-5. record every screenshot count/bytes/pixels/capture duration, model call,
-   input/output token, provider-reported cost, invalid output, failure, retry,
-   timeout, and human intervention;
-6. close all browser/temporary visual resources, then invoke W3 Grader
-   independently;
-7. count completion only when unchanged Grader returns exactly 100/100 and
-   passed=true.
+## Result interpretation and W7 boundary
 
-Do not filter failures, modify W3 facts/predicates/checksums, tune against
-Validation/Reporting, retain raw images/OCR text, or treat model finish/natural
-language as evidence.
-
-## Result interpretation
-
-Only an observed, separately authorized, independently graded visual run may
-report a fixed Development Vision-only result. Five observations do not prove
-general visual capability, OCR robustness, safety against malicious imagery,
-recovery, production reliability, or enterprise ROI. Fake results prove only
-the bounded circuit and Grader isolation.
-
-## Weekly evidence format
-
-Every W5 report records exact scope/changed artifacts, dependencies/image
-versions, isolation settings, visual schemas/limits, lifecycle/cleanup,
-commands and exits, W1-W4 regressions, fake results, all real task rows or
-not-run rows, actual image/token/cost/latency metrics, secret/diff review,
-limitations, and the W6 boundary. The current skeleton is
-[evidence/week-05-report.md](evidence/week-05-report.md).
+Only observed, separately authorized, independently graded runs may make a
+fixed Development result claim. W6 fake outcomes cannot establish visual
+reasoning, route quality, recovery, generalization, safety against malicious
+pages, production reliability, or enterprise ROI. W7 planning, verifier, task
+DAG, and tool matching remain out of scope.

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
-import { createRecord, listRecords } from "../api";
+import { createRecord, listRecords, updateRecord } from "../api";
 import type { Ticket } from "../types";
 
 const path = "/api/itsm/tickets";
@@ -8,6 +8,7 @@ const path = "/api/itsm/tickets";
 export function ItsmPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [error, setError] = useState("");
+  const [showTransitions, setShowTransitions] = useState(false);
   const refresh = useCallback(async () => {
     try {
       setTickets(await listRecords<Ticket>(path));
@@ -38,14 +39,36 @@ export function ItsmPage() {
     }
   }
 
+  async function close(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    try {
+      await updateRecord<Ticket>(
+        `/api/itsm/employees/${Number(data.get("employee_id"))}/close`,
+        {},
+      );
+      form.reset();
+      await refresh();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Unable to close ticket");
+    }
+  }
+
   return (
     <section>
       <div className="section-heading"><div><p className="module-code">02 / ITSM</p><h2>Onboarding tickets</h2></div><p>Open one ticket for the HRIS employee ID.</p></div>
+      <button type="button" onClick={() => setShowTransitions(true)}>Show transitions</button>
       <form onSubmit={submit}>
         <label>Employee ID<input name="employee_id" type="number" min="1" required /></label>
         <label className="wide">Ticket title<input name="title" required /></label>
         <button type="submit">Create ticket</button>
       </form>
+      {showTransitions && <form onSubmit={close}>
+        <label>Close ticket employee ID<input name="employee_id" type="number" min="1" required /></label>
+        <button type="submit">Close ticket</button>
+      </form>}
       {error && <p role="alert" className="error">{error}</p>}
       <div className="records">{tickets.length === 0 ? <p>No onboarding tickets yet.</p> : tickets.map((ticket) => (
         <article key={ticket.id}><strong>#{ticket.id} · {ticket.title}</strong><span>Employee #{ticket.employee_id}</span><em>{ticket.status}</em></article>

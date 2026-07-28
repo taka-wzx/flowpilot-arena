@@ -85,3 +85,40 @@ it("submits the synthetic HRIS employee and refreshes the list", async () => {
     expect.objectContaining({ method: "POST" }),
   );
 });
+
+it("submits the bounded HRIS transfer transition", async () => {
+  const transferred = {
+    id: 41001,
+    first_name: "SyntheticTarget",
+    last_name: "Mover001V1",
+    work_email: "w7-mover-001-v1-target@flowpilot.invalid",
+    department: "Synthetic Transfer Department",
+    job_title: "Synthetic Transfer Lead",
+    location: "Synthetic Transfer Location",
+    start_date: "2027-01-10",
+    status: "transferred",
+    created_at: "2027-01-01T00:00:00Z",
+  };
+  const fetchMock = vi.mocked(fetch);
+  fetchMock
+    .mockResolvedValueOnce({ ok: true, json: async () => [] } as Response)
+    .mockResolvedValueOnce({ ok: true, json: async () => transferred } as Response)
+    .mockResolvedValueOnce({ ok: true, json: async () => [transferred] } as Response);
+
+  window.history.pushState({}, "", "/hris");
+  render(<App />);
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Show transitions" }));
+  await user.type(screen.getByLabelText("Transfer employee ID"), "41001");
+  await user.type(screen.getByLabelText("New department"), "Synthetic Transfer Department");
+  await user.type(screen.getByLabelText("New job title"), "Synthetic Transfer Lead");
+  await user.type(screen.getByLabelText("New location"), "Synthetic Transfer Location");
+  await user.click(screen.getByRole("button", { name: "Transfer employee" }));
+
+  expect(await screen.findByText("transferred")).toBeInTheDocument();
+  expect(fetchMock).toHaveBeenNthCalledWith(
+    2,
+    "/api/hris/employees/41001/transfer",
+    expect.objectContaining({ method: "PATCH" }),
+  );
+});

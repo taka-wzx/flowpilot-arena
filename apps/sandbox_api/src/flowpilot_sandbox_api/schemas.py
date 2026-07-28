@@ -25,10 +25,18 @@ class EmployeeCreate(BaseModel):
         return value.lower()
 
 
-class EmployeeRead(EmployeeCreate):
+class EmployeeRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    first_name: str
+    last_name: str
+    work_email: str
+    department: str
+    job_title: str
+    location: str
+    start_date: date
+    status: Literal["confirmed", "transferred", "disabled"]
     arena_task_id: str | None
     created_at: datetime
 
@@ -39,10 +47,13 @@ class TicketCreate(BaseModel):
     status: Literal["open"] = "open"
 
 
-class TicketRead(TicketCreate):
+class TicketRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    employee_id: int
+    title: str
+    status: Literal["open", "closed"]
     arena_task_id: str | None
     created_at: datetime
 
@@ -54,10 +65,14 @@ class AccountCreate(BaseModel):
     status: Literal["active"] = "active"
 
 
-class AccountRead(AccountCreate):
+class AccountRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    employee_id: int
+    username: str
+    role: Literal["employee"]
+    status: Literal["active", "revoked"]
     arena_task_id: str | None
     created_at: datetime
 
@@ -70,10 +85,15 @@ class AssetCreate(BaseModel):
     status: Literal["assigned"] = "assigned"
 
 
-class AssetRead(AssetCreate):
+class AssetRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    employee_id: int
+    asset_tag: str
+    device_type: Literal["laptop"]
+    model: str
+    status: Literal["assigned", "released"]
     arena_task_id: str | None
     created_at: datetime
 
@@ -91,9 +111,42 @@ class MailboxCreate(BaseModel):
         return value.lower()
 
 
-class MailboxRead(MailboxCreate):
+class MailboxRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    employee_id: int
+    address: str
+    status: Literal["active", "disabled"]
     arena_task_id: str | None
     created_at: datetime
+
+
+class W7StrictModel(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+
+class EmployeeTransfer(W7StrictModel):
+    department: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+    job_title: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+    location: Annotated[str, StringConstraints(min_length=1, max_length=120)]
+
+
+class EmployeeDisable(W7StrictModel):
+    pass
+
+
+class TicketClose(W7StrictModel):
+    pass
+
+
+class AccountRevoke(W7StrictModel):
+    pass
+
+
+class AssetRelease(W7StrictModel):
+    pass
+
+
+class MailboxDisable(W7StrictModel):
+    pass

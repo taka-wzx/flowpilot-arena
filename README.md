@@ -1,157 +1,113 @@
 # FlowPilot Arena
 
-> A governed enterprise computer-use agent project and a separate, synthetic
+> A governed enterprise computer-use Agent project and a separate synthetic
 > evaluation environment.
 > 面向企业级 Computer-Use Agent 与独立合成评测环境的受治理项目。
 
-**Current status: W6 - Hybrid Router.** Released W4 DOM-only and W5
-Vision-only paths remain intact. W6 adds one bounded Hybrid Browser session,
-safe DOM-quality routing signals, deterministic DOM compression, strict
-current-mode action envelopes, and a separate fake-only Hybrid Agent. W3's
-database-fact Grader remains the only success authority.
+**Current status: W7 - Bounded Planning DAG.** Released W4 DOM-only, W5
+Vision-only, and W6 Hybrid paths remain intact. W7 adds one immutable bounded
+task DAG, deterministic closed-set tool matching, a single monotonic W6+W7
+budget ledger, step-level runtime verification, a separate fake-only Planning
+Agent, and a frozen 30-template/90-instance synthetic JML catalog. Independent
+database-fact grading remains the only success authority.
 
-## What works in W6
+## What W7 contains
 
 | Component | Current capability | Deliberately absent |
 |---|---|---|
-| W1 control paths | Static control web and health endpoint | Tasks, DB, Agent behavior |
-| W2 Sandbox | Five manual HRIS/ITSM/IAM/Asset/Mail pages and APIs | Real systems/data, auth, production workflow |
-| W3 Arena | Fixed specs, task-only Reset/Seed, DB-only grade | Browser/model-derived success |
-| W4 DOM path | Bounded DOM observation, opaque refs, typed actions | Screenshot field or router in W4 APIs |
-| W5 visual path | Bounded JPEG, opaque Grounding, typed visual actions | Image storage/path/URL, arbitrary pixels/selectors/code |
-| W6 Hybrid Worker | One Browser/Context/Page and one selected current modality | Joined W4/W5 sessions, dual-modal model input |
-| W6 Hybrid Agent | Deterministic DOM-first Router, local compression, fake-only total budgets | Learning, cache/history, planner, verifier, recovery, provider egress |
-| Acceptance smokes | Independent Reset/Seed and W3 Grade for DOM, Vision, and Hybrid fakes | Fake finish as a success claim |
+| W1-W3 | Control skeleton, five-app Sandbox, immutable W3 Arena/Grader | Real systems/data and browser/model-derived success |
+| W4 DOM | Bounded DOM observation, opaque refs, typed actions | Vision/router/planner in W4 API |
+| W5 Vision | Bounded JPEG, opaque Grounding, typed actions | Storage/path/URL, arbitrary pixels/selectors/code |
+| W6 Hybrid | One Browser/Context/Page, selected modality, deterministic Router/compression | Joined sessions, dual-modal call, planner/recovery |
+| W7 Planning Agent | Frozen bounded DAG, deterministic topology/matcher/Verifier/ledger | Arena/DB/Grader/provider access, retry/replanning/checkpoint |
+| W7 JML | 12 Joiner, 8 Mover, 10 Leaver templates; three stable variants each | Real people/data, Reporting execution, external benchmark |
+| Sandbox increment | Exact transfer/disable/close/revoke/release transitions | Migration, physical delete, arbitrary patch, approval bypass |
 
 ~~~mermaid
 flowchart LR
-    Caller["Trusted acceptance caller"] --> Arena["W3 Reset/Seed + Grader"]
-    Caller --> DomAgent["W4 DOM Agent"]
-    Caller --> VisionAgent["W5 Vision Agent"]
-    Caller --> HybridAgent["W6 Hybrid Agent"]
-    DomAgent --> Worker["Typed Browser Worker"]
-    VisionAgent --> Worker
-    HybridAgent --> Worker
-    Worker --> Web["Five Sandbox pages"]
-    Web --> API["W2 business APIs"]
+    Caller["Trusted acceptance caller"] --> Arena["W3 + W7 Reset/Seed and independent Graders"]
+    Caller --> Planning["W7 Planning Agent"]
+    Caller --> Hybrid["W6 Hybrid Agent regression"]
+    Planning -->|"internal planning-worker"| Worker["Typed Browser Worker"]
+    Hybrid --> Worker
+    Worker --> Web["Five synthetic Sandbox pages"]
+    Web --> API["Strict business APIs"]
     API --> DB["Synthetic PostgreSQL"]
     Arena --> DB
 ~~~
 
+Planning Agent receives only a finite process/category, bounded caller-rendered
+brief, and strict supplied values. Objective/page/model text cannot authorize
+an operation or tool. Effective tools are the intersection of the global
+catalog, current step, current page/modality Worker allowlist, and remaining
+budget. Runtime Verifier cannot read task specs, expected state, database, or
+grader facts. Agent finish is always `finished_ungraded`.
+
 ## Quick start
 
-Prerequisite: Docker Compose. Published ports bind to loopback. Browser Worker,
-DOM Agent, Vision Agent, and Hybrid Agent have no host port and use internal
-Docker networks.
+Prerequisite: Docker Compose. Published W1/Sandbox ports bind to loopback.
+Browser and Agent services have no host port and use internal networks.
 
 ~~~powershell
 docker compose -f deploy/compose/compose.yaml up --build -d
 docker compose -f deploy/compose/compose.yaml ps
 ~~~
 
-On a host with the standalone compatible executable:
+Open the synthetic Sandbox at <http://127.0.0.1:5174/hris> and its local API
+documentation at <http://127.0.0.1:8001/docs>.
 
-~~~powershell
-docker-compose -f deploy/compose/compose.yaml up --build -d
-docker-compose -f deploy/compose/compose.yaml ps
-~~~
-
-Open:
-
-- Sandbox web: http://127.0.0.1:5174/hris
-- Sandbox API docs: http://127.0.0.1:8001/docs
-- W1 control web: http://127.0.0.1:5173
-- W1 control API health: http://127.0.0.1:8000/healthz
-
-Run all trusted fake-only acceptance profiles:
+Run deterministic fake-only acceptance:
 
 ~~~powershell
 docker compose -f deploy/compose/compose.yaml --profile acceptance run --build --rm acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile vision-acceptance run --build --rm vision-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile hybrid-acceptance run --build --rm hybrid-acceptance-smoke
-~~~
-
-The W4 DOM smoke and W5 Vision untouched subrun independently grade untouched
-state at 30/100, passed=false. W5's fresh deterministic completion independently
-grades 100/100, passed=true. W6 Hybrid similarly proves immediate finish remains
-30/100, then uses a fresh Reset/Seed pair for a deterministic DOM-to-Vision
-completion that ends finished_ungraded and independently grades 100/100. These
-are zero-cost fake circuit/Grade-boundary checks, not DOM, Vision, Hybrid, OCR,
-or VLM capability claims.
-
-Stop and remove disposable synthetic state after acceptance:
-
-~~~powershell
+docker compose -f deploy/compose/compose.yaml --profile planning-acceptance run --build --rm planning-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 ~~~
 
-## Browser and Agent safety boundary
+The W7 smoke must prove invalid DAG/tool/Verifier rejection, actual
+multi-dependency execution through one W6 Hybrid session, non-resetting budget
+accounting, cleanup, ungraded finish, and independent grades. Fake runs prove
+wiring and isolation only; they are not real planning, Verifier, DOM, Vision,
+Hybrid, OCR, or VLM capability claims.
 
-- Browser Worker runs non-root with a read-only root filesystem, no bind mount
-  or Docker socket, all capabilities dropped, no-new-privileges, bounded
-  tmpfs/shm/pids, and no database environment.
-- A Hybrid task owns one fresh Browser, Context, and Page. It starts DOM-first
-  at the fixed visual viewport and never splices independent W4/W5 sessions.
-- Every Hybrid response exposes one selected current modality. The Router sees
-  only bounded structural counts, truncation, byte size, safe error category,
-  trusted route category, and remaining numeric budgets.
-- DOM turns use deterministic local compression. Visual turns retain W5's
-  current JPEG/grounding envelope. A model never receives full DOM and image
-  in the same call.
-- Every Hybrid action envelope binds the current session and observation
-  generation. Every observation, switch, action success/failure, timeout,
-  terminal path, deletion, startup failure, cancellation, and shutdown
-  invalidates all DOM and visual references. The Worker rejects wrong-mode,
-  stale, forged, selector,
-  coordinate, rectangle, code, path, URL, JavaScript, shell, and SQL input.
-- Screenshots, DOM/OCR/page/form data, cookies, storage, credentials, tokens,
-  and endpoints remain transient and are never written to repository, logs,
-  Task Specs, database, or long-term storage.
-- Hybrid Agent reaches only Browser Worker on a dedicated internal network. It
-  has no Sandbox/Arena/DB/Grader route, credential, model egress, filesystem
-  persistence, Docker socket,
-  shell, SQL, or JavaScript capability.
-- Router/model/page output cannot declare a pass. Agent finish is
-  finished_ungraded; only W3 Grade 100/100 is success.
+## Safety boundary
 
-## Local development and quality
+- Planning Agent runs non-root, read-only, cap-dropped, no-new-privileges,
+  tmpfs/pids-bounded, without host port/mount/socket/key/provider egress, and
+  connects only to Browser Worker.
+- One Planning run uses one fresh W6 Hybrid Browser, Context, and Page. Every
+  observation/action/probe/switch/terminal path invalidates old references;
+  Browser Worker revalidates current session/generation/modality/reference.
+- Plans are strict and immutable: 16 nodes, 24 edges, depth 8, width 8, four
+  dependencies per node, and 32,768 canonical UTF-8 bytes maximum.
+- Unknown fields, pages, operations, actions, tools, dependencies, illegal
+  transitions, selectors, XPath, coordinates, arbitrary URLs, upload/download,
+  Cookie/Local Storage, Shell, SQL, JavaScript, code, MCP, and plugins fail closed.
+- Runtime Verifier is not Grader. `finish` cannot return success, pass, or score.
+- Raw brief/plan/DOM/image/OCR/page/form data, credentials, tokens, endpoints,
+  and machine paths are not persisted. Evidence uses safe hashes/counts/reasons.
+- Default tests/CI/Compose make zero external model/OCR/VLM calls and incur zero
+  actual model cost.
 
-Python targets 3.13 and uses uv; frontends use committed npm locks. Playwright
-remains pinned to 1.60.0 with Chromium 148.0.7778.96.
+## Local development
 
-~~~powershell
-Push-Location apps/browser_worker
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
+Python targets 3.13 and uses uv; frontends use committed npm locks. Run Ruff,
+format check, Mypy, and pytest for control API, Sandbox API, Browser Worker,
+DOM/Vision/Hybrid/Planning Agents; run npm ci, lint, typecheck, tests, and build
+for both frontends; then run Compose/Alembic/catalog/smoke/secret/diff gates.
+The exact sequence is frozen in [AGENTS.md](AGENTS.md) and
+[the W7 plan](docs/plans/week-07-planning.md).
 
-Push-Location apps/hybrid_agent
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
-~~~
+## Model and milestone boundary
 
-The complete W1-W6 gate sequence is frozen in
-docs/plans/week-06-hybrid-router.md.
+No real W7 Planner/Verifier/model, OCR, or VLM provider/key/endpoint/egress is
+authorized. Any real call requires a new exact disclosure and separate user
+approval. Validation is not used for repeated tuning; Reporting is generated
+and checksum-frozen only.
 
-## Model authorization and milestone boundary
-
-No real DOM/Vision/Hybrid model, VLM, OCR provider, key, endpoint, or egress is
-configured or called by default. Before a real model call, disclose the
-provider, exact model, endpoint, prompt/config, selected-modality input
-handling, task IDs, retries, and hard call/token/image/DOM/time/cost limits;
-then obtain separate explicit user approval.
-
-W6 has no W7 planner DAG, tool matching, verifier, new task template,
-checkpoint, recovery, memory, identity, approval, production worker,
-monitoring, tracing, or other W7+ behavior. See docs/agent-contract.md and
-docs/threat-model.md.
-
-Development occurs only on week/06-hybrid-router. No push, PR, merge, or tag is
-authorized. Licensed under the Apache License 2.0.
+Development occurs only on `week/07-planning`. No push, PR, merge, tag,
+release, remote CI trigger, or W8 work is authorized. W8 alone may add retry,
+Temporal, checkpoints, idempotency, recovery, fault injection, and runtime
+partial replanning. Licensed under Apache-2.0.

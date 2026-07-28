@@ -1,71 +1,91 @@
-# W6 agent contract - Hybrid Router
+# W7 agent contract - Bounded Planning DAG
 
 ## Authority, baseline, and sole objective
 
-This contract translates the W6 row of project-roadmap.md and the
-user-authorized W6 brief into a bounded implementation agreement for
-week/06-hybrid-router.
+This contract translates the W7 row of `docs/project-roadmap.md` and the
+user-authorized W7 brief into a bounded implementation agreement for
+`week/07-planning`.
 
-The verified source baseline is main commit
-5981bf9f2d419854f51e0ced826efb3ac3864953. HEAD, origin/main, and the
-dereferenced annotated tag w05-vision all resolved to that commit before this
-branch was created. The contract-eligible worktree was clean. The pre-existing
-untracked %SystemDrive%/ directory remains outside every read, scan, diff,
-staging, and modification.
+The verified release baseline is main commit
+`1b239fc52173bc550f5601d34b8e87efc5dbf45f`. Before this branch was created,
+HEAD and `origin/main` resolved to that commit, the local `w06-hybrid` object
+was an annotated tag, and its dereferenced commit was the same baseline. A
+read-only GitHub API check proved that remote `refs/tags/w06-hybrid` points to
+annotated tag object `19e74859cb6066837d6708d3ffc618be3b3e00ea`, which in
+turn points to the baseline commit. The eligible worktree was clean.
 
-W6 has one outcome: retain all released W1-W5 behavior while adding a bounded,
-deterministic DOM/Vision Router, deterministic local observation compression,
-strict cross-modality action validation, and an independent fake-only Hybrid
-Agent baseline. The unchanged W3 Grader remains the only task-success
-authority.
+The pre-existing untracked literal `%SystemDrive%/` path remains outside every
+read, enumeration, scan, diff, status, staging, and modification operation. No
+`code_review_agent` repository may be accessed.
 
-The W5 branch rules are superseded only on this W6 branch. W1-W5 APIs,
-behavior, security controls, and evidence remain regression inputs. W7 and
-later roadmap architecture is non-authorizing and prohibited.
+W7 has one outcome: preserve every released W1-W6 API, security boundary, and
+fake baseline while adding a strict immutable task-local Planning DAG,
+deterministic closed-set tool matching, one monotonic total budget ledger,
+step-level runtime verification, and a separately versioned 30-template / 90-
+instance synthetic JML catalog. The independent Arena Grader remains the only
+task-success authority.
 
-## W6 scope
+The W6 branch rules are superseded only on `week/07-planning`. W8 and later
+roadmap architecture is non-authorizing and prohibited.
 
-W6 may add only:
+## W7 scope
 
-1. a Browser Worker Hybrid session API that creates exactly one fresh
-   Playwright Browser, Context, and Page for a task and exposes one selected
-   current modality at a time;
-2. strict versioned hybrid session, observation request/response, route
-   decision, action envelope, action result, and run/result schemas;
-3. Worker-derived bounded DOM structural quality signals without page text,
-   form values, arbitrary URLs, or model output;
-4. deterministic, pure-local DOM observation compression with fixed caps;
-5. a separate non-root Hybrid Agent service containing a small deterministic
-   per-task router and deterministic fake model; and
-6. fake-only Compose/CI acceptance, documentation, locks, tests, and observed
-   W6 evidence.
+W7 may add only:
 
-W4 DOM sessions/actions and the DOM Agent remain unchanged. W5 visual
-sessions/actions and the Vision Agent remain unchanged. A Hybrid task never
-joins a W4 session to a W5 session and never exposes both full DOM and image
-data to one model call.
+1. a separate Python 3.13, non-root, deterministic-fake-only Planning Agent
+   that connects only to Browser Worker over a dedicated internal network;
+2. strict, versioned, `extra=forbid` schemas for plan request/result, immutable
+   DAGs, steps, dependencies, conditions, tool catalog/matches/rejections, plan
+   validation, step execution, verifier request/result, one total budget/usage
+   ledger, and run/result;
+3. deterministic plan generation from a trusted finite process/category,
+   bounded human brief, and strict supplied values, without task-spec, fixture,
+   expected-state, Grader, database, or page-text input;
+4. deterministic topological execution through exactly one W6 Hybrid session,
+   preserving one fresh Browser, Context, and Page for the complete run;
+5. deterministic closed-set tool matching and step-level verification that
+   cannot expand Worker, route, action, or budget authority;
+6. an independent versioned W7 JML catalog with 12 Joiner, 8 Mover, and 10
+   Leaver templates, three deterministic synthetic variants per template,
+   template-level 18/6/6 split, stable IDs/checksums, and an independent W7
+   database-fact Grader;
+7. the smallest typed, non-deleting state-transition API/UI additions required
+   by Mover and Leaver templates within the existing HRIS, ITSM, IAM, Asset,
+   and Mail synthetic applications; and
+8. deterministic unit/Compose acceptance, CI, documentation, locks, and safe
+   numeric evidence.
 
-## Explicit W6 non-goals
+W4 DOM, W5 Vision, and W6 Hybrid APIs keep their released semantics. Planning
+Agent does not import or mutate those services. It consumes the W6 Hybrid HTTP
+contract and uses one W6 session; it never joins W4 and W5 sessions.
 
-W6 does not add a planner DAG, tool matching, verifier, new task template,
-checkpoint, recovery, Temporal, fault injection, partial replanning, memory,
-retrieval, cache, short- or long-term context, cross-task history, learned
-routing, online tuning, database statistics, identity, RBAC, approval, audit
-chain, production worker, monitoring, tracing, load test, external benchmark,
-malicious-page suite, real enterprise integration, real model, provider
-adapter, model credential, provider egress, database migration, Sandbox
-business change, upload, download, generic proxy, arbitrary execution, or
-future-stage placeholder abstraction.
+## Explicit non-goals
 
-W6 does not modify W2/W3 migrations, W3 Task Specs, expected state, grader
-predicates, canonical checksums, manual-baseline evidence, or Sandbox pages.
-It does not write raw DOM, screenshots, OCR, page text, form values, Cookies,
-Local Storage, model output, endpoints, credentials, tokens, or machine paths
-to a repository, database, log, fixture, trace, or long-term store.
+W7 does not add real or paid models, OCR, VLM, provider adapters, model keys,
+provider egress, real systems/accounts/data, external benchmarks, arbitrary
+URLs, selectors, XPath, coordinates, rectangles, upload/download, Cookie or
+Local Storage access, browser options, Shell, SQL, JavaScript, code execution,
+dynamic APIs, MCP, plugins, arbitrary tool discovery, or a generic Agent/model/
+tool framework.
 
-## Exact W6 file allowlist
+W7 does not add W8 Temporal, checkpoints, recovery, idempotency, retries, fault
+injection, or runtime partial replanning; W9 context, summary, memory,
+retrieval, cache, or cross-task history; W10 identity, OIDC, RBAC, tenancy, or
+optimistic locking; W11 HITL, policy execution, approval token/service, or
+audit chain; W12 production workers, backpressure, rate limiting, load tests,
+or production deployment; W13 OTel, tracing, dashboards, formal replay, or
+monitoring; W14 malicious-page evaluation; W15 external/Reporting evaluation,
+formal ablation, or repeated benchmark runs; or W16 Helm/cloud/release work.
 
-Only these paths may be created or modified in W6:
+W7 does not edit the released W2/W3 migrations, W3 Task Specs, fixture,
+expected state, grader predicates, canonical checksums, catalog checksum,
+6/2/2 split, or manual-baseline evidence. It does not persist raw human briefs,
+plans, DOM, screenshots, OCR, page text, form values, model output, Cookies,
+Local Storage, credentials, endpoints, tokens, or machine paths.
+
+## Exact W7 file allowlist
+
+Only these paths may be created or modified in W7:
 
 ~~~text
 AGENTS.md
@@ -78,206 +98,291 @@ docs/agent-contract.md
 docs/architecture.md
 docs/threat-model.md
 docs/evaluation-protocol.md
-docs/adr/0006-w6-bounded-hybrid-router.md
-docs/plans/week-06-hybrid-router.md
-docs/evidence/week-06-report.md
+docs/adr/0007-w7-bounded-planning-dag.md
+docs/plans/week-07-planning.md
+docs/evidence/week-07-report.md
+docs/data/week-07-jml-catalog.md
 
 deploy/compose/compose.yaml
 
-apps/browser_worker/src/flowpilot_browser_worker/config.py
-apps/browser_worker/src/flowpilot_browser_worker/hybrid.py
-apps/browser_worker/src/flowpilot_browser_worker/main.py
-apps/browser_worker/src/flowpilot_browser_worker/runtime.py
-apps/browser_worker/src/flowpilot_browser_worker/schemas.py
-apps/browser_worker/tests/test_api.py
-apps/browser_worker/tests/test_hybrid.py
-apps/browser_worker/tests/test_schemas.py
+apps/planning_agent/.dockerignore
+apps/planning_agent/Dockerfile
+apps/planning_agent/pyproject.toml
+apps/planning_agent/uv.lock
+apps/planning_agent/src/flowpilot_planning_agent/__init__.py
+apps/planning_agent/src/flowpilot_planning_agent/budget.py
+apps/planning_agent/src/flowpilot_planning_agent/client.py
+apps/planning_agent/src/flowpilot_planning_agent/dag.py
+apps/planning_agent/src/flowpilot_planning_agent/executor.py
+apps/planning_agent/src/flowpilot_planning_agent/main.py
+apps/planning_agent/src/flowpilot_planning_agent/planner.py
+apps/planning_agent/src/flowpilot_planning_agent/schemas.py
+apps/planning_agent/src/flowpilot_planning_agent/tools.py
+apps/planning_agent/src/flowpilot_planning_agent/verifier.py
+apps/planning_agent/src/flowpilot_planning_agent/worker_schemas.py
+apps/planning_agent/tests/conftest.py
+apps/planning_agent/tests/test_api.py
+apps/planning_agent/tests/test_budget.py
+apps/planning_agent/tests/test_client.py
+apps/planning_agent/tests/test_dag.py
+apps/planning_agent/tests/test_executor.py
+apps/planning_agent/tests/test_planner.py
+apps/planning_agent/tests/test_schemas.py
+apps/planning_agent/tests/test_tools.py
+apps/planning_agent/tests/test_verifier.py
 
-apps/hybrid_agent/.dockerignore
-apps/hybrid_agent/Dockerfile
-apps/hybrid_agent/pyproject.toml
-apps/hybrid_agent/uv.lock
-apps/hybrid_agent/src/flowpilot_hybrid_agent/__init__.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/client.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/compressor.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/loop.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/main.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/model.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/router.py
-apps/hybrid_agent/src/flowpilot_hybrid_agent/schemas.py
-apps/hybrid_agent/tests/conftest.py
-apps/hybrid_agent/tests/test_api.py
-apps/hybrid_agent/tests/test_client.py
-apps/hybrid_agent/tests/test_compressor.py
-apps/hybrid_agent/tests/test_loop.py
-apps/hybrid_agent/tests/test_model.py
-apps/hybrid_agent/tests/test_router.py
-apps/hybrid_agent/tests/test_schemas.py
+apps/sandbox_api/src/flowpilot_sandbox_api/main.py
+apps/sandbox_api/src/flowpilot_sandbox_api/schemas.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/__init__.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/catalog.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/grader.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/router.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/schemas.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/service.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/data/catalog-v1.json
+apps/sandbox_api/tests/test_business_transitions.py
+apps/sandbox_api/tests/test_jml_api.py
+apps/sandbox_api/tests/test_jml_catalog.py
+apps/sandbox_api/tests/test_jml_grader.py
+apps/sandbox_api/tests/test_jml_service.py
+
+apps/sandbox_web/src/api.ts
+apps/sandbox_web/src/types.ts
+apps/sandbox_web/src/pages/HrisPage.tsx
+apps/sandbox_web/src/pages/ItsmPage.tsx
+apps/sandbox_web/src/pages/IamPage.tsx
+apps/sandbox_web/src/pages/AssetPage.tsx
+apps/sandbox_web/src/pages/MailPage.tsx
+apps/sandbox_web/src/App.test.tsx
 
 tests/integration/Dockerfile
-tests/integration/w6_hybrid_compose_smoke.py
+tests/integration/w7_planning_compose_smoke.py
 ~~~
 
-Released W1-W5 source outside this list, all W2/W3 migrations/task/grader
-inputs, all Sandbox business code, DOM Agent, Vision Agent, existing locks, and
-all W4/W5 evidence/ADR/plan files are regression inputs and not W6 targets.
-Any additional path must be added to this contract before it changes. Any path
-that broadens W6 requires user direction before it is added.
+Released source outside this list is a regression input, not a W7 target. No
+database migration is required or allowed by this contract: existing bounded
+string state fields and HRIS transfer fields represent every authorized W7
+transition. If implementation evidence proves a schema change necessary, its
+exact forward-only migration and related paths must be added here before any
+such file is created; released migrations remain immutable.
 
-## Hybrid Browser Worker contract
+Any other path must be added to this contract before it changes. A path that
+introduces another system, real data, physical deletion, approval bypass, W8+
+capability, or generic future abstraction requires new user direction first.
 
-The Worker adds only these routes:
+## Planning DAG contract
 
-- POST /api/browser/hybrid-sessions accepts w6-hybrid-session/1.0 and fixed
-  initial path /hris;
-- POST /api/browser/hybrid-sessions/{session_id}/observations accepts one
-  strict w6-hybrid-observation-request/1.0 modality request;
-- POST /api/browser/hybrid-sessions/{session_id}/actions accepts one
-  discriminated w6-hybrid-action-envelope/1.0 action;
-- DELETE /api/browser/hybrid-sessions/{session_id} idempotently closes the
-  one Browser, Context, Page, Playwright process, and all task-local maps.
+All W7 Planning models are frozen strict Pydantic models with unknown fields
+forbidden and immutable validated instances. Schema versions are under the
+`w7-* /1.0` namespace. Every run accepts one bounded human brief, one finite
+process/category, one discriminated strict supplied-values object, one fake
+scenario, and one total budget. The planner may not inspect `task_id` to choose
+facts or behavior.
 
-The initial Hybrid observation is DOM at the fixed W5 viewport so later visual
-capture remains bounded. A fresh observation request returns exactly one
-selected modality: a W4-shaped DOM observation or a W5-shaped visual
-observation, never both. Each response includes a bounded route signal only:
-DOM structural state, effective interactive-element count, serialized DOM
-observation byte count, and a sanitized safe last-action error category. It
-contains no semantic node text, name, form value, page title, URL, selector,
-image, model output, or arbitrary route instruction.
+Each step includes `step_id`, untrusted bounded `objective`, `dependencies`,
+closed `operation`, `expected_page`, `required_context`, `allowed_actions`,
+`preconditions`, `postconditions`, `risk_level`, `retry_policy`, and
+`fallback`. `objective` never authorizes an operation, route, tool, action, or
+value. Authority comes only from the validated finite process/category,
+closed operation, strict supplied values, global catalog, Worker state, and
+remaining ledger.
 
-The Worker retains W4 local-origin policy, request interception, final URL
-validation, blocked service workers/downloads, bounded waits/fills/actions,
-and unconditional cleanup. It creates one Browser/Context/Page per Hybrid
-task, with W5's fixed 960 x 540 CSS-pixel viewport, and never creates a second
-session to change modality.
+Frozen DAG caps are:
 
-The Worker enforces a current observation generation and clears every DOM and
-visual reference map before building any new observation. Every action
-envelope carries the current session_id and generation; the Worker compares
-both with the path-owned session before considering modality or action fields.
-A new observation, explicit modality switch, successful action, failed action,
+| Limit | Maximum |
+|---|---:|
+| nodes | 16 |
+| edges | 24 |
+| depth | 8 |
+| width at one topological level | 8 |
+| dependencies per node | 4 |
+| step ID length | 40 characters |
+| objective length | 240 characters |
+| conditions per pre/post list | 8 |
+| serialized canonical plan | 32,768 UTF-8 bytes |
+
+Validation rejects unknown or duplicate step IDs, self-dependency, unknown or
+missing dependencies, cycles, more than one root, nodes unreachable from the
+single root, and every cap breach. It calculates a deterministic topological
+order using lexical `step_id` tie-breaking. A run owns exactly one validated
+frozen DAG and its SHA-256 identifier. It cannot be replaced or partially
+replanned while running.
+
+Executor state transitions are `pending -> ready -> executing -> verified` or
+`pending/ready/executing -> blocked/failed/escalated`. A step may enter
+`executing` only when every dependency is `verified`. Unknown, duplicate,
+terminal-to-running, or out-of-order transitions fail closed. `retry_policy`
+is only `no_retry`; `fallback` is only `stop` or `escalate`.
+
+## Deterministic tool matching and execution
+
+The versioned tool catalog is a closed mapping to released W6 observation and
+typed-action capabilities only. Pages are exactly HRIS `/hris`, ITSM `/itsm`,
+IAM `/iam`, Asset `/assets`, and Mail `/mail`. No candidate string can create
+a tool.
+
+For every match, the effective tools are the intersection of:
+
+1. the W7 global tool allowlist;
+2. the current step's closed `allowed_actions`;
+3. the current fixed page and selected Worker modality allowlist; and
+4. the current remaining total budget.
+
+Brief text, objective/postcondition text, page/DOM/JPEG/OCR content, model
+output, and risk metadata cannot add authority. Unknown and disallowed
+candidates return a closed safe rejection reason and never reach Browser
+Worker. Element-name matching may select only a current Worker-issued opaque
+reference after the operation/action has already been authorized by the four-
+way intersection. The Worker revalidates the session, generation, modality,
+observation, reference, and action before Playwright.
+
+Planning Agent creates one W6 Hybrid session at `/hris`, retains that session
+for the whole immutable DAG, and uses current DOM observations for the shipped
+fake execution. It never creates another session to change modality. W6 Router
+semantics and the independent W6 DOM-to-Vision smoke remain unchanged. Any new
+observation, action success/failure, verification probe, modality switch,
 timeout, terminal action, deletion, startup failure, cancellation, or shutdown
-invalidates all old DOM
-element_ref, visual screenshot_ref, and grounding_ref values. A W6 action
-envelope declares modality; element actions additionally carry the selected
-modality's current opaque references. The Worker checks session, generation,
-modality, allowed action, and current reference lifecycle before Playwright
-execution. Cross-mode, forged, stale, unknown, coordinate,
-rectangle, selector, XPath, code, path, URL, JavaScript, shell, SQL, Cookie,
-Local Storage, upload, download, and browser-option input is rejected.
+continues to invalidate old DOM and visual references in Browser Worker.
 
-W5 visual JPEG limits remain unchanged: image/jpeg only, 960 x 540 maximum,
-518,400 pixels, quality 60, 184,320 bytes/image, 24 capture attempts/session,
-3,000 ms/capture, 4,423,680 total image bytes, and 72,000 total capture ms.
-Hybrid switching never resets those counters. W6 additionally caps Hybrid
-observations and total Worker-produced DOM observation bytes. A limit breach
-returns a bounded category and closes the session where a compliant current
-observation cannot be produced.
+## Step Verifier contract
 
-## Deterministic routing and compression contract
+The runtime Verifier is not Arena Grader. It returns only `verified`,
+`not_verified`, or `inconclusive` with closed safe reason codes. It may consume
+only the current Worker observation, current typed action result summary,
+trusted bounded step conditions, immutable step identity, and current total
+budget. It cannot read Task Spec, fixture maps, expected state, grader
+predicate, canonical checksum, database, Arena, Reset/Seed, Reporting results,
+Planner/model self-report, page success prose, or `finish` as proof.
 
-The only trusted route categories are standard and visual_recovery. They are
-strict run-request values consumed by the Router, not page/model text and not a
-task-spec or fixture lookup. The Router version is w6-router/1.0 and has no
-cross-task state.
+Verifier cannot expand tools, actions, routes, or budgets. A negative or
+inconclusive result never marks a step verified. With `no_retry`, verification
+failure follows the step's fixed `stop` or `escalate` fallback. Agent `finish`
+returns only `finished_ungraded`; independent Grader alone may return score,
+passed, or success.
 
-Default routing starts in DOM. The total schema cap is two switches, while the
-shipped W6 one-way policy performs at most one DOM-to-Vision switch. It selects
-Vision only when all remaining budgets allow a visual observation and one of
-these fixed conditions holds:
+## One monotonic total budget ledger
 
-1. the current DOM quality signal is structurally empty or truncated;
-2. the current safe DOM action outcome is a stale/unknown reference,
-   disallowed-action, browser, or policy category; or
-3. the trusted visual_recovery category has completed one successful bounded
-   DOM read probe action.
+Planning, tool matching/rejection, browser execution, routing accounting,
+verification, and termination share one task-local ledger using a monotonic
+clock. No plan step, observation, mode switch, verifier probe, failure, or
+terminal path may replace or reset it.
 
-Otherwise it retains DOM. W6 does not implement Vision-to-DOM recovery,
-learned policy, success-rate history, online tuning, cache, or retry policy.
-It refuses a requested switch when the switch limit, remaining image, DOM,
-step, call, token, cost, or monotonic-time budget cannot accommodate it. For
-the fake-only W6 runtime, the conservative switch reservation is one complete
-W5 image envelope (184,320 bytes, 518,400 pixels, and 3,000 capture ms), one
-32-input/16-output-token fake call, and more than three seconds remaining.
-Reason codes are a closed strict enum and are reported as safe metadata.
+Default maxima freeze at: one plan generation; the DAG caps above; 64 tool
+match attempts; 16 tool rejections; 16 verifier calls; 16 verifier probes; 16
+executed steps; 16 blocked/failed steps; 24 Worker actions/steps; 24 model
+calls; two switches; two repeated actions; three no-progress events; 24 DOM
+observations; 262,144 raw DOM bytes; 147,456 compressed-DOM accounting bytes;
+24 images; 4,423,680 image bytes; 12,441,600 image pixels; 72,000 capture ms;
+100,000 total input tokens; 20,000 total output tokens; 100,000 planning input
+tokens; 20,000 planning output tokens; 100,000 verifier input tokens; 20,000
+verifier output tokens; zero micro-USD total/planning/verifier cost; and 300
+monotonic seconds. Request values may only reduce these schema maxima.
 
-Before a DOM model call, Hybrid Agent compresses only the current DOM
-observation using deterministic DOM order and fixed JSON serialization:
-32 semantic nodes, 40 interactive elements, 12 prior action summaries,
-12,288 bytes per compressed DOM observation, and 2,048 bytes of summaries.
-It removes trailing semantic nodes before interactive elements, records
-truncation and exact serialized bytes, and never uses an LLM or stores input.
-The selected visual path preserves the W5 bounded JPEG and current grounding
-envelope. The model receives exactly one compressed DOM observation or one
-current visual observation per call, never both.
+Budget checks occur before and after every counted operation. Usage and result
+schemas expose safe counters, closed reason codes, opaque hashes, and terminal
+state only.
 
-## Hybrid Agent, models, and budgets
+## W7 JML catalog and Sandbox increments
 
-apps/hybrid_agent is a separate Python 3.13 FastAPI service. It resolves only
-the credential-free local Browser Worker URL and joins only the dedicated
-internal hybrid-worker network shared with Browser Worker. DOM Agent and
-Vision Agent remain on their released agent-worker network. Hybrid Agent has
-no Sandbox/API/Arena/Grader/DB client or network, no credential, repository
-mount, Docker socket, filesystem persistence, shell,
-SQL, JavaScript, browser object, provider egress, model key, or production
-control responsibility.
+The W7 catalog is independent of the immutable W3 catalog. Its catalog schema,
+variant generator, fixture, split manifest, and grader schemas are versioned.
+It contains exactly 12 Joiner, 8 Mover, and 10 Leaver templates. Each template
+generates variants `v1`, `v2`, and `v3`, producing exactly 90 stable instance
+IDs and canonical checksums.
 
-Its strict schemas are w6-hybrid-agent-run/1.0,
-w6-hybrid-agent-result/1.0, w6-router-decision/1.0,
-w6-compressed-observation/1.0, and w6-hybrid-model-decision/1.0. The default
-and only W6 runtime model is deterministic-fake-hybrid with zero external
-calls and zero actual cost. The test-only DOM-to-Vision completion scenario
-parses only the caller-rendered supplied-values brief, chooses current DOM
-element refs or current visual groundings by allowed action/geometry, and has
-no Task Spec, expected-state, grader predicate, database, OCR/VLM, DOM
-fallback during a visual turn, or fixture map.
+Template-level split is fixed as:
 
-Default total hard limits are 24 steps, 24 model calls, two switches, two
-repeated actions, three no-progress events, 300 seconds, 24 DOM observations,
-262,144 raw DOM bytes, 147,456 compressed DOM bytes, 24 images, 4,423,680
-image bytes, 12,441,600 image pixels, 72,000 capture ms, 100,000 input tokens,
-20,000 output tokens, and zero micro-USD cost. Counters are monotonic across
-all modalities and no switch can reset, hide, or bypass them. Result/action
-summaries expose only safe numeric metrics, action type/outcome, route reason,
-and termination state. Finish is finished_ungraded and never includes pass,
-score, success, raw screenshot, DOM, or page content.
+| Split | Joiner | Mover | Leaver | Total |
+|---|---:|---:|---:|---:|
+| Development | 8 | 4 | 6 | 18 |
+| Validation | 2 | 2 | 2 | 6 |
+| Reporting | 2 | 2 | 2 | 6 |
+
+The catalog checksum is SHA-256 over canonical sorted template JSON excluding
+its checksum field. Instance checksums are SHA-256 over canonical generated
+instance JSON. Split and Reporting manifest checksums are SHA-256 over sorted
+template/instance/checksum rows. Source and license are fixed to original
+FlowPilot synthetic W7 data under Apache-2.0. Names/identifiers are explicitly
+fictional, emails use `.invalid`, and assets use `SYN-W7-...`.
+
+Reporting is limited in W7 to deterministic generation, loading, strict schema
+and checksum verification, and manifest freezing. No Reporting Agent run,
+grade-result inspection, tuning, or policy change is permitted. Validation is
+not used for repeated tuning.
+
+The only Sandbox behavior additions are:
+
+- HRIS: `confirmed -> transferred` with bounded new department/job/location,
+  or `confirmed/transferred -> disabled`;
+- ITSM: `open -> closed`;
+- IAM: `active -> revoked`;
+- Asset: `assigned -> released`; and
+- Mail: `active -> disabled`.
+
+They are employee-owned, strict typed transitions over existing rows. Unknown
+employees/rows, wrong prior states, extra fields, unsupported values, and
+repeated transitions fail closed. There is no physical deletion, arbitrary
+field patch, generic transition endpoint, approval artifact, or new database
+schema. Planning Agent cannot call these APIs directly; only Browser Worker
+may operate their fixed Sandbox UI controls.
+
+Reset/Seed deletes only rows owned by the selected W7 task ID in dependency
+order and recreates fixed synthetic facts in one transaction. The independent
+W7 Grader reads database facts only and does not expose predicates/expected
+state to Planning Agent. W3 Reset/Seed and Grader remain byte-for-byte
+regression targets.
 
 ## Evaluation, Compose, and evidence
 
-W6 Development candidates are w3-joiner-001 through w3-joiner-005. The outer
-trusted caller alone reads immutable task metadata, Reset/Seeds twice, renders
-the human-facing supplied-values brief, calls Hybrid Agent, and independently
-calls the unchanged W3 Grader after cleanup. It must not give grader predicates
-to the model. A fake completion is only fake circuit and isolation evidence.
+Default tests, CI, Compose, Planner, execution model, and Verifier are local
+deterministic fakes with zero external calls and zero actual cost. W4 DOM, W5
+Vision, and W6 Hybrid fake smokes run unchanged.
 
-W4 fake DOM smoke must continue to grade untouched state at 30/100,
-passed=false. W5 fake Vision smoke must continue to show untouched 30/100,
-passed=false and fresh deterministic completion 100/100, passed=true. W6 adds
-a fake Hybrid smoke on the same Development task and equal Reset/Seed
-conditions. Its first immediate-finish run must independently grade 30/100,
-passed=false. Its fresh deterministic completion must perform an actual
-DOM-to-Vision Worker modality switch, exercise current-reference validation,
-compression cap accounting, and cleanup, return finished_ungraded, then be
-independently graded exactly 100/100, passed=true. All fake results have zero
-external calls and cost and make no real hybrid, DOM, Vision, OCR, or VLM
-capability claim.
+W7 fake Planning acceptance must prove an actually executed multi-node,
+multi-dependency DAG; deterministic topology; successful matching; explicit
+unknown/unauthorized-tool rejection; step verification; negative/inconclusive
+verification not counted as success; rejection of cycle, missing dependency,
+out-of-order execution, and over-limit plans; one non-resetting ledger;
+terminal cleanup; and `finished_ungraded` isolation.
 
-Default Compose and CI add a non-root, read-only, cap-dropped,
-no-new-privileges Hybrid Agent with tmpfs, pids limit, no host port, no
-credential, no provider egress, and only dedicated hybrid-worker attachment. The
-profile-only hybrid acceptance caller has management networks solely for
-Reset/Seed and independent grading; it is not an Agent tool and is not in the
-normal profile.
+On the same W3 Development task and equal Reset/Seed checksum, W6 Hybrid and
+W7 Hybrid+Planner fake baselines are paired. W7 immediate finish must grade
+30/100 false. Fresh W7 deterministic completion must return
+`finished_ungraded` and independently grade exactly 100/100 true.
+
+For W7 Development data, one Joiner, Mover, and Leaver instance each receives
+two equal Reset/Seeds, an untouched failing grade, a bounded deterministic
+completion returning `finished_ungraded`, and an independent exact 100/100
+passing grade. All 30 templates / 90 instances are checked for count, process
+distribution, split distribution, stable IDs/checksums, deterministic Reset/
+Seed, and Grader schema without using Validation/Reporting for tuning.
+
+Compose adds Planning Agent as non-root, read-only, cap-dropped,
+no-new-privileges, tmpfs/pids-bounded, credential-free, without host port,
+mount, Docker socket, or provider egress. It joins only dedicated internal
+`planning-worker`, which contains Browser Worker and no Sandbox, Arena,
+database, DOM/Vision/Hybrid Agent, or provider service. Profile-only acceptance
+orchestration may join management networks for Reset/Seed and independent
+grading; it is not an Agent tool or normal-profile service.
+
+Evidence records only schema versions, opaque IDs/hashes, template/task/
+variant IDs and checksums, DAG counts/depth/order, step state counts, tool
+match/rejection counts and safe reasons, route/DOM/compression/image/action/
+model/token/cost/latency counters, terminal status, and independent grade. It
+records no raw brief, plan prose, DOM, screenshot, OCR, page/form content,
+credential, token, endpoint, Cookie, Local Storage, personal data, or machine
+path. Fake evidence proves wiring and isolation, not real planning, reasoning,
+Verifier, DOM, Vision, Hybrid, OCR, or VLM capability.
 
 ## Git and handoff rules
 
-Work only on week/06-hybrid-router. Do not push, create a PR, merge, tag,
-force-push, or call a real model without separate explicit user authorization.
-Do not stage broadly; stage only the final exact W6 allowlist after every
-locally available gate passes and evidence matches observed facts. Never
-inspect, copy, modify, stage, scan, ignore, or delete %SystemDrive%/, and
-never access any code_review_agent repository.
+Work only on `week/07-planning`. Do not push, create a PR, merge, tag, release,
+trigger remote CI, force-push, or call a real model without separate explicit
+user authorization. Do not stage broadly; stage only exact final allowlist
+paths after all locally available gates pass and evidence matches observed
+facts. Record unavailable Docker/Compose/pre-commit/Gitleaks tooling rather
+than weakening a gate.
 
-W6 stops after bounded routing, compression, and action validation. W7
-planning, verifier, and task-DAG work remain explicitly out of scope.
+W7 stops after bounded Planning DAG, matching, ledger, runtime Verifier, full
+synthetic JML catalog, minimum transitions, and fake-only evidence. W8 work is
+not started.

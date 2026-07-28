@@ -10,7 +10,8 @@
   0 calls; 0 cost
 - Screenshot, OCR, DOM, page-text, form-content, or credential artifacts
   committed or persisted: 0
-- Remote delivery, remote CI, push, PR, merge, and tag: not run or authorized
+- Remote delivery: branch pushed; ready PR #28 opened against main; initial
+  push and pull-request CI passed; merge and tag not run or authorized
 
 ## Startup gate evidence
 
@@ -223,6 +224,18 @@ This Git build rejected the requested `':!%SystemDrive%'` shorthand with
 `Unimplemented pathspec magic '%'`; the compatible
 `':(exclude)%SystemDrive%'` form was used for diff, status, allowlist, and
 changed-path secret checks without reading the protected directory.
+
+## Remote delivery evidence
+
+The validated branch was pushed and ready PR #28 was opened against main.
+Initial push workflow 30332606909 and pull-request workflow 30332635017 each
+passed all 13 jobs: backend, frontend, Sandbox/Arena backend, Sandbox frontend,
+Browser Worker, DOM Agent, Vision Agent, Hybrid Agent, Compose configuration,
+W4 fake DOM smoke, W5 fake Vision-only smoke, W6 fake Hybrid smoke, and Secret
+scan. No model credential or real-model call was present in either workflow.
+
+This evidence-only follow-up commit must pass its own remote checks before any
+separately authorized merge. Merge and w06-hybrid tag creation are not claimed.
 
 ## Known limitations
 

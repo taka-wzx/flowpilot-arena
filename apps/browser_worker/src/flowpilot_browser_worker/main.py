@@ -21,6 +21,12 @@ from flowpilot_browser_worker.schemas import (
     HybridSessionClosed,
     HybridSessionCreate,
     HybridSessionCreated,
+    RecoveryActionResult,
+    RecoveryDomActionEnvelope,
+    RecoveryObservationRequest,
+    RecoverySessionClosed,
+    RecoverySessionCreate,
+    RecoverySessionCreated,
     SessionClosed,
     SessionCreate,
     SessionCreated,
@@ -207,4 +213,82 @@ async def close_hybrid_session(session_id: SessionId, request: Request) -> Hybri
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Hybrid browser session not found or already closed",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/recovery-sessions",
+    response_model=RecoverySessionCreated,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_recovery_session(
+    payload: RecoverySessionCreate,
+    request: Request,
+) -> RecoverySessionCreated:
+    try:
+        return await _runtime(request).create_recovery_session(
+            payload.session_epoch, payload.initial_path
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Unable to start isolated recovery browser session",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/recovery-sessions/{session_id}/observations",
+    response_model=HybridObservation,
+)
+async def request_recovery_observation(
+    session_id: SessionId,
+    payload: RecoveryObservationRequest,
+    request: Request,
+) -> HybridObservation:
+    try:
+        return await _runtime(request).request_recovery_observation(session_id, payload)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery browser session or epoch not found",
+        ) from exc
+    except HybridObservationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Recovery browser observation is no longer available",
+        ) from exc
+
+
+@app.post(
+    "/api/browser/recovery-sessions/{session_id}/actions",
+    response_model=RecoveryActionResult,
+)
+async def execute_recovery_action(
+    session_id: SessionId,
+    payload: RecoveryDomActionEnvelope,
+    request: Request,
+) -> RecoveryActionResult:
+    try:
+        return await _runtime(request).execute_recovery_action(session_id, payload)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery browser session not found or already closed",
+        ) from exc
+
+
+@app.delete(
+    "/api/browser/recovery-sessions/{session_id}",
+    response_model=RecoverySessionClosed,
+)
+async def close_recovery_session(
+    session_id: SessionId,
+    request: Request,
+) -> RecoverySessionClosed:
+    try:
+        return await _runtime(request).close_recovery_session(session_id)
+    except UnknownSessionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recovery browser session not found or already closed",
         ) from exc

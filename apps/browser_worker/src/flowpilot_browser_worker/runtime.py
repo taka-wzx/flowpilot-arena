@@ -25,6 +25,7 @@ from flowpilot_browser_worker.hybrid import (
 )
 from flowpilot_browser_worker.observation import ElementTarget, ObservationBuilder
 from flowpilot_browser_worker.policy import PolicyViolation, URLPolicy, validate_fill_text
+from flowpilot_browser_worker.recovery import fixed_headers, mutation_matches, parse_receipt
 from flowpilot_browser_worker.schemas import (
     ACTION_SCHEMA_VERSION,
     VISION_ACTION_SCHEMA_VERSION,
@@ -43,6 +44,7 @@ from flowpilot_browser_worker.schemas import (
     HybridDomFailAction,
     HybridDomFinishAction,
     HybridDomNavigateAction,
+    HybridDomObservation,
     HybridDomWaitAction,
     HybridErrorCategory,
     HybridModality,
@@ -59,6 +61,13 @@ from flowpilot_browser_worker.schemas import (
     LastAction,
     NavigateAction,
     ReadAction,
+    RecoveryActionResult,
+    RecoveryDomActionEnvelope,
+    RecoveryIdempotencyBinding,
+    RecoveryObservationRequest,
+    RecoveryReceiptResult,
+    RecoverySessionClosed,
+    RecoverySessionCreated,
     ScrollAction,
     SelectAction,
     SessionClosed,
@@ -101,7 +110,7 @@ class HybridObservationError(RuntimeError):
 @dataclass(slots=True)
 class BrowserSession:
     session_id: str
-    mode: Literal["dom", "vision", "hybrid"]
+    mode: Literal["dom", "vision", "hybrid", "recovery"]
     playwright: Playwright
     browser: Browser
     context: BrowserContext
@@ -119,6 +128,8 @@ class BrowserSession:
     hybrid_observation_count: int = 0
     hybrid_dom_observation_bytes: int = 0
     hybrid_route_signals: HybridRouteSignals | None = None
+    recovery_epoch: int | None = None
+    recovery_binding: RecoveryIdempotencyBinding | None = None
     action_count: int = 0
     navigation_count: int = 1
     closed: bool = False
@@ -176,12 +187,48 @@ class BrowserRuntime:
     async def create_hybrid_session(self, initial_path: str = "/hris") -> HybridSessionCreated:
         session = await self._open_session(initial_path, "hybrid")
         try:
-            observation = await self._refresh_hybrid_observation(session, "dom")
+            observation = cast(
+                HybridDomObservation, await self._refresh_hybrid_observation(session, "dom")
+            )
             await self._register_session(session)
             return HybridSessionCreated(session_id=session.session_id, observation=observation)
         except BaseException:
             await self._close_session(session)
             raise
+
+    async def create_recovery_session(
+        self, session_epoch: int, initial_path: str = "/hris"
+    ) -> RecoverySessionCreated:
+        session = await self._open_session(initial_path, "recovery")
+        session.recovery_epoch = session_epoch
+        try:
+            observation = cast(
+                HybridDomObservation, await self._refresh_hybrid_observation(session, "dom")
+            )
+            await self._register_session(session)
+            return RecoverySessionCreated(
+                session_id=session.session_id,
+                session_epoch=session_epoch,
+                observation=observation,
+            )
+        except BaseException:
+            await self._close_session(session)
+            raise
+
+    async def request_recovery_observation(
+        self,
+        session_id: str,
+        request: RecoveryObservationRequest,
+    ) -> HybridObservation:
+        session = await self._require_session(session_id, "recovery")
+        async with session.lock:
+            if session.recovery_epoch != request.session_epoch:
+                raise UnknownSessionError(session_id)
+            try:
+                return await self._refresh_hybrid_observation(session, "dom")
+            except BaseException:
+                await self._close_session(session)
+                raise
 
     async def request_hybrid_observation(
         self,
@@ -436,6 +483,131 @@ class BrowserRuntime:
                     self._sanitize(str(exc)),
                 )
 
+    async def execute_recovery_action(
+        self,
+        session_id: str,
+        envelope: RecoveryDomActionEnvelope,
+    ) -> RecoveryActionResult:
+        session = await self._require_session(session_id, "recovery")
+        async with session.lock:
+            action = envelope.action
+            if (
+                session.action_count >= self.config.limits.max_actions
+                or self._clock() - session.started_at > self.config.limits.max_session_seconds
+            ):
+                await self._close_session(session)
+                return RecoveryActionResult(
+                    session_id=session_id,
+                    session_epoch=envelope.session_epoch,
+                    action_id=action.action_id,
+                    action_type=action.type,
+                    success=False,
+                    terminal=True,
+                    error_category="action_budget_exhausted",
+                    message="Recovery Browser session exhausted a hard limit",
+                )
+            session.action_count += 1
+            if envelope.session_id != session.session_id:
+                return await self._recovery_observation_result(
+                    session, envelope, False, "unknown_hybrid_ref"
+                )
+            if envelope.session_epoch != session.recovery_epoch:
+                return await self._recovery_observation_result(
+                    session, envelope, False, "stale_hybrid_ref"
+                )
+            if envelope.generation != session.hybrid_generation:
+                return await self._recovery_observation_result(
+                    session, envelope, False, "stale_hybrid_ref"
+                )
+            if session.hybrid_modality != "dom":
+                return await self._recovery_observation_result(
+                    session, envelope, False, "invalid_modality"
+                )
+            if isinstance(action, (HybridDomFinishAction, HybridDomFailAction)):
+                message = (
+                    action.summary if isinstance(action, HybridDomFinishAction) else action.reason
+                )
+                await self._close_session(session)
+                return RecoveryActionResult(
+                    session_id=session_id,
+                    session_epoch=envelope.session_epoch,
+                    action_id=action.action_id,
+                    action_type=action.type,
+                    success=isinstance(action, HybridDomFinishAction),
+                    terminal=True,
+                    message=self._sanitize(message or "Recovery run ended"),
+                )
+            try:
+                dom_action = self._hybrid_dom_action(action)
+                target: ElementTarget | None = None
+                if isinstance(
+                    dom_action, (ClickAction, FillAction, SelectAction, ReadAction, ScrollAction)
+                ):
+                    reference_error, target = self._resolve_target(session, dom_action)
+                    if reference_error is not None:
+                        return await self._recovery_observation_result(
+                            session,
+                            envelope,
+                            False,
+                            self._hybrid_error_from_dom(reference_error[0]),
+                        )
+                receipt = None
+                if envelope.idempotency is not None:
+                    if not isinstance(dom_action, ClickAction):
+                        raise PolicyViolation("Idempotency metadata requires a mutation click")
+                    binding = envelope.idempotency
+                    session.recovery_binding = binding
+                    try:
+                        async with session.page.expect_response(
+                            lambda response: mutation_matches(
+                                binding.operation,
+                                response.request.method,
+                                response.url,
+                            ),
+                            timeout=self.config.limits.browser_action_timeout_ms,
+                        ) as response_info:
+                            await self._dispatch(session, dom_action, target)
+                        mutation_response = await response_info.value
+                    finally:
+                        session.recovery_binding = None
+                    receipt = parse_receipt(
+                        mutation_response.status,
+                        {key.lower(): value for key, value in mutation_response.headers.items()},
+                    )
+                    if receipt.state == "mismatch":
+                        return await self._recovery_observation_result(
+                            session,
+                            envelope,
+                            False,
+                            "idempotency_mismatch",
+                            receipt=receipt,
+                        )
+                else:
+                    await self._dispatch(session, dom_action, target)
+                self.policy.assert_final_navigation(session.page.url)
+                return await self._recovery_observation_result(
+                    session, envelope, True, None, receipt=receipt
+                )
+            except asyncio.CancelledError:
+                await self._close_session(session)
+                raise
+            except (PolicyViolation, ValueError) as exc:
+                return await self._recovery_observation_result(
+                    session, envelope, False, "input_rejected", message=self._sanitize(str(exc))
+                )
+            except PlaywrightTimeoutError:
+                return await self._recovery_observation_result(
+                    session, envelope, False, "browser_timeout"
+                )
+            except PlaywrightError as exc:
+                return await self._recovery_observation_result(
+                    session,
+                    envelope,
+                    False,
+                    "browser_error",
+                    message=self._sanitize(str(exc)),
+                )
+
     async def close_session(self, session_id: str) -> SessionClosed:
         async with self._sessions_lock:
             session = self._sessions.get(session_id)
@@ -466,6 +638,16 @@ class BrowserRuntime:
                 await self._close_session(session)
         return HybridSessionClosed(session_id=session_id, closed=True)
 
+    async def close_recovery_session(self, session_id: str) -> RecoverySessionClosed:
+        async with self._sessions_lock:
+            session = self._sessions.get(session_id)
+        if session is None or session.mode != "recovery" or session.recovery_epoch is None:
+            raise UnknownSessionError(session_id)
+        epoch = session.recovery_epoch
+        async with session.lock:
+            await self._close_session(session)
+        return RecoverySessionClosed(session_id=session_id, session_epoch=epoch, closed=True)
+
     async def close_all(self) -> None:
         async with self._sessions_lock:
             sessions = list(self._sessions.values())
@@ -474,7 +656,7 @@ class BrowserRuntime:
                 await self._close_session(session)
 
     async def _open_session(
-        self, initial_path: str, mode: Literal["dom", "vision", "hybrid"]
+        self, initial_path: str, mode: Literal["dom", "vision", "hybrid", "recovery"]
     ) -> BrowserSession:
         session_id = self._session_id_factory()
         initial_url = self.policy.resolve_navigation(initial_path)
@@ -484,7 +666,7 @@ class BrowserRuntime:
         page: Page | None = None
         try:
             browser = await playwright.chromium.launch(headless=True)
-            if mode in {"vision", "hybrid"}:
+            if mode in {"vision", "hybrid", "recovery"}:
                 context = await browser.new_context(
                     accept_downloads=False,
                     service_workers="block",
@@ -503,18 +685,27 @@ class BrowserRuntime:
             page = await context.new_page()
             page.set_default_timeout(self.config.limits.browser_action_timeout_ms)
             page.set_default_navigation_timeout(self.config.limits.browser_action_timeout_ms)
+            opened_session: BrowserSession | None = None
 
             async def guard_request(route: Route) -> None:
                 request = route.request
                 if self.policy.allows_request(request.url):
-                    await route.continue_()
+                    binding = (
+                        opened_session.recovery_binding if opened_session is not None else None
+                    )
+                    if binding is not None and mutation_matches(
+                        binding.operation, request.method, request.url
+                    ):
+                        await route.continue_(headers={**request.headers, **fixed_headers(binding)})
+                    else:
+                        await route.continue_()
                 else:
                     await route.abort("blockedbyclient")
 
             await page.route("**/*", guard_request)
             await page.goto(initial_url, wait_until="domcontentloaded")
             self.policy.assert_final_navigation(page.url)
-            return BrowserSession(
+            opened_session = BrowserSession(
                 session_id=session_id,
                 mode=mode,
                 playwright=playwright,
@@ -525,6 +716,7 @@ class BrowserRuntime:
                 observation_id="",
                 references={},
             )
+            return opened_session
         except BaseException:
             await self._close_handles(page, context, browser, playwright)
             raise
@@ -546,7 +738,7 @@ class BrowserRuntime:
     async def _require_session(
         self,
         session_id: str,
-        mode: Literal["dom", "vision", "hybrid"] | None = None,
+        mode: Literal["dom", "vision", "hybrid", "recovery"] | None = None,
     ) -> BrowserSession:
         async with self._sessions_lock:
             session = self._sessions.get(session_id)
@@ -1074,6 +1266,59 @@ class BrowserRuntime:
             envelope,
             error.category,
             "Hybrid session could not produce a compliant current observation",
+        )
+
+    async def _recovery_observation_result(
+        self,
+        session: BrowserSession,
+        envelope: RecoveryDomActionEnvelope,
+        success: bool,
+        error_category: HybridErrorCategory | Literal["idempotency_mismatch"] | None,
+        *,
+        message: str | None = None,
+        receipt: RecoveryReceiptResult | None = None,
+    ) -> RecoveryActionResult:
+        try:
+            observation = cast(
+                HybridDomObservation,
+                await self._refresh_hybrid_observation(
+                    session,
+                    "dom",
+                    action_id=envelope.action.action_id,
+                    action_type=envelope.action.type,
+                    success=success,
+                    error_category=(
+                        error_category
+                        if error_category != "idempotency_mismatch"
+                        else "input_rejected"
+                    ),
+                ),
+            )
+        except HybridObservationError:
+            await self._close_session(session)
+            return RecoveryActionResult(
+                session_id=session.session_id,
+                session_epoch=envelope.session_epoch,
+                action_id=envelope.action.action_id,
+                action_type=envelope.action.type,
+                success=False,
+                terminal=True,
+                error_category=error_category or "internal_error",
+                message="Recovery session could not produce a compliant observation",
+                receipt=receipt,
+            )
+        return RecoveryActionResult(
+            session_id=session.session_id,
+            session_epoch=envelope.session_epoch,
+            action_id=envelope.action.action_id,
+            action_type=envelope.action.type,
+            success=success,
+            terminal=False,
+            error_category=error_category,
+            message=message
+            or ("Recovery action completed" if success else "Recovery action rejected"),
+            observation=observation,
+            receipt=receipt,
         )
 
     async def _refresh_hybrid_observation(

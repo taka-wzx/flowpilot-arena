@@ -1,7 +1,14 @@
 from datetime import date, datetime
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 SyntheticEmail = Annotated[str, StringConstraints(min_length=6, max_length=255)]
 SyntheticAssetTag = Annotated[str, StringConstraints(pattern=r"^SYN-[A-Z0-9-]+$", max_length=80)]
@@ -150,3 +157,38 @@ class AssetRelease(W7StrictModel):
 
 class MailboxDisable(W7StrictModel):
     pass
+
+
+W8Operation = Literal[
+    "create_ticket",
+    "create_account",
+    "assign_asset",
+    "create_mailbox",
+    "transfer_employee",
+    "disable_employee",
+    "close_ticket",
+    "revoke_account",
+    "release_asset",
+    "disable_mailbox",
+]
+
+
+class W8IdempotencyMetadata(W7StrictModel):
+    task_id: Annotated[str, StringConstraints(min_length=1, max_length=40)]
+    idempotency_key: Annotated[str, StringConstraints(pattern=r"^op_[0-9a-f]{64}$")]
+    request_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+    plan_revision: int = Field(ge=1, le=2)
+    step_id: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,39}$")]
+    operation: W8Operation
+
+
+class W8ReceiptResult(W7StrictModel):
+    schema_version: Literal["w8-receipt-result/1.0"] = "w8-receipt-result/1.0"
+    state: Literal["created", "replayed", "mismatch"]
+    result_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")] | None = None
+
+    @model_validator(mode="after")
+    def validate_result(self) -> Self:
+        if (self.state == "mismatch") == (self.result_hash is not None):
+            raise ValueError("receipt result fields are inconsistent")
+        return self

@@ -1,104 +1,104 @@
 # Architecture
 
-## W7 current-state architecture
+## W8 current-state architecture
 
-W7 preserves released W1 control paths, W2 five-module synthetic Sandbox, W3
-Arena/Grader, W4 DOM Agent, W5 Vision Agent, and W6 Hybrid Agent. It adds a
-fourth independent Agent service for one-shot bounded planning and an
-independent W7 JML catalog inside the synthetic Arena management boundary.
+W8 preserves W1-W7 and adds one isolated durable orchestration boundary.
+Recovery Workflow Worker does not execute browser or business operations. It
+replays deterministic safe state and calls Planning Agent Activities; Planning
+Agent alone reaches Browser Worker; Browser Worker alone drives the fixed
+synthetic pages. Arena/Grader remain outside every Agent service.
 
 ~~~mermaid
 flowchart LR
-    Caller["Trusted acceptance caller<br/>Reset/Seed · brief · independent grade"] --> Arena["W3 Arena + W7 JML management"]
-    Caller --> Dom["W4 DOM Agent"]
-    Caller --> Vision["W5 Vision Agent"]
-    Caller --> Hybrid["W6 Hybrid Agent"]
-    Caller --> Planning["W7 Planning Agent<br/>Planner · Matcher · Verifier"]
-    Dom --> Worker["Isolated Browser Worker"]
-    Vision --> Worker
-    Hybrid --> Worker
-    Planning -->|"dedicated internal planning-worker"| Worker
-    Worker --> Web["Five Sandbox pages"]
-    Web --> API["Synthetic business APIs"]
-    API --> DB["Synthetic PostgreSQL"]
-    Arena --> DB
+    Caller["Trusted W8 acceptance caller<br/>encrypt · start · independent grade"]
+    Caller -->|"opaque ciphertext + closed fault"| Temporal["Temporal Server 1.31.2"]
+    Temporal -->|"temporal-control"| Recovery["Recovery Workflow Worker<br/>Workflow + Activities"]
+    Recovery -->|"recovery-planning"| Planning["W7 Planning Agent<br/>W8 recovery/step API"]
+    Planning -->|"planning-worker"| Browser["Browser Worker<br/>epoch + current refs"]
+    Browser -->|"browser-sandbox"| Web["Five synthetic Sandbox pages"]
+    Web --> API["Typed Sandbox API<br/>business fact + receipt transaction"]
+    API --> SandboxDB["Synthetic PostgreSQL"]
+    Temporal --> TemporalDB["Independent Temporal PostgreSQL"]
+    Caller --> Arena["W3/W7 Reset/Seed + Grader"]
+    Arena --> SandboxDB
 ~~~
 
-Acceptance orchestration alone may read immutable task metadata, compare
-Reset/Seed results, render a human brief/supplied values, and call an
-independent Grader. It is profile-only and is not an Agent tool.
+Temporal Server joins two networks: `temporal-db` with only its persistence
+database, and `temporal-control` with Recovery Worker and profile-only trusted
+acceptance. Recovery Worker additionally joins `recovery-planning` with
+Planning Agent. It cannot resolve Browser Worker, Sandbox Web/API, Arena,
+Grader, or either database. Planning Agent retains only `planning-worker` for
+Browser Worker. No Temporal UI or host port exists.
 
-| Boundary | Responsibility | Deliberately excluded |
-|---|---|---|
-| Browser Worker | Released W4-W6 one-session observations/actions and reference lifecycle | Plans, task facts, Grader, arbitrary browser control |
-| Planning Agent | Frozen DAG, topology, matching, one ledger, runtime Verifier, deterministic fake execution | Sandbox/Arena/DB/Grader/provider/persistence/recovery |
-| W7 JML Arena package | Versioned catalog/generator, task-owned Reset/Seed, DB-fact Grader | Browser/model control and Agent access |
-| Sandbox API/UI | Five exact typed state transitions | Delete, generic patch, arbitrary data mutation, approval |
-| W3/W7 Graders | Sole task-success decisions from owned DB facts | Page, observation, plan, model, or finish trust |
-
-## Planning lifecycle
+## Durable lifecycle
 
 ~~~mermaid
 sequenceDiagram
     participant C as Trusted caller
+    participant T as Temporal
+    participant R as Recovery Worker
     participant P as Planning Agent
-    participant W as Browser Worker
-    participant V as Runtime Verifier
+    participant B as Browser Worker
+    participant S as Sandbox transaction
     participant G as Independent Grader
 
-    C->>P: finite process/category + bounded brief + supplied values
-    P->>P: generate once, validate/freeze DAG, charge one ledger
-    P->>W: create one W6 Hybrid session
-    loop deterministic topological steps
-        P->>P: require dependencies verified
-        P->>P: match global ∩ step ∩ page/mode ∩ budget
-        P->>W: current typed action envelope
-        W-->>P: current action result + current observation
-        P->>W: verification observation probe
-        W-->>V: current observation (old refs invalidated)
-        V-->>P: verified / not_verified / inconclusive
+    C->>C: validate and AES-GCM encrypt strict input
+    C->>T: start workflow with opaque envelope
+    T->>R: replay deterministic workflow state
+    R->>P: Activity decrypts and starts epoch 1
+    P->>B: fresh Browser/Context/Page + observation
+    loop lexical remaining steps
+        T->>R: schedule bounded step Activity
+        R->>P: strict step request + latest Checkpoint
+        P->>B: current epoch/generation/ref action
+        B->>S: fixed mutation + key/hash headers
+        S-->>B: committed or receipt replay safe code
+        B-->>P: current observation + safe receipt result
+        P-->>R: closed verified step result
+        R->>R: update ledger and hash Checkpoint
     end
-    P->>W: finish then unconditional delete
-    P-->>C: finished_ungraded + safe counters/hashes
+    Note over R,P: closed fault may force retry, fresh epoch, or one replan
+    R-->>C: finished_ungraded + safe hashes/counters
     C->>G: independent database-fact grade
 ~~~
 
-The validated Pydantic DAG is immutable and task-local. A lexical topological
-order is calculated once. A step can execute only after every dependency is
-verified. Verification failure stops or escalates; there is no retry or
-runtime replanning.
+The Workflow never sees decrypted business input. Only Activity code decrypts
+immediately before its Planning call and returns safe hashes/counters. Planner,
+Browser, persistence, fault injection I/O, and cleanup are Activities.
 
-## Authority and data flow
+## Checkpoint and browser epochs
 
-Planner consumes only a trusted finite process/category, bounded caller-
-rendered brief, and strict supplied values. It does not receive a Task Spec,
-expected state, fixture map, Grader predicate/checksum, database fact, DOM,
-image, or Reporting result during plan generation.
+A Checkpoint is a canonical safe-state projection, not a browser snapshot. It
+contains immutable plan/revision hashes, topology and safe step states,
+verified/completed/remaining IDs, session epoch, deadline and total usage,
+retry/recovery/replan/fault counters, receipt hashes, and parent/current hash.
+It contains no handle, observation/reference, page/model content, task spec, or
+grader data.
 
-The closed operation field, never objective prose, maps to exact step actions.
-Matcher computes a four-way intersection before a current opaque Worker
-reference can be selected. Browser Worker revalidates current session,
-generation, modality, observation, reference, and action.
+Epoch 1 is the no-fault path. Each recovery first closes/invalidates current
+state, then opens one wholly fresh Browser, Context, and Page. Epochs 2 and 3
+are the only recovery epochs. Planning resumes from the latest verified
+Checkpoint and re-observes current Sandbox facts; it never combines epochs.
 
-Runtime Verifier sees current observation, current action-result summary,
-trusted step conditions, and current ledger only. It cannot declare task
-success. Planning Agent finish remains `finished_ungraded`.
+## Idempotency transaction
 
-## JML data and Sandbox state
+For a fixed W8 mutation click, Browser Worker temporarily attaches only the
+validated W8 task/key/hash/revision/step/operation headers to the exact
+same-origin request. Sandbox validates the typed body, recomputes the canonical
+hash, and in one database transaction either applies the business change plus
+receipt or returns the existing receipt. Hash mismatch returns 409 before the
+business change. Grader reads business facts only and ignores receipts.
 
-The W7 catalog is separate from immutable W3 resources. Thirty templates
-generate three deterministic variants each. Task-level ownership confines
-Reset/Seed and grading. Reporting artifacts are generated/checksummed/frozen
-only and cannot influence W7 planning.
+## Failure and replan policy
 
-Existing database columns represent exact transitions: HRIS transfer/disable,
-ITSM close, IAM revoke, Asset release, and Mail disable. No schema migration or
-physical deletion is added. Planning Agent reaches these only through fixed UI
-controls and Browser Worker.
+Recovery order is fresh observation, one transient retry, new epoch, verified
+Checkpoint resume, one local replan, then escalation/safe failure. All attempts,
+faults, receipts, replays, Checkpoints, epochs, and revisions accumulate in the
+same total ledger. Revision 2 may replace only the failed and not-started
+descendant subgraph; completed nodes and side effects remain immutable.
 
-## Isolation and W8 boundary
+## W9 boundary
 
-Planning Agent is non-root, read-only, cap-dropped, no-new-privileges,
-tmpfs/pids-bounded, has no host port/mount/socket/credential, and joins only
-`planning-worker` with Browser Worker. W7 has no retry, checkpoint, recovery,
-Temporal, idempotency, fault injection, or partial replanning.
+W8 adds no context builder, memory, summary, retrieval, cache, or cross-task
+history. Temporal durable state is strictly operational safe state and cannot
+be used as semantic memory.

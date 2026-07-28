@@ -5,9 +5,25 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.2.0] - 2026-07-29
 
 ### Added
+
+- W8 deterministic Temporal Workflow/Activity boundary with fixed Python SDK
+  1.30.0, local Temporal Server 1.31.2, replay tests, and an independent
+  non-root Recovery Workflow Worker connected only to Temporal and Planning.
+- W8 AES-256-GCM opaque durable input envelope, canonical verified Checkpoint
+  lineage, one-day local retention, complete-history plaintext scan, and
+  explicit prohibition on business/page/model/grader plaintext in Temporal.
+- W8 fresh browser session epochs, old-reference invalidation, bounded
+  transient retry/recovery, trusted acceptance-only faults, non-resetting
+  W6/W7/W8 usage accounting, and one bounded immutable partial DAG revision.
+- W8 forward-only `w8_operation_receipts` migration and transactionally atomic
+  fixed synthetic business mutation/receipt semantics with same-hash replay,
+  mismatch rejection, task-owned Reset/Seed cleanup, and zero-duplicate tests.
+- W8 deterministic fault/recovery Compose acceptance for Activity ambiguity,
+  Browser/Recovery Worker restart, Temporal replay, Checkpoint mismatch,
+  idempotency mismatch, partial replan, cleanup, and independent grading.
 
 - W7 strict immutable Planning DAG schemas with deterministic topology,
   node/edge/depth/width/dependency/field/byte caps, dependency state machine,
@@ -103,6 +119,14 @@ and this project follows [Semantic Versioning](https://semver.org/).
   aggregate call/token/time/cost limits respected.
 
 ### Security
+
+- Isolated Recovery Worker from Browser Worker, Sandbox, Arena, Grader, and
+  both databases; separated Temporal persistence from Sandbox business data;
+  prohibited Temporal UI/host ports/repository mounts/Docker sockets.
+- Bound W8 mutations to current epoch/session/generation/observation/reference
+  plus a deterministic task/key/request hash and fixed closed operation;
+  arbitrary headers, URLs, interception, code, and changed-hash replay fail
+  closed.
 
 - Restricted W7 plan authority to finite process/category, closed operations,
   strict supplied values, four-way tool intersection, current Worker

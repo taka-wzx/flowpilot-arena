@@ -1,6 +1,15 @@
 from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, Date, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    SmallInteger,
+    String,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -105,4 +114,25 @@ class HumanBaselineRecord(Base):
     action_count: Mapped[int] = mapped_column(Integer)
     final_score: Mapped[int] = mapped_column(Integer)
     notes: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class W8OperationReceipt(Base):
+    __tablename__ = "w8_operation_receipts"
+    __table_args__ = (
+        CheckConstraint("length(idempotency_key) = 67", name="ck_w8_receipt_key_length"),
+        CheckConstraint("length(request_hash) = 64", name="ck_w8_receipt_request_hash_length"),
+        CheckConstraint("length(result_hash) = 64", name="ck_w8_receipt_result_hash_length"),
+        CheckConstraint("plan_revision >= 1 AND plan_revision <= 2", name="ck_w8_revision"),
+        CheckConstraint("outcome_code = 'committed'", name="ck_w8_outcome"),
+    )
+
+    task_id: Mapped[str] = mapped_column(String(40), primary_key=True, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(67), primary_key=True)
+    request_hash: Mapped[str] = mapped_column(String(64))
+    plan_revision: Mapped[int] = mapped_column(SmallInteger)
+    step_id: Mapped[str] = mapped_column(String(40))
+    operation: Mapped[str] = mapped_column(String(40))
+    outcome_code: Mapped[str] = mapped_column(String(32), default="committed")
+    result_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

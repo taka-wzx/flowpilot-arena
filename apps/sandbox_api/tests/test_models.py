@@ -9,6 +9,7 @@ def test_foundation_schema_contains_five_module_entities(db_engine: Engine) -> N
         "iam_accounts",
         "mailboxes",
         "onboarding_tickets",
+        "w8_operation_receipts",
     }
 
 

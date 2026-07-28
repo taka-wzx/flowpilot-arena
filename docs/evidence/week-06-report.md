@@ -1,9 +1,8 @@
 # Week 06 evidence report - Hybrid Router
 
 - Status: W6 local implementation, deterministic tests, W4/W5 regressions,
-  fake Hybrid Compose acceptance, isolation inspection, and cleanup complete;
-  the configured private-key hook runner remains unavailable without an
-  unapproved download
+  fake Hybrid Compose acceptance, isolation inspection, cleanup, and all
+  available secret/diff checks complete
 - Branch: week/06-hybrid-router
 - Baseline commit: 5981bf9f2d419854f51e0ced826efb3ac3864953 (w05-vision)
 - Runtime baseline: Python 3.13; Playwright 1.60.0; Chromium revision 1223
@@ -208,7 +207,7 @@ authorization and W5 fake result were not reused.
 | W6 Hybrid smoke | Passed; explicit wrong-mode/stale-reference rejection and idempotent cleanup, immediate 30/100 false, fresh DOM-to-Vision completion 100/100 true |
 | Container isolation | Passed; Hybrid Agent non-root/read-only/cap-drop/no-new-privileges/no mounts/no host port, resolves only Browser Worker on dedicated internal network |
 | Container cleanup | Passed; down -v --remove-orphans left no project containers, networks, or volumes |
-| Private-key detector | Global pre-commit unavailable; temporary uvx needed a PyPI download, and that external-code execution was not approved, so this current-source gate is unavailable |
+| Private-key detector | Passed; explicitly authorized temporary uvx runner initialized the configured pre-commit-hooks v5.0.0 environment and detect-private-key passed all files |
 | Gitleaks | Passed: 37 commits/about 1.60 MB history and all 42 exact changed paths; no leaks |
 | Diff format | git diff --check passed |
 | Exact allowlist audit | 42 changed, 42 allowed, 0 outside, 0 allowlisted-but-unchanged |
@@ -242,11 +241,11 @@ changed-path secret checks without reading the protected directory.
    and lacks the docker compose plugin and Buildx. Compatible classic builds,
    migrations, all three fake smoke profiles, isolation inspection, and cleanup
    passed without weakening their acceptance semantics.
-6. The global pre-commit entry point is unavailable. A temporary uvx runner
-   required downloading and executing third-party code from PyPI; that action
-   was not approved, so the configured private-key hook is explicitly recorded
-   as unavailable rather than replaced or weakened. Gitleaks history and exact
-   changed-path scans passed.
+6. The global pre-commit entry point is unavailable. After explicit user
+   authorization, a temporary uvx runner downloaded pre-commit and the exact
+   configured pre-commit-hooks v5.0.0 environment; detect-private-key passed all
+   files. No runner, hook environment, ignore, or baseline was added to the
+   repository. Gitleaks history and exact changed-path scans also passed.
 
 ## W7 boundary
 

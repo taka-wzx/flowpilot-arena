@@ -11,9 +11,14 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend-quality:
     name: Backend lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -36,6 +41,7 @@ jobs:
 
   frontend-quality:
     name: Frontend lint, type-check, unit test, and build
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -55,6 +61,7 @@ jobs:
 
   sandbox-backend-quality:
     name: Sandbox/Arena backend lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -87,6 +94,7 @@ jobs:
 
   sandbox-frontend-quality:
     name: Sandbox frontend lint, type-check, unit test, and build
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -106,6 +114,7 @@ jobs:
 
   browser-worker-quality:
     name: Browser Worker lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -128,6 +137,7 @@ jobs:
 
   dom-agent-quality:
     name: DOM Agent lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -150,6 +160,7 @@ jobs:
 
   vision-agent-quality:
     name: Vision Agent lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -172,6 +183,7 @@ jobs:
 
   hybrid-agent-quality:
     name: Hybrid Agent lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -194,6 +206,7 @@ jobs:
 
   planning-agent-quality:
     name: Planning Agent lint, type-check, and unit test
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -216,6 +229,7 @@ jobs:
 
   recovery-worker-quality:
     name: Recovery Worker lint, type-check, unit test, and replay
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -245,132 +259,18 @@ jobs:
         run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
       - run: docker compose -f deploy/compose/compose.yaml config
 
-  compose-smoke:
-    name: W4 deterministic Compose smoke
+  compose-regression:
+    name: W4-W10 deterministic Compose regression
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - name: Generate runtime-only local envelope key
         run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W4 stack
-        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
-      - name: Run fake-model smoke and verify independent grading
-        run: >-
-          docker compose -f deploy/compose/compose.yaml --profile acceptance
-          run --build --rm acceptance-smoke
-      - name: Stop stack and remove synthetic volume
-        if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
-
-  vision-compose-smoke:
-    name: W5 deterministic Vision-only Compose smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v6
-      - name: Generate runtime-only local envelope key
-        run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W5 stack
-        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
-      - name: Run fake Vision-only smoke and verify independent grading
-        run: >-
-          docker compose -f deploy/compose/compose.yaml --profile vision-acceptance
-          run --build --rm vision-acceptance-smoke
-      - name: Stop stack and remove synthetic volume
-        if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
-
-  hybrid-compose-smoke:
-    name: W6 deterministic Hybrid Compose smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v6
-      - name: Generate runtime-only local envelope key
-        run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W6 stack
-        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
-      - name: Run fake Hybrid smoke and verify independent grading
-        run: >-
-          docker compose -f deploy/compose/compose.yaml --profile hybrid-acceptance
-          run --build --rm hybrid-acceptance-smoke
-      - name: Stop stack and remove synthetic volume
-        if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
-
-  planning-compose-smoke:
-    name: W7 deterministic Planning Compose smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - name: Generate runtime-only local envelope key
-        run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W7 stack
-        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
-      - name: Run fake Planning smoke and verify independent grading
-        run: >-
-          docker compose -f deploy/compose/compose.yaml --profile planning-acceptance
-          run --build --rm planning-acceptance-smoke
-      - name: Stop stack and remove synthetic volume
-        if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
-
-  recovery-compose-smoke:
-    name: W8 deterministic Recovery Compose smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v6
-      - name: Generate runtime-only local envelope key
-        run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W8 stack
-        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
-      - name: Verify W8 receipt migration
-        run: >-
-          docker compose -f deploy/compose/compose.yaml exec -T sandbox-api
-          alembic current
-      - name: Run deterministic recovery, idempotency, fault, replan, and history smoke
-        run: >-
-          docker compose -f deploy/compose/compose.yaml --profile recovery-acceptance
-          run --build --rm recovery-acceptance-smoke
-      - name: Restart Browser and Recovery Workers and verify health
-        run: >-
-          docker compose -f deploy/compose/compose.yaml restart browser-worker recovery-worker
-      - run: docker compose -f deploy/compose/compose.yaml ps
-      - name: Stop stack and remove both synthetic volumes
-        if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
-
-  context-compose-smoke:
-    name: W9 deterministic Context Compose smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    steps:
-      - uses: actions/checkout@v6
-      - name: Generate runtime-only local envelope key
-        run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W9 stack
-        run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
-      - name: Run deterministic context, memory, retrieval, summary, and ablation smoke
-        run: >-
-          docker compose -f deploy/compose/compose.yaml --profile context-acceptance
-          run --build --rm context-acceptance-smoke
-      - run: docker compose -f deploy/compose/compose.yaml ps
-      - name: Stop stack and remove both synthetic volumes
-        if: always()
-        run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
-
-  identity-compose-smoke:
-    name: W10 deterministic Identity Compose smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 40
-    steps:
-      - uses: actions/checkout@v6
-      - name: Generate runtime-only local envelope key
-        run: echo "RECOVERY_ENVELOPE_KEY=$(openssl rand -base64 32 | tr '+/' '-_' | tr -d '\n')" >> "$GITHUB_ENV"
-      - name: Build and start isolated W1-W10 stack
+      - name: Build and start isolated W1-W10 stack once
         run: docker compose -f deploy/compose/compose.yaml up --build -d --wait
       - name: Verify Sandbox and Control Plane migrations
         run: |
@@ -378,12 +278,40 @@ jobs:
           docker compose -f deploy/compose/compose.yaml exec -T sandbox-api alembic check
           docker compose -f deploy/compose/compose.yaml exec -T control-api alembic current
           docker compose -f deploy/compose/compose.yaml exec -T control-api alembic check
-      - name: Run local OIDC, RBAC, tenant, context, and optimistic-lock smoke
+      - name: Run W4 deterministic fake-model smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile acceptance
+          run --build --rm acceptance-smoke
+      - name: Run W5 deterministic Vision-only smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile vision-acceptance
+          run --build --rm vision-acceptance-smoke
+      - name: Run W6 deterministic Hybrid smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile hybrid-acceptance
+          run --build --rm hybrid-acceptance-smoke
+      - name: Run W7 deterministic Planning smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile planning-acceptance
+          run --build --rm planning-acceptance-smoke
+      - name: Run W8 deterministic Recovery smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile recovery-acceptance
+          run --build --rm recovery-acceptance-smoke
+      - name: Restart Browser and Recovery Workers and verify health
+        run: >-
+          docker compose -f deploy/compose/compose.yaml restart browser-worker recovery-worker
+      - run: docker compose -f deploy/compose/compose.yaml ps
+      - name: Run W9 deterministic Context smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile context-acceptance
+          run --build --rm context-acceptance-smoke
+      - name: Run W10 deterministic Identity smoke last
         run: >-
           docker compose -f deploy/compose/compose.yaml --profile identity-acceptance
           run --build --rm identity-acceptance-smoke
       - run: docker compose -f deploy/compose/compose.yaml ps
-      - name: Stop stack and remove all synthetic identity and task volumes
+      - name: Stop stack and remove all synthetic containers, networks, and volumes
         if: always()
         run: docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 
@@ -397,3 +325,82 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  required-ci-gate:
+    name: Required CI gate
+    if: always()
+    needs:
+      - backend-quality
+      - frontend-quality
+      - sandbox-backend-quality
+      - sandbox-frontend-quality
+      - browser-worker-quality
+      - dom-agent-quality
+      - vision-agent-quality
+      - hybrid-agent-quality
+      - planning-agent-quality
+      - recovery-worker-quality
+      - compose-config
+      - compose-regression
+      - secret-scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify the event-specific required job set
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ACTOR: ${{ github.actor }}
+          BACKEND_QUALITY: ${{ needs.backend-quality.result }}
+          FRONTEND_QUALITY: ${{ needs.frontend-quality.result }}
+          SANDBOX_BACKEND_QUALITY: ${{ needs.sandbox-backend-quality.result }}
+          SANDBOX_FRONTEND_QUALITY: ${{ needs.sandbox-frontend-quality.result }}
+          BROWSER_WORKER_QUALITY: ${{ needs.browser-worker-quality.result }}
+          DOM_AGENT_QUALITY: ${{ needs.dom-agent-quality.result }}
+          VISION_AGENT_QUALITY: ${{ needs.vision-agent-quality.result }}
+          HYBRID_AGENT_QUALITY: ${{ needs.hybrid-agent-quality.result }}
+          PLANNING_AGENT_QUALITY: ${{ needs.planning-agent-quality.result }}
+          RECOVERY_WORKER_QUALITY: ${{ needs.recovery-worker-quality.result }}
+          COMPOSE_CONFIG: ${{ needs.compose-config.result }}
+          COMPOSE_REGRESSION: ${{ needs.compose-regression.result }}
+          SECRET_SCAN: ${{ needs.secret-scan.result }}
+        run: |
+          set -euo pipefail
+
+          expected_quality=success
+          expected_compose=success
+          case "$EVENT_NAME" in
+            push)
+              expected_quality=skipped
+              expected_compose=skipped
+              ;;
+            pull_request)
+              if [[ "$ACTOR" == "dependabot[bot]" ]]; then
+                expected_compose=skipped
+              fi
+              ;;
+            workflow_dispatch)
+              ;;
+            *)
+              echo "Unexpected event: $EVENT_NAME"
+              exit 1
+              ;;
+          esac
+
+          [[ "$COMPOSE_CONFIG" == success ]]
+          [[ "$SECRET_SCAN" == success ]]
+          [[ "$COMPOSE_REGRESSION" == "$expected_compose" ]]
+
+          quality_results=(
+            "$BACKEND_QUALITY"
+            "$FRONTEND_QUALITY"
+            "$SANDBOX_BACKEND_QUALITY"
+            "$SANDBOX_FRONTEND_QUALITY"
+            "$BROWSER_WORKER_QUALITY"
+            "$DOM_AGENT_QUALITY"
+            "$VISION_AGENT_QUALITY"
+            "$HYBRID_AGENT_QUALITY"
+            "$PLANNING_AGENT_QUALITY"
+            "$RECOVERY_WORKER_QUALITY"
+          )
+          for result in "${quality_results[@]}"; do
+            [[ "$result" == "$expected_quality" ]]
+          done

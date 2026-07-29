@@ -96,6 +96,7 @@ README.md
 CHANGELOG.md
 
 .github/workflows/ci.yml
+.github/dependabot.yml
 
 docs/agent-contract.md
 docs/project-roadmap.md
@@ -367,18 +368,53 @@ VLM/embedding calls remain 0 and cost remains 0.
 
 ## GitHub Actions quota, Git, and W11 boundary
 
-CI retains main-only push and full pull-request triggers and adds exactly one
-necessary W10 job, for 19 total jobs. Remote delivery is not authorized. Do not
-push, create a PR, merge, tag, release, trigger/rerun Actions, or call a real
-identity/model/provider service without separate explicit user authorization.
+W10 was delivered by pull request #32. Its feature commit is
+`df0e48a3b965959425c42e14a1280b39a7899cb4`, and its immutable main merge is
+`9bbb0303c6bc795468b094df676a86dfcbc69dcb`. Annotated tags now bind
+`w09-context` to `5e1868d30da70c2d8cd9db1705db0cb8f7dabfac` and `w10-identity` to the W10
+merge. Neither tag creates a Release; the current Release remains
+`v0.2.0 - Hybrid + Recovery` at `w08-recovery`.
 
-If remote delivery is later authorized, diagnose all failures first, make one
-concentrated fix and one necessary feature push. With no code/lock/migration/
-Compose/workflow change and a transient infrastructure failure, rerun failed
-jobs only. Never rerun all jobs, a successful/superseded run, create an empty
-commit or duplicate PR, force-push, or change unrelated CI. Record every
-necessary extra run ID, SHA, trigger, code-change state, and why a failed-job-
-only rerun was insufficient.
+The 19-job W10 pull-request run `30435351140` passed on its first attempt. The
+post-merge main run `30435957709` passed 17 jobs on attempt 1; only W4 and W7
+failed for external runner/Docker infrastructure reasons. The authorized
+failed-jobs-only attempt 2 could not allocate a runner because the Actions
+spending limit was exhausted. It must not be rerun until Actions quota or
+billing is restored.
+
+The user separately authorizes one post-W10 quota-maintenance change on
+`codex/ci-quota-maintenance`. It may modify only this contract,
+`.github/dependabot.yml`, and `.github/workflows/ci.yml`; it changes no product,
+lock, migration, acceptance contract, security boundary, or released tag. The
+maintenance policy is frozen as follows:
+
+- ordinary Dependabot version updates are paused with
+  `open-pull-requests-limit: 0` for every configured ecosystem; security-update
+  pull requests remain enabled;
+- one workflow-level concurrency group cancels superseded runs for the same
+  pull request or ref;
+- main pushes run only Compose configuration, secret scanning, and one stable
+  `Required CI gate`;
+- human pull requests and manual dispatches run all ten quality jobs, one
+  consolidated sequential W4-W10 Compose regression job, Compose configuration,
+  secret scanning, and the required gate;
+- Dependabot pull requests run the ten quality jobs, Compose configuration,
+  secret scanning, and the required gate, but skip the costly Compose regression;
+- the consolidated Compose job builds and starts the W1-W10 stack once, checks
+  both migrations, runs W4-W10 acceptance profiles in order with W8 restart
+  checks and W10 last, and always removes project containers, networks, and
+  volumes; and
+- repository Actions are restricted to the exact action repositories and refs
+  used by the workflow. Main branch protection requires pull requests, an
+  up-to-date successful `Required CI gate`, applies to administrators, and
+  blocks force pushes and deletion without requiring an approval count that
+  would prevent a solo maintainer from merging.
+
+This maintenance is delivered as one explicit three-file commit, one push, and
+one pull request. Do not merge it, rerun Actions, create an empty commit, weaken
+a gate, amend W9/W10, create another tag/Release, or begin W11 while Actions
+cannot allocate runners. If the PR run is blocked at zero steps by quota, record
+that state and wait for quota restoration.
 
 Local completion requires every application lock/quality/test gate; Control
 Plane migration round-trip; Sandbox migration freeze; W3/W7/W9 freezes; W4-W10

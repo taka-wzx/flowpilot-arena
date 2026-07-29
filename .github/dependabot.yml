@@ -2,35 +2,42 @@ version: 2
 updates:
   - package-ecosystem: pip
     directory: /apps/control_api
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
 
   - package-ecosystem: npm
     directory: /apps/control_web
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
 
   - package-ecosystem: pip
     directory: /apps/sandbox_api
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
 
   - package-ecosystem: npm
     directory: /apps/sandbox_web
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
 
   - package-ecosystem: pip
     directory: /apps/browser_worker
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
 
   - package-ecosystem: pip
     directory: /apps/dom_agent
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
 
   - package-ecosystem: github-actions
     directory: /
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly

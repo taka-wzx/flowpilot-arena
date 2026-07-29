@@ -40,3 +40,24 @@ def test_unknown_state_version_and_limit_fail_closed(workflow_start: WorkflowSta
         WorkflowStart.model_validate(
             {**workflow_start.model_dump(mode="json"), "fault_scenario": "page_directed"}
         )
+
+
+def test_w9_context_usage_is_a_safe_durable_projection() -> None:
+    usage = DurableUsage().model_copy(
+        update={
+            "planning_usage": DurableUsage().planning_usage.model_copy(
+                update={
+                    "context_assemblies": 1,
+                    "context_items": 7,
+                    "context_bytes": 1_400,
+                    "context_tokens": 350,
+                    "retrieval_queries": 1,
+                    "summary_inputs": 2,
+                    "memory_reads": 1,
+                }
+            )
+        }
+    )
+    assert usage.planning_usage.context_assemblies == 1
+    assert usage.planning_usage.context_items == 7
+    assert "safe_value" not in usage.model_dump(mode="json")

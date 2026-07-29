@@ -13,6 +13,11 @@ def test_one_ledger_accumulates_planning_execution_and_verification() -> None:
     ledger.charge_action()
     ledger.charge_dom_observation(1_000)
     ledger.charge_verifier(probe=True)
+    ledger.charge_context_assembly()
+    ledger.charge_context_item(canonical_bytes=100, estimated_tokens=25)
+    ledger.charge_retrieval(candidates=2, selected=1)
+    ledger.charge_summary(inputs=3, outputs=2, dropped=1)
+    ledger.charge_memory(reads=1, writes=1)
     now[0] += 1.25
     usage = ledger.snapshot()
     assert usage.plan_generations == 1
@@ -23,6 +28,13 @@ def test_one_ledger_accumulates_planning_execution_and_verification() -> None:
     assert usage.verifier_calls == 1
     assert usage.verifier_probes == 1
     assert usage.model_calls == 2
+    assert usage.context_assemblies == 1
+    assert usage.context_items == 1
+    assert usage.context_bytes == 100
+    assert usage.retrieval_candidates == 2
+    assert usage.summary_dropped == 1
+    assert usage.memory_reads == 1
+    assert usage.memory_writes == 1
     assert usage.elapsed_ms == 1_250
 
 

@@ -85,8 +85,13 @@ class PlanningExecutor:
         self._verifier = verifier or DeterministicStepVerifier()
         self._action_number = 0
 
-    async def run(self, request: PlanningRunRequest) -> PlanningRunResult:
-        ledger = TotalBudgetLedger(request.budget)
+    async def run(
+        self,
+        request: PlanningRunRequest,
+        *,
+        ledger: TotalBudgetLedger | None = None,
+    ) -> PlanningRunResult:
+        ledger = ledger or TotalBudgetLedger(request.budget)
         step_results: list[StepExecutionResult] = []
         rejection_reasons: list[ToolRejectionReason] = []
         plan_id: str | None = None

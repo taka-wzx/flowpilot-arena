@@ -99,6 +99,13 @@ BudgetReason = Literal[
     "input_token_budget_exhausted",
     "output_token_budget_exhausted",
     "cost_budget_exhausted",
+    "context_assembly_budget_exhausted",
+    "context_item_budget_exhausted",
+    "context_byte_budget_exhausted",
+    "context_token_budget_exhausted",
+    "retrieval_budget_exhausted",
+    "summary_budget_exhausted",
+    "memory_budget_exhausted",
 ]
 
 
@@ -286,6 +293,20 @@ class TotalBudget(StrictModel):
     max_cost_microusd: int = Field(default=0, ge=0, le=1_000_000)
     max_planning_cost_microusd: int = Field(default=0, ge=0, le=1_000_000)
     max_verifier_cost_microusd: int = Field(default=0, ge=0, le=1_000_000)
+    max_context_assemblies: int = Field(default=1, ge=1, le=1)
+    max_context_items: int = Field(default=32, ge=1, le=32)
+    max_context_bytes: int = Field(default=16_384, ge=1, le=16_384)
+    max_context_tokens: int = Field(default=4_096, ge=1, le=4_096)
+    max_retrieval_queries: int = Field(default=1, ge=0, le=1)
+    max_retrieval_candidates: int = Field(default=6, ge=0, le=6)
+    max_retrieval_selected: int = Field(default=3, ge=0, le=3)
+    max_summary_inputs: int = Field(default=12, ge=0, le=12)
+    max_summary_outputs: int = Field(default=8, ge=0, le=8)
+    max_summary_dropped: int = Field(default=12, ge=0, le=12)
+    max_memory_reads: int = Field(default=6, ge=0, le=6)
+    max_memory_writes: int = Field(default=6, ge=0, le=6)
+    max_memory_deletes: int = Field(default=6, ge=0, le=6)
+    max_memory_rejections: int = Field(default=6, ge=0, le=6)
     max_duration_seconds: int = Field(default=300, ge=1, le=300)
 
 
@@ -321,6 +342,20 @@ class TotalUsage(StrictModel):
     cost_microusd: int = Field(ge=0)
     planning_cost_microusd: int = Field(ge=0)
     verifier_cost_microusd: int = Field(ge=0)
+    context_assemblies: int = Field(default=0, ge=0)
+    context_items: int = Field(default=0, ge=0)
+    context_bytes: int = Field(default=0, ge=0)
+    context_tokens: int = Field(default=0, ge=0)
+    retrieval_queries: int = Field(default=0, ge=0)
+    retrieval_candidates: int = Field(default=0, ge=0)
+    retrieval_selected: int = Field(default=0, ge=0)
+    summary_inputs: int = Field(default=0, ge=0)
+    summary_outputs: int = Field(default=0, ge=0)
+    summary_dropped: int = Field(default=0, ge=0)
+    memory_reads: int = Field(default=0, ge=0)
+    memory_writes: int = Field(default=0, ge=0)
+    memory_deletes: int = Field(default=0, ge=0)
+    memory_rejections: int = Field(default=0, ge=0)
     elapsed_ms: int = Field(ge=0)
 
 

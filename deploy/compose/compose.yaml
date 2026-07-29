@@ -694,6 +694,33 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=32m
 
+  context-acceptance-smoke:
+    profiles:
+      - context-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w9_context_compose_smoke.py"]
+    environment:
+      SANDBOX_API_URL: http://sandbox-api:8001
+      PLANNING_AGENT_URL: http://planning-agent:8006
+    depends_on:
+      sandbox-api:
+        condition: service_healthy
+      planning-agent:
+        condition: service_healthy
+    networks:
+      - sandbox-backend
+      - planning-worker
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
 networks:
   control-backend:
   sandbox-backend:

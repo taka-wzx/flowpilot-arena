@@ -1,113 +1,104 @@
 # FlowPilot Arena
 
-> A governed enterprise computer-use Agent project and a separate synthetic
-> evaluation environment.
-> 面向企业级 Computer-Use Agent 与独立合成评测环境的受治理项目。
+> A governed enterprise computer-use Agent project and a separate resettable
+> synthetic evaluation environment.
 
-**Current status: W7 - Bounded Planning DAG.** Released W4 DOM-only, W5
-Vision-only, and W6 Hybrid paths remain intact. W7 adds one immutable bounded
-task DAG, deterministic closed-set tool matching, a single monotonic W6+W7
-budget ledger, step-level runtime verification, a separate fake-only Planning
-Agent, and a frozen 30-template/90-instance synthetic JML catalog. Independent
+**Current status: W8 - Durable Recovery, based on released W7.** W8 adds
+deterministic Temporal orchestration, opaque encrypted durable input, verified
+Checkpoints, fresh browser session epochs, transactional operation receipts,
+bounded retry/fault recovery, and one bounded partial DAG revision. Independent
 database-fact grading remains the only success authority.
 
-## What W7 contains
+W7 PR #29 merged at `0aa1349ffee0bfabdb8c9f02787f37dfe7f7c029` after its
+15-job PR CI and 15-job post-merge main CI passed. Tag `w07-planning` is
+published, and W8 was restacked on that exact baseline without a tree change.
 
-| Component | Current capability | Deliberately absent |
+## Current architecture
+
+| Component | W8 responsibility | Deliberately absent |
 |---|---|---|
-| W1-W3 | Control skeleton, five-app Sandbox, immutable W3 Arena/Grader | Real systems/data and browser/model-derived success |
-| W4 DOM | Bounded DOM observation, opaque refs, typed actions | Vision/router/planner in W4 API |
-| W5 Vision | Bounded JPEG, opaque Grounding, typed actions | Storage/path/URL, arbitrary pixels/selectors/code |
-| W6 Hybrid | One Browser/Context/Page, selected modality, deterministic Router/compression | Joined sessions, dual-modal call, planner/recovery |
-| W7 Planning Agent | Frozen bounded DAG, deterministic topology/matcher/Verifier/ledger | Arena/DB/Grader/provider access, retry/replanning/checkpoint |
-| W7 JML | 12 Joiner, 8 Mover, 10 Leaver templates; three stable variants each | Real people/data, Reporting execution, external benchmark |
-| Sandbox increment | Exact transfer/disable/close/revoke/release transitions | Migration, physical delete, arbitrary patch, approval bypass |
+| W1-W3 | Control skeleton, synthetic Sandbox, immutable Arena/Graders | Real systems/data and Agent-derived success |
+| W4-W6 | Isolated Browser Worker and DOM/Vision/Hybrid baselines | Arbitrary browser/API/code capability |
+| W7 Planning | Immutable bounded DAG, matcher, Verifier, total ledger | Arena/DB/Grader/provider access |
+| Temporal | Durable deterministic safe orchestration state | UI/cloud/production cluster/plaintext business input |
+| Recovery Worker | Workflow replay and fixed Planning Activities | Browser/Sandbox/Arena/Grader/DB/model route |
+| Sandbox receipt | Atomic fixed mutation plus safe idempotency receipt | Raw payload, general API proxy, rollback/compensation |
 
 ~~~mermaid
 flowchart LR
-    Caller["Trusted acceptance caller"] --> Arena["W3 + W7 Reset/Seed and independent Graders"]
-    Caller --> Planning["W7 Planning Agent"]
-    Caller --> Hybrid["W6 Hybrid Agent regression"]
-    Planning -->|"internal planning-worker"| Worker["Typed Browser Worker"]
-    Hybrid --> Worker
-    Worker --> Web["Five synthetic Sandbox pages"]
-    Web --> API["Strict business APIs"]
-    API --> DB["Synthetic PostgreSQL"]
-    Arena --> DB
+    Caller["Trusted acceptance caller"] -->|"opaque AES-GCM envelope"| Temporal["Temporal 1.31.2"]
+    Temporal --> Recovery["Recovery Worker"]
+    Recovery --> Planning["Planning Agent W8 API"]
+    Planning --> Browser["Browser Worker epoch"]
+    Browser --> Web["Five synthetic pages"]
+    Web --> API["Typed business + receipt transaction"]
+    API --> DB["Sandbox PostgreSQL"]
+    Caller --> Grader["Independent Grader"]
+    Grader --> DB
 ~~~
 
-Planning Agent receives only a finite process/category, bounded caller-rendered
-brief, and strict supplied values. Objective/page/model text cannot authorize
-an operation or tool. Effective tools are the intersection of the global
-catalog, current step, current page/modality Worker allowlist, and remaining
-budget. Runtime Verifier cannot read task specs, expected state, database, or
-grader facts. Agent finish is always `finished_ungraded`.
+The Workflow sees ciphertext, closed states, opaque IDs/hashes, topology, and
+counters only. It performs no HTTP, database, filesystem, environment, random,
+system-time, Planner/model, Browser, Sandbox, Arena, or Grader I/O. Activities
+decrypt the runtime envelope and call only Planning Agent.
 
-## Quick start
+## Safety boundary
 
-Prerequisite: Docker Compose. Published W1/Sandbox ports bind to loopback.
-Browser and Agent services have no host port and use internal networks.
+- Normal execution uses epoch 1 with one fresh Browser/Context/Page. Recovery
+  may create epochs 2 and 3 only, after invalidating every old session,
+  generation, observation, element, screenshot, and grounding reference.
+- Checkpoints are canonical safe-state hashes, limited to 18 and 65,536 bytes;
+  they contain no browser handle/ref, page/model content, Task Spec, or grader
+  data.
+- The `w8_operation_receipts` row and fixed synthetic business mutation commit
+  in one transaction. Same key/hash replays; changed hash is rejected before a
+  side effect. Graders ignore receipts.
+- Activity retry is at most once and only for a closed transient reason.
+  Retry/replay/recovery/fault/receipt/replan usage joins the existing
+  non-resetting W6/W7 total ledger.
+- One immutable revision may replace only a failed step and not-started
+  descendants. Completed steps/effects, authority, and budgets cannot expand.
+- Runtime Verifier is not Grader. Agent finish remains `finished_ungraded`.
+- Default tests, CI, and Compose are deterministic fake-only and make zero real
+  model/OCR/VLM calls at zero actual model cost.
+
+## Local start and acceptance
+
+Python targets 3.13 and uses uv. Temporal Python SDK is fixed at 1.30.0;
+Temporal Server is fixed at 1.31.2. Before starting W8 services, inject a
+temporary local 32-byte base64 AES key in `RECOVERY_ENVELOPE_KEY`; do not store
+it in the repository or shell history.
 
 ~~~powershell
+$env:RECOVERY_ENVELOPE_KEY = '<runtime-only base64 key>'
 docker compose -f deploy/compose/compose.yaml up --build -d
 docker compose -f deploy/compose/compose.yaml ps
-~~~
-
-Open the synthetic Sandbox at <http://127.0.0.1:5174/hris> and its local API
-documentation at <http://127.0.0.1:8001/docs>.
-
-Run deterministic fake-only acceptance:
-
-~~~powershell
 docker compose -f deploy/compose/compose.yaml --profile acceptance run --build --rm acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile vision-acceptance run --build --rm vision-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile hybrid-acceptance run --build --rm hybrid-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile planning-acceptance run --build --rm planning-acceptance-smoke
+docker compose -f deploy/compose/compose.yaml --profile recovery-acceptance run --build --rm recovery-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
+Remove-Item Env:RECOVERY_ENVELOPE_KEY
 ~~~
 
-The W7 smoke must prove invalid DAG/tool/Verifier rejection, actual
-multi-dependency execution through one W6 Hybrid session, non-resetting budget
-accounting, cleanup, ungraded finish, and independent grades. Fake runs prove
-wiring and isolation only; they are not real planning, Verifier, DOM, Vision,
-Hybrid, OCR, or VLM capability claims.
+Published Control/Sandbox ports bind to loopback. Browser, Agent, Recovery, and
+Temporal services have no host port. The W8 smoke must scan complete raw
+Temporal history for plaintext sentinels and assert zero duplicate side
+effects before it can pass.
 
-## Safety boundary
+The exact local gates are in [AGENTS.md](AGENTS.md), the scope in
+[the W8 contract](docs/agent-contract.md), and the staged plan in
+[the W8 plan](docs/plans/week-08-recovery.md).
 
-- Planning Agent runs non-root, read-only, cap-dropped, no-new-privileges,
-  tmpfs/pids-bounded, without host port/mount/socket/key/provider egress, and
-  connects only to Browser Worker.
-- One Planning run uses one fresh W6 Hybrid Browser, Context, and Page. Every
-  observation/action/probe/switch/terminal path invalidates old references;
-  Browser Worker revalidates current session/generation/modality/reference.
-- Plans are strict and immutable: 16 nodes, 24 edges, depth 8, width 8, four
-  dependencies per node, and 32,768 canonical UTF-8 bytes maximum.
-- Unknown fields, pages, operations, actions, tools, dependencies, illegal
-  transitions, selectors, XPath, coordinates, arbitrary URLs, upload/download,
-  Cookie/Local Storage, Shell, SQL, JavaScript, code, MCP, and plugins fail closed.
-- Runtime Verifier is not Grader. `finish` cannot return success, pass, or score.
-- Raw brief/plan/DOM/image/OCR/page/form data, credentials, tokens, endpoints,
-  and machine paths are not persisted. Evidence uses safe hashes/counts/reasons.
-- Default tests/CI/Compose make zero external model/OCR/VLM calls and incur zero
-  actual model cost.
+## Data and milestone discipline
 
-## Local development
+W3 and W7 catalogs/checksums/splits remain immutable. Development may exercise
+the fault matrix. Validation may run once only after freeze. Reporting is
+loaded/schema/checksum-validated only and is not executed before W15.
 
-Python targets 3.13 and uses uv; frontends use committed npm locks. Run Ruff,
-format check, Mypy, and pytest for control API, Sandbox API, Browser Worker,
-DOM/Vision/Hybrid/Planning Agents; run npm ci, lint, typecheck, tests, and build
-for both frontends; then run Compose/Alembic/catalog/smoke/secret/diff gates.
-The exact sequence is frozen in [AGENTS.md](AGENTS.md) and
-[the W7 plan](docs/plans/week-07-planning.md).
-
-## Model and milestone boundary
-
-No real W7 Planner/Verifier/model, OCR, or VLM provider/key/endpoint/egress is
-authorized. Any real call requires a new exact disclosure and separate user
-approval. Validation is not used for repeated tuning; Reporting is generated
-and checksum-frozen only.
-
-Development occurs only on `week/07-planning`. No push, PR, merge, tag,
-release, remote CI trigger, or W8 work is authorized. W8 alone may add retry,
-Temporal, checkpoints, idempotency, recovery, fault injection, and runtime
-partial replanning. Licensed under Apache-2.0.
+W8 remote delivery follows a quota-conscious path: only the feature pushes
+needed to satisfy the PR gate, one PR CI per commit, one post-merge main CI,
+tag `w08-recovery`, and roadmap release `v0.2.0`. Superseded, failed, or
+successful commits are not rerun. No real model call or W9 work is authorized.
+Licensed under Apache-2.0.

@@ -1,10 +1,10 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
-from typing import Annotated
+from typing import Annotated, cast
 
 from alembic import command
 from alembic.config import Config
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, Header, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,6 +12,11 @@ from sqlalchemy.orm import Session
 from flowpilot_sandbox_api.arena.jml.router import router as jml_router
 from flowpilot_sandbox_api.arena.router import router as arena_router
 from flowpilot_sandbox_api.database import get_session
+from flowpilot_sandbox_api.idempotency import (
+    IdempotencyMismatch,
+    ReceiptLimitExceeded,
+    execute_idempotent,
+)
 from flowpilot_sandbox_api.models import (
     AssetAssignment,
     Employee,
@@ -36,9 +41,47 @@ from flowpilot_sandbox_api.schemas import (
     TicketClose,
     TicketCreate,
     TicketRead,
+    W8IdempotencyMetadata,
+    W8Operation,
+    W8ReceiptResult,
 )
 
 SessionDependency = Annotated[Session, Depends(get_session)]
+
+
+def w8_metadata(
+    task_id: Annotated[str | None, Header(alias="X-FlowPilot-W8-Task-Id")] = None,
+    idempotency_key: Annotated[str | None, Header(alias="X-FlowPilot-W8-Idempotency-Key")] = None,
+    request_hash: Annotated[str | None, Header(alias="X-FlowPilot-W8-Request-Hash")] = None,
+    plan_revision: Annotated[int | None, Header(alias="X-FlowPilot-W8-Plan-Revision")] = None,
+    step_id: Annotated[str | None, Header(alias="X-FlowPilot-W8-Step-Id")] = None,
+    operation: Annotated[str | None, Header(alias="X-FlowPilot-W8-Operation")] = None,
+) -> W8IdempotencyMetadata | None:
+    values = (task_id, idempotency_key, request_hash, plan_revision, step_id, operation)
+    if all(value is None for value in values):
+        return None
+    if any(value is None for value in values):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incomplete W8 idempotency metadata",
+        )
+    assert task_id is not None
+    assert idempotency_key is not None
+    assert request_hash is not None
+    assert plan_revision is not None
+    assert step_id is not None
+    assert operation is not None
+    return W8IdempotencyMetadata(
+        task_id=task_id,
+        idempotency_key=idempotency_key,
+        request_hash=request_hash,
+        plan_revision=plan_revision,
+        step_id=step_id,
+        operation=cast(W8Operation, operation),
+    )
+
+
+W8MetadataDependency = Annotated[W8IdempotencyMetadata | None, Depends(w8_metadata)]
 
 
 def run_migrations() -> None:
@@ -93,6 +136,40 @@ def commit_transition[ModelT](session: Session, record: ModelT) -> ModelT:
     return record
 
 
+def w8_mutation[ModelT](
+    *,
+    session: Session,
+    metadata: W8IdempotencyMetadata,
+    operation: W8Operation,
+    owner_task_id: str | None,
+    payload: dict[str, object],
+    perform: Callable[[], ModelT],
+    replay: Callable[[], ModelT],
+    response: Response,
+) -> ModelT:
+    if metadata.operation != operation or owner_task_id != metadata.task_id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="W8 mutation ownership or operation mismatch",
+        )
+    try:
+        record, receipt = execute_idempotent(session, metadata, payload, perform, replay)
+    except (IdempotencyMismatch, ReceiptLimitExceeded, IntegrityError) as exc:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="idempotency_mismatch",
+        ) from exc
+    set_receipt_headers(response, receipt)
+    return record
+
+
+def set_receipt_headers(response: Response, receipt: W8ReceiptResult) -> None:
+    response.headers["X-FlowPilot-W8-Receipt-State"] = receipt.state
+    if receipt.result_hash is not None:
+        response.headers["X-FlowPilot-W8-Result-Hash"] = receipt.result_hash
+
+
 @app.get("/healthz")
 def healthz() -> dict[str, str]:
     return {"status": "ok", "service": "sandbox-api", "version": "0.1.0"}
@@ -116,9 +193,35 @@ def create_employee(payload: EmployeeCreate, session: SessionDependency) -> Empl
 def transfer_employee(
     employee_id: int,
     payload: EmployeeTransfer,
+    response: Response,
     session: SessionDependency,
+    metadata: W8MetadataDependency,
 ) -> Employee:
     employee = require_employee(session, employee_id)
+    if metadata is not None:
+
+        def perform() -> Employee:
+            if employee.status != "confirmed":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Employee transfer requires confirmed state",
+                )
+            employee.department = payload.department
+            employee.job_title = payload.job_title
+            employee.location = payload.location
+            employee.status = "transferred"
+            return employee
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="transfer_employee",
+            owner_task_id=employee.arena_task_id,
+            payload={"employee_id": employee_id, **payload.model_dump(mode="json")},
+            perform=perform,
+            replay=lambda: require_employee(session, employee_id),
+            response=response,
+        )
     if employee.status != "confirmed":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -135,9 +238,32 @@ def transfer_employee(
 def disable_employee(
     employee_id: int,
     _payload: EmployeeDisable,
+    response: Response,
     session: SessionDependency,
+    metadata: W8MetadataDependency,
 ) -> Employee:
     employee = require_employee(session, employee_id)
+    if metadata is not None:
+
+        def perform() -> Employee:
+            if employee.status not in {"confirmed", "transferred"}:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="Employee disable requires confirmed or transferred state",
+                )
+            employee.status = "disabled"
+            return employee
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="disable_employee",
+            owner_task_id=employee.arena_task_id,
+            payload={"employee_id": employee_id},
+            perform=perform,
+            replay=lambda: require_employee(session, employee_id),
+            response=response,
+        )
     if employee.status not in {"confirmed", "transferred"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -157,12 +283,46 @@ def list_tickets(session: SessionDependency) -> list[OnboardingTicket]:
     response_model=TicketRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_ticket(payload: TicketCreate, session: SessionDependency) -> OnboardingTicket:
+def create_ticket(
+    payload: TicketCreate,
+    response: Response,
+    session: SessionDependency,
+    metadata: W8MetadataDependency,
+) -> OnboardingTicket:
     employee = require_employee(session, payload.employee_id)
-    return persist(
-        session,
-        OnboardingTicket(**payload.model_dump(), arena_task_id=employee.arena_task_id),
-        "Ticket already exists",
+    if metadata is None:
+        return persist(
+            session,
+            OnboardingTicket(**payload.model_dump(), arena_task_id=employee.arena_task_id),
+            "Ticket already exists",
+        )
+
+    def perform() -> OnboardingTicket:
+        record = OnboardingTicket(**payload.model_dump(), arena_task_id=employee.arena_task_id)
+        session.add(record)
+        return record
+
+    def replay() -> OnboardingTicket:
+        return require_single(
+            list(
+                session.scalars(
+                    select(OnboardingTicket).where(
+                        OnboardingTicket.employee_id == payload.employee_id
+                    )
+                )
+            ),
+            "Employee-owned ticket not found",
+        )
+
+    return w8_mutation(
+        session=session,
+        metadata=metadata,
+        operation="create_ticket",
+        owner_task_id=employee.arena_task_id,
+        payload=payload.model_dump(mode="json"),
+        perform=perform,
+        replay=replay,
+        response=response,
     )
 
 
@@ -170,7 +330,9 @@ def create_ticket(payload: TicketCreate, session: SessionDependency) -> Onboardi
 def close_ticket(
     employee_id: int,
     _payload: TicketClose,
+    response: Response,
     session: SessionDependency,
+    metadata: W8MetadataDependency,
 ) -> OnboardingTicket:
     record = require_single(
         list(
@@ -180,6 +342,26 @@ def close_ticket(
         ),
         "Employee-owned ticket not found",
     )
+    if metadata is not None:
+
+        def perform() -> OnboardingTicket:
+            if record.status != "open":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT, detail="Ticket is not open"
+                )
+            record.status = "closed"
+            return record
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="close_ticket",
+            owner_task_id=record.arena_task_id,
+            payload={"employee_id": employee_id},
+            perform=perform,
+            replay=lambda: record,
+            response=response,
+        )
     if record.status != "open":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Ticket is not open")
     record.status = "closed"
@@ -196,8 +378,40 @@ def list_accounts(session: SessionDependency) -> list[IamAccount]:
     response_model=AccountRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_account(payload: AccountCreate, session: SessionDependency) -> IamAccount:
+def create_account(
+    payload: AccountCreate,
+    response: Response,
+    session: SessionDependency,
+    metadata: W8MetadataDependency,
+) -> IamAccount:
     employee = require_employee(session, payload.employee_id)
+    if metadata is not None:
+
+        def perform() -> IamAccount:
+            record = IamAccount(**payload.model_dump(), arena_task_id=employee.arena_task_id)
+            session.add(record)
+            return record
+
+        def replay() -> IamAccount:
+            return require_single(
+                list(
+                    session.scalars(
+                        select(IamAccount).where(IamAccount.employee_id == payload.employee_id)
+                    )
+                ),
+                "Employee-owned account not found",
+            )
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="create_account",
+            owner_task_id=employee.arena_task_id,
+            payload=payload.model_dump(mode="json"),
+            perform=perform,
+            replay=replay,
+            response=response,
+        )
     return persist(
         session,
         IamAccount(**payload.model_dump(), arena_task_id=employee.arena_task_id),
@@ -209,12 +423,34 @@ def create_account(payload: AccountCreate, session: SessionDependency) -> IamAcc
 def revoke_account(
     employee_id: int,
     _payload: AccountRevoke,
+    response: Response,
     session: SessionDependency,
+    metadata: W8MetadataDependency,
 ) -> IamAccount:
     record = require_single(
         list(session.scalars(select(IamAccount).where(IamAccount.employee_id == employee_id))),
         "Employee-owned account not found",
     )
+    if metadata is not None:
+
+        def perform() -> IamAccount:
+            if record.status != "active":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT, detail="Account is not active"
+                )
+            record.status = "revoked"
+            return record
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="revoke_account",
+            owner_task_id=record.arena_task_id,
+            payload={"employee_id": employee_id},
+            perform=perform,
+            replay=lambda: record,
+            response=response,
+        )
     if record.status != "active":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account is not active")
     record.status = "revoked"
@@ -231,8 +467,42 @@ def list_assets(session: SessionDependency) -> list[AssetAssignment]:
     response_model=AssetRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_asset(payload: AssetCreate, session: SessionDependency) -> AssetAssignment:
+def create_asset(
+    payload: AssetCreate,
+    response: Response,
+    session: SessionDependency,
+    metadata: W8MetadataDependency,
+) -> AssetAssignment:
     employee = require_employee(session, payload.employee_id)
+    if metadata is not None:
+
+        def perform() -> AssetAssignment:
+            record = AssetAssignment(**payload.model_dump(), arena_task_id=employee.arena_task_id)
+            session.add(record)
+            return record
+
+        def replay() -> AssetAssignment:
+            return require_single(
+                list(
+                    session.scalars(
+                        select(AssetAssignment).where(
+                            AssetAssignment.employee_id == payload.employee_id
+                        )
+                    )
+                ),
+                "Employee-owned asset not found",
+            )
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="assign_asset",
+            owner_task_id=employee.arena_task_id,
+            payload=payload.model_dump(mode="json"),
+            perform=perform,
+            replay=replay,
+            response=response,
+        )
     return persist(
         session,
         AssetAssignment(**payload.model_dump(), arena_task_id=employee.arena_task_id),
@@ -244,7 +514,9 @@ def create_asset(payload: AssetCreate, session: SessionDependency) -> AssetAssig
 def release_asset(
     employee_id: int,
     _payload: AssetRelease,
+    response: Response,
     session: SessionDependency,
+    metadata: W8MetadataDependency,
 ) -> AssetAssignment:
     record = require_single(
         list(
@@ -254,6 +526,26 @@ def release_asset(
         ),
         "Employee-owned asset not found",
     )
+    if metadata is not None:
+
+        def perform() -> AssetAssignment:
+            if record.status != "assigned":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT, detail="Asset is not assigned"
+                )
+            record.status = "released"
+            return record
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="release_asset",
+            owner_task_id=record.arena_task_id,
+            payload={"employee_id": employee_id},
+            perform=perform,
+            replay=lambda: record,
+            response=response,
+        )
     if record.status != "assigned":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Asset is not assigned")
     record.status = "released"
@@ -270,8 +562,40 @@ def list_mailboxes(session: SessionDependency) -> list[Mailbox]:
     response_model=MailboxRead,
     status_code=status.HTTP_201_CREATED,
 )
-def create_mailbox(payload: MailboxCreate, session: SessionDependency) -> Mailbox:
+def create_mailbox(
+    payload: MailboxCreate,
+    response: Response,
+    session: SessionDependency,
+    metadata: W8MetadataDependency,
+) -> Mailbox:
     employee = require_employee(session, payload.employee_id)
+    if metadata is not None:
+
+        def perform() -> Mailbox:
+            record = Mailbox(**payload.model_dump(), arena_task_id=employee.arena_task_id)
+            session.add(record)
+            return record
+
+        def replay() -> Mailbox:
+            return require_single(
+                list(
+                    session.scalars(
+                        select(Mailbox).where(Mailbox.employee_id == payload.employee_id)
+                    )
+                ),
+                "Employee-owned mailbox not found",
+            )
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="create_mailbox",
+            owner_task_id=employee.arena_task_id,
+            payload=payload.model_dump(mode="json"),
+            perform=perform,
+            replay=replay,
+            response=response,
+        )
     return persist(
         session,
         Mailbox(**payload.model_dump(), arena_task_id=employee.arena_task_id),
@@ -283,12 +607,34 @@ def create_mailbox(payload: MailboxCreate, session: SessionDependency) -> Mailbo
 def disable_mailbox(
     employee_id: int,
     _payload: MailboxDisable,
+    response: Response,
     session: SessionDependency,
+    metadata: W8MetadataDependency,
 ) -> Mailbox:
     record = require_single(
         list(session.scalars(select(Mailbox).where(Mailbox.employee_id == employee_id))),
         "Employee-owned mailbox not found",
     )
+    if metadata is not None:
+
+        def perform() -> Mailbox:
+            if record.status != "active":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT, detail="Mailbox is not active"
+                )
+            record.status = "disabled"
+            return record
+
+        return w8_mutation(
+            session=session,
+            metadata=metadata,
+            operation="disable_mailbox",
+            owner_task_id=record.arena_task_id,
+            payload={"employee_id": employee_id},
+            perform=perform,
+            replay=lambda: record,
+            response=response,
+        )
     if record.status != "active":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Mailbox is not active")
     record.status = "disabled"

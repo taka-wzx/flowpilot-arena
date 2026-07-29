@@ -1,91 +1,90 @@
-# W7 agent contract - Bounded Planning DAG
+# W8 agent contract - Durable Recovery
 
 ## Authority, baseline, and sole objective
 
-This contract translates the W7 row of `docs/project-roadmap.md` and the
-user-authorized W7 brief into a bounded implementation agreement for
-`week/07-planning`.
+This contract translates the W8 row of `docs/project-roadmap.md` and the
+user-authorized W8 brief into the only implementation authority for the local
+stacked branch `week/08-recovery`.
 
-The verified release baseline is main commit
-`1b239fc52173bc550f5601d34b8e87efc5dbf45f`. Before this branch was created,
-HEAD and `origin/main` resolved to that commit, the local `w06-hybrid` object
-was an annotated tag, and its dereferenced commit was the same baseline. A
-read-only GitHub API check proved that remote `refs/tags/w06-hybrid` points to
-annotated tag object `19e74859cb6066837d6708d3ffc618be3b3e00ea`, which in
-turn points to the baseline commit. The eligible worktree was clean.
+W8 is restacked on released W7 main commit
+`0aa1349ffee0bfabdb8c9f02787f37dfe7f7c029`, which contains unchanged W7
+source commit `146ab46b5b1753e16c64cbc46198668dba08ce01`. PR #29
+merged normally after pull-request run `30342549814`, attempt 2, passed all 15
+jobs. Post-merge main run `30416799576` also passed all 15 jobs, and annotated
+tag `w07-planning` resolves to the W7 merge commit. The W8 rebase changed only
+commit ancestry; its tree remained unchanged.
 
-The pre-existing untracked literal `%SystemDrive%/` path remains outside every
-read, enumeration, scan, diff, status, staging, and modification operation. No
+The literal `%SystemDrive%/` path remains outside every read, enumeration,
+scan, diff, status, staging, and modification operation. No
 `code_review_agent` repository may be accessed.
 
-W7 has one outcome: preserve every released W1-W6 API, security boundary, and
-fake baseline while adding a strict immutable task-local Planning DAG,
-deterministic closed-set tool matching, one monotonic total budget ledger,
-step-level runtime verification, and a separately versioned 30-template / 90-
-instance synthetic JML catalog. The independent Arena Grader remains the only
-task-success authority.
+W8 has one outcome: preserve W1-W7 while adding deterministic Temporal
+orchestration, versioned durable Checkpoints, fresh-epoch browser recovery,
+transactional idempotency, bounded retry, trusted deterministic faults, and
+one bounded immutable DAG revision. Independent database-fact grading remains
+the only success authority; Agent finish remains `finished_ungraded`.
 
-The W6 branch rules are superseded only on `week/07-planning`. W8 and later
-roadmap architecture is non-authorizing and prohibited.
+## Exact scope
 
-## W7 scope
+W8 may add only:
 
-W7 may add only:
-
-1. a separate Python 3.13, non-root, deterministic-fake-only Planning Agent
-   that connects only to Browser Worker over a dedicated internal network;
-2. strict, versioned, `extra=forbid` schemas for plan request/result, immutable
-   DAGs, steps, dependencies, conditions, tool catalog/matches/rejections, plan
-   validation, step execution, verifier request/result, one total budget/usage
-   ledger, and run/result;
-3. deterministic plan generation from a trusted finite process/category,
-   bounded human brief, and strict supplied values, without task-spec, fixture,
-   expected-state, Grader, database, or page-text input;
-4. deterministic topological execution through exactly one W6 Hybrid session,
-   preserving one fresh Browser, Context, and Page for the complete run;
-5. deterministic closed-set tool matching and step-level verification that
-   cannot expand Worker, route, action, or budget authority;
-6. an independent versioned W7 JML catalog with 12 Joiner, 8 Mover, and 10
-   Leaver templates, three deterministic synthetic variants per template,
-   template-level 18/6/6 split, stable IDs/checksums, and an independent W7
-   database-fact Grader;
-7. the smallest typed, non-deleting state-transition API/UI additions required
-   by Mover and Leaver templates within the existing HRIS, ITSM, IAM, Asset,
-   and Mail synthetic applications; and
-8. deterministic unit/Compose acceptance, CI, documentation, locks, and safe
-   numeric evidence.
-
-W4 DOM, W5 Vision, and W6 Hybrid APIs keep their released semantics. Planning
-Agent does not import or mutate those services. It consumes the W6 Hybrid HTTP
-contract and uses one W6 session; it never joins W4 and W5 sessions.
+1. one independent Python 3.13 Recovery Workflow Worker using Temporal Python
+   SDK `1.30.0`, connected only to fixed Temporal Server and Planning Agent;
+2. one fixed `temporalio/server:1.31.2` local server, fixed
+   `temporalio/admin-tools:1.31.2` one-shot schema/namespace bootstrap, and a
+   separate fixed PostgreSQL persistence service, with no UI, cloud service,
+   or host port;
+3. a deterministic Workflow that stores only versioned safe state, schedules
+   Activities, uses Temporal workflow time/IDs, and chooses from closed reason
+   codes;
+4. an AES-256-GCM opaque durable envelope encrypted outside Workflow code with
+   a runtime-injected key, so Temporal history never receives plaintext brief,
+   objective, supplied values, DOM, screenshot, form content, or endpoint;
+5. strict frozen W8 schemas for start/result, workflow state, Checkpoint,
+   Activity, session epoch, retry, receipt, recovery, fault, DAG revision,
+   budget, cleanup, and terminal results;
+6. explicit fresh Browser/Context/Page session epochs, at most two recoveries,
+   with old session/generation/observation/element/screenshot/grounding refs
+   invalidated before a new epoch;
+7. a forward-only Sandbox migration adding only the task-owned
+   `w8_operation_receipts` table and its constraints/indexes;
+8. transactionally atomic receipt creation and fixed synthetic mutation,
+   same-key/same-hash replay, and same-key/different-hash rejection;
+9. closed `no_retry` and `transient_once` policies, at most two attempts per
+   Activity, and the fixed recovery order in this contract;
+10. one deterministic fake-only partial replan that preserves completed steps
+    and replaces only a failed step plus not-started descendants;
+11. trusted acceptance-only fault scenarios, replay/determinism tests, W4-W7
+    regressions, W8 Compose acceptance, and safe numeric/hash evidence; and
+12. a CI trigger optimization that retains full pull-request CI, runs push CI
+    only on main, and does not remove or weaken any W1-W8 job.
 
 ## Explicit non-goals
 
-W7 does not add real or paid models, OCR, VLM, provider adapters, model keys,
-provider egress, real systems/accounts/data, external benchmarks, arbitrary
-URLs, selectors, XPath, coordinates, rectangles, upload/download, Cookie or
-Local Storage access, browser options, Shell, SQL, JavaScript, code execution,
-dynamic APIs, MCP, plugins, arbitrary tool discovery, or a generic Agent/model/
-tool framework.
+W8 adds no W9 context, summary, memory, retrieval, cache, or cross-task
+history; W10 OIDC, users, organizations, RBAC, tenancy, or optimistic locking;
+W11 HITL, approval service/token, risk-policy execution, or audit chain; W12
+production worker, backpressure, rate limiting, load test, or production
+deployment; W13 OTel, tracing, dashboard, replay platform, or monitoring; W14
+malicious-page suite; W15 external benchmark, Reporting execution, formal
+ablation, or repeated runs; or W16 Helm, cloud deployment, repository
+publication, tag, release, or release automation.
 
-W7 does not add W8 Temporal, checkpoints, recovery, idempotency, retries, fault
-injection, or runtime partial replanning; W9 context, summary, memory,
-retrieval, cache, or cross-task history; W10 identity, OIDC, RBAC, tenancy, or
-optimistic locking; W11 HITL, policy execution, approval token/service, or
-audit chain; W12 production workers, backpressure, rate limiting, load tests,
-or production deployment; W13 OTel, tracing, dashboards, formal replay, or
-monitoring; W14 malicious-page evaluation; W15 external/Reporting evaluation,
-formal ablation, or repeated benchmark runs; or W16 Helm/cloud/release work.
+It adds no real model/provider/OCR/VLM/key/egress, real enterprise system,
+account, or data; arbitrary URL/header/interception/API/selector/XPath/
+coordinate/rectangle/path/Shell/SQL/JavaScript/code; dynamic plugin, MCP, tool
+discovery, generic Agent/workflow framework; physical deletion, compensating
+transaction, business rollback, approval bypass, or W9 placeholder.
 
-W7 does not edit the released W2/W3 migrations, W3 Task Specs, fixture,
-expected state, grader predicates, canonical checksums, catalog checksum,
-6/2/2 split, or manual-baseline evidence. It does not persist raw human briefs,
-plans, DOM, screenshots, OCR, page text, form values, model output, Cookies,
-Local Storage, credentials, endpoints, tokens, or machine paths.
+Released W2/W3 migrations, W3 Task Specs/fixtures/predicates/checksums/split,
+W7 catalog/instances/checksums/split/Reporting manifest, and manual-baseline
+evidence are immutable.
 
-## Exact W7 file allowlist
+## Exact W8 file allowlist
 
-Only these paths may be created or modified in W7:
+Only the following paths may be created or modified. Any new path must be
+added here before it changes; scope-expanding additions require new user
+direction.
 
 ~~~text
 AGENTS.md
@@ -98,291 +97,265 @@ docs/agent-contract.md
 docs/architecture.md
 docs/threat-model.md
 docs/evaluation-protocol.md
-docs/adr/0007-w7-bounded-planning-dag.md
-docs/plans/week-07-planning.md
-docs/evidence/week-07-report.md
-docs/data/week-07-jml-catalog.md
+docs/adr/0008-w8-durable-recovery.md
+docs/plans/week-08-recovery.md
+docs/evidence/week-08-report.md
+docs/data/week-08-recovery-data.md
 
 deploy/compose/compose.yaml
+deploy/compose/temporal/Dockerfile
+deploy/compose/temporal/create-namespace.sh
+deploy/compose/temporal/dynamicconfig/development-sql.yaml
+deploy/compose/temporal/server.Dockerfile
+deploy/compose/temporal/setup-postgres.sh
 
-apps/planning_agent/.dockerignore
-apps/planning_agent/Dockerfile
-apps/planning_agent/pyproject.toml
-apps/planning_agent/uv.lock
-apps/planning_agent/src/flowpilot_planning_agent/__init__.py
-apps/planning_agent/src/flowpilot_planning_agent/budget.py
+apps/recovery_worker/.dockerignore
+apps/recovery_worker/Dockerfile
+apps/recovery_worker/pyproject.toml
+apps/recovery_worker/uv.lock
+apps/recovery_worker/src/flowpilot_recovery_worker/__init__.py
+apps/recovery_worker/src/flowpilot_recovery_worker/activities.py
+apps/recovery_worker/src/flowpilot_recovery_worker/client.py
+apps/recovery_worker/src/flowpilot_recovery_worker/crypto.py
+apps/recovery_worker/src/flowpilot_recovery_worker/main.py
+apps/recovery_worker/src/flowpilot_recovery_worker/schemas.py
+apps/recovery_worker/src/flowpilot_recovery_worker/workflow.py
+apps/recovery_worker/tests/conftest.py
+apps/recovery_worker/tests/test_activities.py
+apps/recovery_worker/tests/test_client.py
+apps/recovery_worker/tests/test_crypto.py
+apps/recovery_worker/tests/test_replay.py
+apps/recovery_worker/tests/test_schemas.py
+apps/recovery_worker/tests/test_workflow.py
+
 apps/planning_agent/src/flowpilot_planning_agent/client.py
-apps/planning_agent/src/flowpilot_planning_agent/dag.py
-apps/planning_agent/src/flowpilot_planning_agent/executor.py
 apps/planning_agent/src/flowpilot_planning_agent/main.py
-apps/planning_agent/src/flowpilot_planning_agent/planner.py
-apps/planning_agent/src/flowpilot_planning_agent/schemas.py
-apps/planning_agent/src/flowpilot_planning_agent/tools.py
-apps/planning_agent/src/flowpilot_planning_agent/verifier.py
 apps/planning_agent/src/flowpilot_planning_agent/worker_schemas.py
-apps/planning_agent/tests/conftest.py
-apps/planning_agent/tests/test_api.py
-apps/planning_agent/tests/test_budget.py
+apps/planning_agent/src/flowpilot_planning_agent/receipts.py
+apps/planning_agent/src/flowpilot_planning_agent/recovery.py
+apps/planning_agent/src/flowpilot_planning_agent/recovery_schemas.py
+apps/planning_agent/src/flowpilot_planning_agent/replan.py
 apps/planning_agent/tests/test_client.py
-apps/planning_agent/tests/test_dag.py
-apps/planning_agent/tests/test_executor.py
-apps/planning_agent/tests/test_planner.py
-apps/planning_agent/tests/test_schemas.py
-apps/planning_agent/tests/test_tools.py
-apps/planning_agent/tests/test_verifier.py
+apps/planning_agent/tests/test_receipts.py
+apps/planning_agent/tests/test_recovery.py
+apps/planning_agent/tests/test_recovery_api.py
+apps/planning_agent/tests/test_replan.py
 
+apps/browser_worker/src/flowpilot_browser_worker/main.py
+apps/browser_worker/src/flowpilot_browser_worker/recovery.py
+apps/browser_worker/src/flowpilot_browser_worker/runtime.py
+apps/browser_worker/src/flowpilot_browser_worker/schemas.py
+apps/browser_worker/tests/test_api.py
+apps/browser_worker/tests/test_recovery.py
+
+apps/sandbox_api/migrations/versions/20260728_0003_w8_operation_receipts.py
+apps/sandbox_api/src/flowpilot_sandbox_api/idempotency.py
 apps/sandbox_api/src/flowpilot_sandbox_api/main.py
+apps/sandbox_api/src/flowpilot_sandbox_api/models.py
 apps/sandbox_api/src/flowpilot_sandbox_api/schemas.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/__init__.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/catalog.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/grader.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/router.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/schemas.py
+apps/sandbox_api/src/flowpilot_sandbox_api/arena/service.py
 apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/service.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/data/catalog-v1.json
-apps/sandbox_api/tests/test_business_transitions.py
-apps/sandbox_api/tests/test_jml_api.py
-apps/sandbox_api/tests/test_jml_catalog.py
-apps/sandbox_api/tests/test_jml_grader.py
+apps/sandbox_api/tests/test_idempotency.py
+apps/sandbox_api/tests/test_models.py
+apps/sandbox_api/tests/test_arena_service.py
 apps/sandbox_api/tests/test_jml_service.py
 
-apps/sandbox_web/src/api.ts
-apps/sandbox_web/src/types.ts
-apps/sandbox_web/src/pages/HrisPage.tsx
-apps/sandbox_web/src/pages/ItsmPage.tsx
-apps/sandbox_web/src/pages/IamPage.tsx
-apps/sandbox_web/src/pages/AssetPage.tsx
-apps/sandbox_web/src/pages/MailPage.tsx
-apps/sandbox_web/src/App.test.tsx
-
 tests/integration/Dockerfile
-tests/integration/w7_planning_compose_smoke.py
+tests/integration/pyproject.toml
+tests/integration/uv.lock
+tests/integration/w8_recovery_compose_smoke.py
+tests/integration/w8_restart_driver.py
 ~~~
 
-Released source outside this list is a regression input, not a W7 target. No
-database migration is required or allowed by this contract: existing bounded
-string state fields and HRIS transfer fields represent every authorized W7
-transition. If implementation evidence proves a schema change necessary, its
-exact forward-only migration and related paths must be added here before any
-such file is created; released migrations remain immutable.
+## Temporal and opaque-input contract
 
-Any other path must be added to this contract before it changes. A path that
-introduces another system, real data, physical deletion, approval bypass, W8+
-capability, or generic future abstraction requires new user direction first.
+The Workflow may hold only strict deterministic data: schema/status versions,
+opaque run/task/workflow IDs, plan and revision hashes, deterministic topology,
+step safe states, completed/verified/remaining IDs, session epoch, absolute
+workflow deadline, total usage, retry/recovery/replan/fault counts,
+idempotency/request/result hashes, Checkpoint lineage, and closed reason codes.
 
-## Planning DAG contract
+Workflow code may schedule Activities; use Temporal workflow time, IDs, and
+timers; update counters; validate closed state transitions; and choose the next
+closed recovery decision. It must not perform HTTP, database, filesystem,
+environment, random, system-time, Planner/model, Browser/Playwright, Sandbox,
+Arena, Grader, page-text, or dynamic-tool work. It must not use unordered
+iteration to create commands. Continue-As-New is prohibited.
 
-All W7 Planning models are frozen strict Pydantic models with unknown fields
-forbidden and immutable validated instances. Schema versions are under the
-`w7-* /1.0` namespace. Every run accepts one bounded human brief, one finite
-process/category, one discriminated strict supplied-values object, one fake
-scenario, and one total budget. The planner may not inspect `task_id` to choose
-facts or behavior.
+Human brief and strict supplied values are canonicalized, encrypted with
+AES-256-GCM outside Workflow code, and passed as `w8-opaque-envelope/1.0`.
+The envelope binds schema version, opaque run/task IDs, workflow ID, key ID,
+nonce, ciphertext, and associated-data hash. Only Activity code reads the
+runtime `RECOVERY_ENVELOPE_KEY` and decrypts. The key is never committed,
+logged, returned, put in Temporal payloads, or treated as a production secret.
+Authentication failure, unknown key/version, malformed base64, or identity
+mismatch fails closed before Planning is called.
 
-Each step includes `step_id`, untrusted bounded `objective`, `dependencies`,
-closed `operation`, `expected_page`, `required_context`, `allowed_actions`,
-`preconditions`, `postconditions`, `risk_level`, `retry_policy`, and
-`fallback`. `objective` never authorizes an operation, route, tool, action, or
-value. Authority comes only from the validated finite process/category,
-closed operation, strict supplied values, global catalog, Worker state, and
-remaining ledger.
+Tests and Compose acceptance export raw Workflow history and reject any
+occurrence of the synthetic brief, objective, supplied values, `.invalid`,
+`SYN-`, page/form data, key material, or configured endpoint. The history scan
+is a completion gate, not a best-effort check.
 
-Frozen DAG caps are:
+## Workflow state, Checkpoint, and retention
 
-| Limit | Maximum |
-|---|---:|
-| nodes | 16 |
-| edges | 24 |
-| depth | 8 |
-| width at one topological level | 8 |
-| dependencies per node | 4 |
-| step ID length | 40 characters |
-| objective length | 240 characters |
-| conditions per pre/post list | 8 |
-| serialized canonical plan | 32,768 UTF-8 bytes |
+Workflow states are exactly `received`, `planning`, `executing`,
+`checkpointed`, `recovering`, `replanning`, `verifying`,
+`finished_ungraded`, `escalated`, `failed`, and `cancelled`. Unknown state,
+version, field, transition, hash, counter, or reason fails closed.
 
-Validation rejects unknown or duplicate step IDs, self-dependency, unknown or
-missing dependencies, cycles, more than one root, nodes unreachable from the
-single root, and every cap breach. It calculates a deterministic topological
-order using lexical `step_id` tie-breaking. A run owns exactly one validated
-frozen DAG and its SHA-256 identifier. It cannot be replaced or partially
-replanned while running.
+Checkpoint schema `w8-checkpoint/1.0` stores only the allowed Workflow fields
+plus a SHA-256 hash over canonical sorted-key UTF-8 JSON excluding the hash
+field. Maximum canonical serialized size is 65,536 bytes and maximum count is
+18. Every new Checkpoint names its parent hash; the first uses an explicit
+genesis hash. Only a step with a positive runtime Verifier result can enter the
+verified/completed sets and advance the recoverable Checkpoint.
 
-Executor state transitions are `pending -> ready -> executing -> verified` or
-`pending/ready/executing -> blocked/failed/escalated`. A step may enter
-`executing` only when every dependency is `verified`. Unknown, duplicate,
-terminal-to-running, or out-of-order transitions fail closed. `retry_policy`
-is only `no_retry`; `fallback` is only `stop` or `escalate`.
+Checkpoint never stores Browser/Context/Page handles; DOM, screenshot, OCR,
+page/form text; observation/element/screenshot/grounding refs; raw brief,
+objective, postcondition, Planner/model output; Task Spec, expected state,
+grader predicate/checksum; Cookie/Local Storage, credential, token, endpoint,
+or machine path. Current Browser/session references remain process-local and
+are erased on every terminal/recovery/shutdown path.
 
-## Deterministic tool matching and execution
+Temporal namespace retention is fixed to one day for local synthetic W8.
+Sandbox Reset/Seed deletes only receipts owned by the selected synthetic task.
+No long-term checkpoint export or application database copy exists. Compose
+cleanup removes the independent Temporal database volume and Sandbox volume.
 
-The versioned tool catalog is a closed mapping to released W6 observation and
-typed-action capabilities only. Pages are exactly HRIS `/hris`, ITSM `/itsm`,
-IAM `/iam`, Asset `/assets`, and Mail `/mail`. No candidate string can create
-a tool.
+## Session epoch and reference lifecycle
 
-For every match, the effective tools are the intersection of:
+Normal W8 execution creates epoch 1 with one fresh Browser, Context, and Page.
+Recovery may create epoch 2 and then epoch 3; more than two recoveries fails
+closed. Before opening a new epoch, Planning Agent closes the current session
+best-effort and clears every task-local current reference. Browser Worker W8
+session creation and action envelopes bind the exact epoch. W8 actions also
+retain W6 session, generation, modality, observation, and opaque-reference
+validation.
 
-1. the W7 global tool allowlist;
-2. the current step's closed `allowed_actions`;
-3. the current fixed page and selected Worker modality allowlist; and
-4. the current remaining total budget.
+A recovered epoch never reuses or composes prior DOM/image data. It obtains a
+fresh observation and continues only from the latest verified Checkpoint.
+Actions carrying an old epoch, session, generation, observation, element,
+screenshot, or grounding reference are rejected before execution. Success,
+failure, timeout, cancellation, startup failure, Worker shutdown, and replay
+failure unconditionally close the current epoch and clear task-local state.
 
-Brief text, objective/postcondition text, page/DOM/JPEG/OCR content, model
-output, and risk metadata cannot add authority. Unknown and disallowed
-candidates return a closed safe rejection reason and never reach Browser
-Worker. Element-name matching may select only a current Worker-issued opaque
-reference after the operation/action has already been authorized by the four-
-way intersection. The Worker revalidates the session, generation, modality,
-observation, reference, and action before Playwright.
+## Transactional idempotency and receipt contract
 
-Planning Agent creates one W6 Hybrid session at `/hris`, retains that session
-for the whole immutable DAG, and uses current DOM observations for the shipped
-fake execution. It never creates another session to change modality. W6 Router
-semantics and the independent W6 DOM-to-Vision smoke remain unchanged. Any new
-observation, action success/failure, verification probe, modality switch,
-timeout, terminal action, deletion, startup failure, cancellation, or shutdown
-continues to invalidate old DOM and visual references in Browser Worker.
+The only new business-database object is `w8_operation_receipts`. Each row has:
 
-## Step Verifier contract
+- `task_id` (synthetic task owner, maximum 40 characters);
+- `idempotency_key` (`op_` plus 64 lowercase hex characters);
+- `request_hash` (64 lowercase hex);
+- `plan_revision` (1 or 2);
+- `step_id` (maximum 40 characters);
+- `operation` (the existing closed W7 operation enum);
+- `outcome_code` (`committed` only in stored rows);
+- `result_hash` (hash of a safe canonical outcome projection); and
+- database-created `created_at`.
 
-The runtime Verifier is not Arena Grader. It returns only `verified`,
-`not_verified`, or `inconclusive` with closed safe reason codes. It may consume
-only the current Worker observation, current typed action result summary,
-trusted bounded step conditions, immutable step identity, and current total
-budget. It cannot read Task Spec, fixture maps, expected state, grader
-predicate, canonical checksum, database, Arena, Reset/Seed, Reporting results,
-Planner/model self-report, page success prose, or `finish` as proof.
+Primary uniqueness is `(task_id, idempotency_key)`. Additional constraints
+bind non-empty closed fields and revision range. No receipt stores raw payload,
+form value, page/DOM text, credential, browser ref, or result body. A run may
+create or replay at most 24 receipts.
 
-Verifier cannot expand tools, actions, routes, or budgets. A negative or
-inconclusive result never marks a step verified. With `no_retry`, verification
-failure follows the step's fixed `stop` or `escalate` fallback. Agent `finish`
-returns only `finished_ungraded`; independent Grader alone may return score,
-passed, or success.
+The key is deterministically derived from opaque run ID, plan revision, step
+ID, and operation index. The request hash covers schema version, task owner,
+revision, step ID, closed operation, and canonical strict mutation payload.
+For an existing task/key: equal hash returns the stored safe outcome and does
+not execute; unequal hash returns HTTP 409 `idempotency_mismatch` and does not
+execute. For a new key, receipt insert and the fixed business mutation commit
+in the same SQLAlchemy transaction. Integrity races re-read and apply the same
+rule. Grader ignores receipts and scores business facts only.
 
-## One monotonic total budget ledger
+W8 Browser Worker accepts idempotency metadata only in the W8 typed action
+envelope, only for a closed mutation click, and only through fixed
+`X-FlowPilot-W8-*` headers attached temporarily to the exact synthetic UI
+request. It rejects arbitrary header names/values, URLs, interception rules,
+and non-mutation use. Sandbox recomputes the request hash from its validated
+typed body before applying the transaction.
 
-Planning, tool matching/rejection, browser execution, routing accounting,
-verification, and termination share one task-local ledger using a monotonic
-clock. No plan step, observation, mode switch, verifier probe, failure, or
-terminal path may replace or reset it.
+## Retry, recovery, fault, and replan rules
 
-Default maxima freeze at: one plan generation; the DAG caps above; 64 tool
-match attempts; 16 tool rejections; 16 verifier calls; 16 verifier probes; 16
-executed steps; 16 blocked/failed steps; 24 Worker actions/steps; 24 model
-calls; two switches; two repeated actions; three no-progress events; 24 DOM
-observations; 262,144 raw DOM bytes; 147,456 compressed-DOM accounting bytes;
-24 images; 4,423,680 image bytes; 12,441,600 image pixels; 72,000 capture ms;
-100,000 total input tokens; 20,000 total output tokens; 100,000 planning input
-tokens; 20,000 planning output tokens; 100,000 verifier input tokens; 20,000
-verifier output tokens; zero micro-USD total/planning/verifier cost; and 300
-monotonic seconds. Request values may only reduce these schema maxima.
+The recovery order is fixed:
 
-Budget checks occur before and after every counted operation. Usage and result
-schemas expose safe counters, closed reason codes, opaque hashes, and terminal
-state only.
+1. request a fresh current observation;
+2. retry one explicitly transient, not-safely-completed Activity once;
+3. create a fresh Browser session epoch;
+4. resume from the latest verified Checkpoint;
+5. perform one eligible local replan of the failed/not-started subgraph; then
+6. escalate or terminate safely.
 
-## W7 JML catalog and Sandbox increments
+Retry policies are exactly `no_retry` and `transient_once`. Temporal Activity
+retry is fixed to maximum attempts 2, bounded initial/maximum interval, and no
+unbounded exponential schedule. Validation, permission, schema, Checkpoint
+version/hash, idempotency mismatch, unknown operation, budget exhaustion, and
+permanent faults are non-retryable. Attempt numbers survive Worker restart.
 
-The W7 catalog is independent of the immutable W3 catalog. Its catalog schema,
-variant generator, fixture, split manifest, and grader schemas are versioned.
-It contains exactly 12 Joiner, 8 Mover, and 10 Leaver templates. Each template
-generates variants `v1`, `v2`, and `v3`, producing exactly 90 stable instance
-IDs and canonical checksums.
+Run maxima are: 2 Activity attempts; 2 session recoveries; 1 replan; 2 DAG
+revisions; 18 Checkpoints; 24 receipts; 2 injected faults; and the existing
+300-second duration. Retry, replay, recovery, fault, receipt, Checkpoint, and
+replan counters join the same non-resetting W6/W7 ledger; no existing action,
+model, token, cost, step, switch, repetition, no-progress, DOM, or image cap is
+increased.
 
-Template-level split is fixed as:
+Fault scenarios are a trusted acceptance-only closed enum:
+`none`, `activity_pre_dispatch_once`, `post_commit_pre_checkpoint_once`,
+`browser_session_lost_once`, `browser_worker_restart_once`,
+`recovery_worker_restart_once`, `transient_timeout_once`,
+`permanent_failure`, `checkpoint_version_mismatch`,
+`checkpoint_hash_mismatch`, `idempotency_mismatch`,
+`replan_eligible_once`, and `replan_disallowed`. Each has a fixed injection
+point, maximum count, retry/recovery classification, and expected terminal
+status. No normal API exposes a generic fault endpoint; page/model data cannot
+select a fault.
 
-| Split | Joiner | Mover | Leaver | Total |
-|---|---:|---:|---:|---:|
-| Development | 8 | 4 | 6 | 18 |
-| Validation | 2 | 2 | 2 | 6 |
-| Reporting | 2 | 2 | 2 | 6 |
+Revision 1 remains immutable. One revision 2 may replace only the failed step
+and its not-started descendants, preserving all verified/completed nodes,
+receipts, Checkpoints, authority, supplied values, process/category, and total
+budget. It records parent plan hash, replacement boundary, replaced IDs, and a
+canonical revision hash. The union of old/new nodes remains charged and must
+fit W7 node/edge/depth/width/dependency/byte limits. No completed side effect is
+rolled back or compensated.
 
-The catalog checksum is SHA-256 over canonical sorted template JSON excluding
-its checksum field. Instance checksums are SHA-256 over canonical generated
-instance JSON. Split and Reporting manifest checksums are SHA-256 over sorted
-template/instance/checksum rows. Source and license are fixed to original
-FlowPilot synthetic W7 data under Apache-2.0. Names/identifiers are explicitly
-fictional, emails use `.invalid`, and assets use `SYN-W7-...`.
+## Verifier, Grader, data, and evidence
 
-Reporting is limited in W7 to deterministic generation, loading, strict schema
-and checksum verification, and manifest freezing. No Reporting Agent run,
-grade-result inspection, tuning, or policy change is permitted. Validation is
-not used for repeated tuning.
+Runtime Verifier remains strictly weaker than Grader. It may read only current
+observation/action result, safe receipt replay state, closed step conditions,
+and ledger. It receives no Task Spec, expected state, predicate/checksum,
+Arena/DB/Reporting result, page-success prose, or Planner self-report.
+Negative/inconclusive results cannot advance a Checkpoint.
 
-The only Sandbox behavior additions are:
+W3 catalog/checksum/6-2-2 split and W7 30-template/90-instance catalog,
+12/8/10 distribution, 18/6/6 split, checksums, IDs, Grader, and Reporting
+freeze remain unchanged. Development may run the fault matrix. Validation may
+run at most one preregistered final recovery check after parameters freeze.
+Reporting is limited to load/schema/checksum validation and receives no
+Reset/Seed, Agent, fault, recovery, grade, or result inspection.
 
-- HRIS: `confirmed -> transferred` with bounded new department/job/location,
-  or `confirmed/transferred -> disabled`;
-- ITSM: `open -> closed`;
-- IAM: `active -> revoked`;
-- Asset: `assigned -> released`; and
-- Mail: `active -> disabled`.
+Evidence records only versions, opaque IDs/hashes, safe statuses/reasons,
+Checkpoint/revision topology and counts, Activity attempts, retry/recovery/
+epoch counts, receipt create/replay/mismatch counts, duplicate-side-effect
+count, fault/replan counters, inherited W6/W7 counters, terminal state, and
+independent grade. It records no raw brief, objective, supplied value, DOM,
+image, OCR, page/form content, credential, key, endpoint, token, Cookie, Local
+Storage, or machine path.
 
-They are employee-owned, strict typed transitions over existing rows. Unknown
-employees/rows, wrong prior states, extra fields, unsupported values, and
-repeated transitions fail closed. There is no physical deletion, arbitrary
-field patch, generic transition endpoint, approval artifact, or new database
-schema. Planning Agent cannot call these APIs directly; only Browser Worker
-may operate their fixed Sandbox UI controls.
+## Git and completion rules
 
-Reset/Seed deletes only rows owned by the selected W7 task ID in dependency
-order and recreates fixed synthetic facts in one transaction. The independent
-W7 Grader reads database facts only and does not expose predicates/expected
-state to Planning Agent. W3 Reset/Seed and Grader remain byte-for-byte
-regression targets.
+Work only on `week/08-recovery`. The user has authorized the quota-conscious
+W8 remote sequence: the minimum normal feature pushes needed to satisfy one
+pull-request gate per commit, normal merge, one post-merge main CI, annotated
+tag `w08-recovery`, and roadmap-required GitHub Release `v0.2.0`. Do not rerun
+the superseded W7 push run or any superseded, failed, or successful W8 commit,
+create duplicate CI, force-push, call a real model, or begin W9. Stage only
+exact allowlist paths after all locally available gates pass and evidence
+matches.
 
-## Evaluation, Compose, and evidence
-
-Default tests, CI, Compose, Planner, execution model, and Verifier are local
-deterministic fakes with zero external calls and zero actual cost. W4 DOM, W5
-Vision, and W6 Hybrid fake smokes run unchanged.
-
-W7 fake Planning acceptance must prove an actually executed multi-node,
-multi-dependency DAG; deterministic topology; successful matching; explicit
-unknown/unauthorized-tool rejection; step verification; negative/inconclusive
-verification not counted as success; rejection of cycle, missing dependency,
-out-of-order execution, and over-limit plans; one non-resetting ledger;
-terminal cleanup; and `finished_ungraded` isolation.
-
-On the same W3 Development task and equal Reset/Seed checksum, W6 Hybrid and
-W7 Hybrid+Planner fake baselines are paired. W7 immediate finish must grade
-30/100 false. Fresh W7 deterministic completion must return
-`finished_ungraded` and independently grade exactly 100/100 true.
-
-For W7 Development data, one Joiner, Mover, and Leaver instance each receives
-two equal Reset/Seeds, an untouched failing grade, a bounded deterministic
-completion returning `finished_ungraded`, and an independent exact 100/100
-passing grade. All 30 templates / 90 instances are checked for count, process
-distribution, split distribution, stable IDs/checksums, deterministic Reset/
-Seed, and Grader schema without using Validation/Reporting for tuning.
-
-Compose adds Planning Agent as non-root, read-only, cap-dropped,
-no-new-privileges, tmpfs/pids-bounded, credential-free, without host port,
-mount, Docker socket, or provider egress. It joins only dedicated internal
-`planning-worker`, which contains Browser Worker and no Sandbox, Arena,
-database, DOM/Vision/Hybrid Agent, or provider service. Profile-only acceptance
-orchestration may join management networks for Reset/Seed and independent
-grading; it is not an Agent tool or normal-profile service.
-
-Evidence records only schema versions, opaque IDs/hashes, template/task/
-variant IDs and checksums, DAG counts/depth/order, step state counts, tool
-match/rejection counts and safe reasons, route/DOM/compression/image/action/
-model/token/cost/latency counters, terminal status, and independent grade. It
-records no raw brief, plan prose, DOM, screenshot, OCR, page/form content,
-credential, token, endpoint, Cookie, Local Storage, personal data, or machine
-path. Fake evidence proves wiring and isolation, not real planning, reasoning,
-Verifier, DOM, Vision, Hybrid, OCR, or VLM capability.
-
-## Git and handoff rules
-
-Work only on `week/07-planning`. Do not push, create a PR, merge, tag, release,
-trigger remote CI, force-push, or call a real model without separate explicit
-user authorization. Do not stage broadly; stage only exact final allowlist
-paths after all locally available gates pass and evidence matches observed
-facts. Record unavailable Docker/Compose/pre-commit/Gitleaks tooling rather
-than weakening a gate.
-
-W7 stops after bounded Planning DAG, matching, ledger, runtime Verifier, full
-synthetic JML catalog, minimum transitions, and fake-only evidence. W8 work is
-not started.
+W8 local completion requires deterministic/replay tests; W4-W7 regression;
+the W8 no-fault, pre-dispatch, post-commit, epoch-loss, Browser Worker restart,
+Recovery Worker restart, transient/permanent, Checkpoint mismatch,
+idempotency mismatch, partial-replan, budget, and cleanup proofs; migration
+round-trip; history plaintext scan; zero duplicate side effects; Development
+Joiner/Mover/Leaver recovery; independent grades; secret/diff/path checks; and
+complete Compose cleanup. Unavailable tooling is recorded, never treated as a
+pass. A local commit is allowed only after all locally available gates pass.

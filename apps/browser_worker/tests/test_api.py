@@ -13,6 +13,11 @@ from flowpilot_browser_worker.schemas import (
     HybridSessionClosed,
     HybridSessionCreated,
     Observation,
+    RecoveryActionResult,
+    RecoveryDomActionEnvelope,
+    RecoveryObservationRequest,
+    RecoverySessionClosed,
+    RecoverySessionCreated,
     SessionClosed,
     SessionCreated,
     VisionActionResult,
@@ -116,6 +121,35 @@ class StubRuntime:
     async def close_hybrid_session(self, session_id: str) -> HybridSessionClosed:
         return HybridSessionClosed(session_id=session_id, closed=True)
 
+    async def create_recovery_session(self, session_epoch: int, _: str) -> RecoverySessionCreated:
+        created = await self.create_hybrid_session("/hris")
+        return RecoverySessionCreated(
+            session_id=created.session_id,
+            session_epoch=session_epoch,
+            observation=created.observation,
+        )
+
+    async def request_recovery_observation(
+        self, _: str, __: RecoveryObservationRequest
+    ) -> HybridObservation:
+        return (await self.create_hybrid_session("/hris")).observation
+
+    async def execute_recovery_action(
+        self, session_id: str, action: RecoveryDomActionEnvelope
+    ) -> RecoveryActionResult:
+        return RecoveryActionResult(
+            session_id=session_id,
+            session_epoch=action.session_epoch,
+            action_id=action.action.action_id,
+            action_type=action.action.type,
+            success=action.action.type == "finish",
+            terminal=True,
+            message="Recovery run ended",
+        )
+
+    async def close_recovery_session(self, session_id: str) -> RecoverySessionClosed:
+        return RecoverySessionClosed(session_id=session_id, session_epoch=1, closed=True)
+
     async def close_all(self) -> None:
         pass
 
@@ -203,3 +237,36 @@ def test_api_health_strict_session_and_unknown_action_rejection() -> None:
         assert hybrid_action.status_code == 200
         hybrid_closed = client.delete("/api/browser/hybrid-sessions/bw_abcdefghijklmnop")
         assert hybrid_closed.status_code == 200 and hybrid_closed.json()["closed"] is True
+        recovery_created = client.post(
+            "/api/browser/recovery-sessions",
+            json={
+                "schema_version": "w8-recovery-session/1.0",
+                "initial_path": "/hris",
+                "session_epoch": 1,
+            },
+        )
+        assert recovery_created.status_code == 201
+        wrong_epoch = client.post(
+            "/api/browser/recovery-sessions",
+            json={
+                "schema_version": "w8-recovery-session/1.0",
+                "initial_path": "/hris",
+                "session_epoch": 4,
+            },
+        )
+        assert wrong_epoch.status_code == 422
+        arbitrary_header = client.post(
+            "/api/browser/recovery-sessions/bw_abcdefghijklmnop/actions",
+            json={
+                "schema_version": "w8-recovery-action-envelope/1.0",
+                "session_id": "bw_abcdefghijklmnop",
+                "session_epoch": 1,
+                "generation": 1,
+                "modality": "dom",
+                "action": {"action_id": "act_w8_bad", "type": "wait", "duration_ms": 1},
+                "headers": {"Authorization": "unsafe"},
+            },
+        )
+        assert arbitrary_header.status_code == 422
+        recovery_closed = client.delete("/api/browser/recovery-sessions/bw_abcdefghijklmnop")
+        assert recovery_closed.status_code == 200

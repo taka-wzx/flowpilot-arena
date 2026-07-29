@@ -18,6 +18,7 @@ from flowpilot_sandbox_api.models import (
     IamAccount,
     Mailbox,
     OnboardingTicket,
+    W8OperationReceipt,
 )
 
 TASK_MODELS = (Mailbox, AssetAssignment, IamAccount, OnboardingTicket, Employee)
@@ -129,6 +130,9 @@ def _snapshot_checksum(snapshot: dict[str, list[dict[str, Any]]]) -> str:
 
 def reset_seed(session: Session, spec: TaskSpec) -> ResetSeedResult:
     with session.begin():
+        session.execute(
+            delete(W8OperationReceipt).where(W8OperationReceipt.task_id == spec.task_id)
+        )
         for model in TASK_MODELS:
             session.execute(delete(model).where(model.arena_task_id == spec.task_id))
         for seed in spec.initial_state.employees:

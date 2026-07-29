@@ -727,3 +727,102 @@ class HybridSessionClosed(StrictModel):
     schema_version: Literal["w6-hybrid-session/1.0"] = HYBRID_SESSION_SCHEMA_VERSION
     session_id: SessionId
     closed: bool
+
+
+RecoveryOperation = Literal[
+    "create_ticket",
+    "create_account",
+    "assign_asset",
+    "create_mailbox",
+    "transfer_employee",
+    "disable_employee",
+    "close_ticket",
+    "revoke_account",
+    "release_asset",
+    "disable_mailbox",
+]
+
+
+class RecoverySessionCreate(StrictModel):
+    schema_version: Literal["w8-recovery-session/1.0"] = "w8-recovery-session/1.0"
+    initial_path: Literal["/hris"] = "/hris"
+    session_epoch: int = Field(ge=1, le=3)
+
+
+class RecoverySessionCreated(StrictModel):
+    schema_version: Literal["w8-recovery-session-created/1.0"] = "w8-recovery-session-created/1.0"
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    observation: HybridDomObservation
+
+
+class RecoveryObservationRequest(StrictModel):
+    schema_version: Literal["w8-recovery-observation-request/1.0"] = (
+        "w8-recovery-observation-request/1.0"
+    )
+    session_epoch: int = Field(ge=1, le=3)
+    modality: Literal["dom"] = "dom"
+
+
+class RecoveryIdempotencyBinding(StrictModel):
+    schema_version: Literal["w8-idempotency-binding/1.0"] = "w8-idempotency-binding/1.0"
+    task_id: Annotated[str, StringConstraints(min_length=1, max_length=40)]
+    idempotency_key: Annotated[str, StringConstraints(pattern=r"^op_[0-9a-f]{64}$")]
+    request_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+    plan_revision: int = Field(ge=1, le=2)
+    step_id: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,39}$")]
+    operation: RecoveryOperation
+
+
+class RecoveryDomActionEnvelope(StrictModel):
+    schema_version: Literal["w8-recovery-action-envelope/1.0"] = "w8-recovery-action-envelope/1.0"
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    generation: int = Field(ge=1, le=24)
+    modality: Literal["dom"] = "dom"
+    action: HybridDomAction
+    idempotency: RecoveryIdempotencyBinding | None = None
+
+    @model_validator(mode="after")
+    def validate_idempotency_action(self) -> "RecoveryDomActionEnvelope":
+        if self.idempotency is not None and not isinstance(self.action, HybridDomClickAction):
+            raise ValueError("idempotency binding is allowed only on a fixed mutation click")
+        return self
+
+
+class RecoveryReceiptResult(StrictModel):
+    state: Literal["created", "replayed", "mismatch"]
+    result_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")] | None = None
+
+    @model_validator(mode="after")
+    def validate_result(self) -> "RecoveryReceiptResult":
+        if (self.state == "mismatch") == (self.result_hash is not None):
+            raise ValueError("receipt result fields are inconsistent")
+        return self
+
+
+class RecoveryActionResult(StrictModel):
+    schema_version: Literal["w8-recovery-action-result/1.0"] = "w8-recovery-action-result/1.0"
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    action_id: ActionId
+    action_type: ActionType
+    success: bool
+    terminal: bool
+    error_category: HybridErrorCategory | Literal["idempotency_mismatch"] | None = None
+    message: Annotated[str, StringConstraints(max_length=300)]
+    observation: HybridDomObservation | None = None
+    receipt: RecoveryReceiptResult | None = None
+
+    @model_validator(mode="after")
+    def validate_result(self) -> "RecoveryActionResult":
+        if self.terminal == (self.observation is not None):
+            raise ValueError("terminal and observation fields are inconsistent")
+        return self
+
+
+class RecoverySessionClosed(StrictModel):
+    schema_version: Literal["w8-recovery-session-closed/1.0"] = "w8-recovery-session-closed/1.0"
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    closed: bool

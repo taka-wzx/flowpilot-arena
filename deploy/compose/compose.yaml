@@ -1,4 +1,4 @@
-name: flowpilot-arena-w7
+name: flowpilot-arena-w8
 
 services:
   control-api:
@@ -265,6 +265,7 @@ services:
         condition: service_healthy
     networks:
       - planning-worker
+      - recovery-planning
     init: true
     read_only: true
     cap_drop:
@@ -287,6 +288,156 @@ services:
       timeout: 3s
       retries: 5
       start_period: 10s
+
+  temporal-postgres:
+    image: postgres:17.6-alpine
+    user: "70:70"
+    environment:
+      POSTGRES_DB: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal_w8_local_only
+    networks:
+      - temporal-db
+    volumes:
+      - temporal-postgres-data:/var/lib/postgresql/data
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /run/postgresql:rw,noexec,nosuid,size=8m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  temporal-schema:
+    build:
+      context: ./temporal
+      dockerfile: Dockerfile
+    entrypoint: ["/opt/flowpilot-temporal/setup-postgres.sh"]
+    environment:
+      DB_PORT: "5432"
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal_w8_local_only
+      POSTGRES_SEEDS: temporal-postgres
+      SQL_PASSWORD: temporal_w8_local_only
+    depends_on:
+      temporal-postgres:
+        condition: service_healthy
+    networks:
+      - temporal-db
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+
+  temporal:
+    build:
+      context: ./temporal
+      dockerfile: server.Dockerfile
+    user: "1000:1000"
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal_w8_local_only
+      POSTGRES_SEEDS: temporal-postgres
+      DBNAME: temporal
+      VISIBILITY_DBNAME: temporal_visibility
+      BIND_ON_IP: 0.0.0.0
+    depends_on:
+      temporal-schema:
+        condition: service_completed_successfully
+    networks:
+      - temporal-db
+      - temporal-control
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  temporal-namespace:
+    build:
+      context: ./temporal
+      dockerfile: Dockerfile
+    entrypoint: ["/opt/flowpilot-temporal/create-namespace.sh"]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      DEFAULT_NAMESPACE: flowpilot-w8
+    depends_on:
+      temporal:
+        condition: service_healthy
+    networks:
+      - temporal-control
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
+  recovery-worker:
+    build:
+      context: ../../apps/recovery_worker
+      dockerfile: Dockerfile
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      PLANNING_AGENT_URL: http://planning-agent:8006
+      RECOVERY_ENVELOPE_KEY: ${RECOVERY_ENVELOPE_KEY:?RECOVERY_ENVELOPE_KEY must be runtime-injected}
+    depends_on:
+      temporal:
+        condition: service_healthy
+      temporal-namespace:
+        condition: service_completed_successfully
+      planning-agent:
+        condition: service_healthy
+    networks:
+      - temporal-control
+      - recovery-planning
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-recovery:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import socket; from urllib.request import urlopen; urlopen('http://planning-agent:8006/healthz', timeout=3).read(); socket.create_connection(('temporal', 7233), 3).close()",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
   real-agent:
     profiles:
@@ -510,6 +661,39 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  recovery-acceptance-smoke:
+    profiles:
+      - recovery-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w8_recovery_compose_smoke.py"]
+    environment:
+      SANDBOX_API_URL: http://sandbox-api:8001
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      TEMPORAL_ADDRESS: temporal:7233
+      PLANNING_AGENT_URL: http://planning-agent:8006
+      RECOVERY_ENVELOPE_KEY: ${RECOVERY_ENVELOPE_KEY:?RECOVERY_ENVELOPE_KEY must be runtime-injected}
+    depends_on:
+      sandbox-api:
+        condition: service_healthy
+      planning-agent:
+        condition: service_healthy
+      recovery-worker:
+        condition: service_healthy
+    networks:
+      - sandbox-backend
+      - planning-worker
+      - temporal-control
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+
 networks:
   control-backend:
   sandbox-backend:
@@ -521,7 +705,14 @@ networks:
     internal: true
   planning-worker:
     internal: true
+  recovery-planning:
+    internal: true
+  temporal-control:
+    internal: true
+  temporal-db:
+    internal: true
   model-egress:
 
 volumes:
   sandbox-postgres-data:
+  temporal-postgres-data:

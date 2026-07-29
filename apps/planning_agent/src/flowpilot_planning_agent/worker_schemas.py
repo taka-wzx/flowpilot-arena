@@ -192,3 +192,70 @@ class HybridActionResult(StrictModel):
         if self.observation is not None and self.observation.session_id != self.session_id:
             raise ValueError("result observation must belong to the session")
         return self
+
+
+RecoveryOperation = Literal[
+    "create_ticket",
+    "create_account",
+    "assign_asset",
+    "create_mailbox",
+    "transfer_employee",
+    "disable_employee",
+    "close_ticket",
+    "revoke_account",
+    "release_asset",
+    "disable_mailbox",
+]
+
+
+class RecoverySessionCreated(StrictModel):
+    schema_version: Literal["w8-recovery-session-created/1.0"]
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    observation: HybridDomObservation
+
+
+class RecoveryIdempotencyBinding(StrictModel):
+    schema_version: Literal["w8-idempotency-binding/1.0"] = "w8-idempotency-binding/1.0"
+    task_id: Annotated[str, StringConstraints(min_length=1, max_length=40)]
+    idempotency_key: Annotated[str, StringConstraints(pattern=r"^op_[0-9a-f]{64}$")]
+    request_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
+    plan_revision: int = Field(ge=1, le=2)
+    step_id: Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,39}$")]
+    operation: RecoveryOperation
+
+
+class RecoveryDomActionEnvelope(StrictModel):
+    schema_version: Literal["w8-recovery-action-envelope/1.0"] = "w8-recovery-action-envelope/1.0"
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    generation: int = Field(ge=1, le=24)
+    modality: Literal["dom"] = "dom"
+    action: DomAction
+    idempotency: RecoveryIdempotencyBinding | None = None
+
+
+class RecoveryReceiptResult(StrictModel):
+    state: Literal["created", "replayed", "mismatch"]
+    result_hash: Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")] | None = None
+
+
+class RecoveryActionResult(StrictModel):
+    schema_version: Literal["w8-recovery-action-result/1.0"]
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    action_id: ActionId
+    action_type: ActionType
+    success: bool
+    terminal: bool
+    error_category: Annotated[str, StringConstraints(max_length=80)] | None = None
+    message: Annotated[str, StringConstraints(max_length=300)]
+    observation: HybridDomObservation | None = None
+    receipt: RecoveryReceiptResult | None = None
+
+
+class RecoverySessionClosed(StrictModel):
+    schema_version: Literal["w8-recovery-session-closed/1.0"]
+    session_id: SessionId
+    session_epoch: int = Field(ge=1, le=3)
+    closed: bool

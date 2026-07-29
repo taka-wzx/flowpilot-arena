@@ -97,7 +97,8 @@ W3 and W7 catalogs/checksums/splits remain immutable. Development may exercise
 the fault matrix. Validation may run once only after freeze. Reporting is
 loaded/schema/checksum-validated only and is not executed before W15.
 
-W8 remote delivery follows one quota-conscious path: one feature push, one PR
-CI, one post-merge main CI, tag `w08-recovery`, and roadmap release `v0.2.0`.
-Superseded or successful workflows are not rerun. No real model call or W9 work
-is authorized. Licensed under Apache-2.0.
+W8 remote delivery follows a quota-conscious path: only the feature pushes
+needed to satisfy the PR gate, one PR CI per commit, one post-merge main CI,
+tag `w08-recovery`, and roadmap release `v0.2.0`. Superseded, failed, or
+successful commits are not rerun. No real model call or W9 work is authorized.
+Licensed under Apache-2.0.

@@ -15,6 +15,8 @@ def test_opaque_envelope_round_trip_contains_no_plaintext(
 
 
 def test_tampered_ciphertext_and_identity_fail_closed(workflow_start, envelope_key: bytes) -> None:
+    assert "-" not in workflow_start.envelope.nonce
+    assert "-" not in workflow_start.envelope.ciphertext
     tampered = workflow_start.model_copy(
         update={
             "envelope": workflow_start.envelope.model_copy(

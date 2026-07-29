@@ -13,7 +13,10 @@ from flowpilot_recovery_worker.schemas import (
 
 
 def _b64encode(value: bytes) -> str:
-    return base64.urlsafe_b64encode(value).decode("ascii")
+    # Standard Base64 keeps opaque envelope text free of URL-safe '-' tokens.
+    # The history scanner must reject plaintext sentinels without treating a
+    # random ciphertext occurrence of the short ``SYN-`` sentinel as a match.
+    return base64.b64encode(value).decode("ascii")
 
 
 def _b64decode(value: str) -> bytes:

@@ -123,10 +123,11 @@ run Reset/Seed, Agent, fault, recovery, grade, or result inspection before W15.
 ## Git and completion discipline
 
 Work only on `week/08-recovery`; do not amend W7 or develop on main. The user
-has authorized one normal W8 push, PR CI, merge, post-merge main CI, annotated
-tag, and the roadmap-required `v0.2.0` GitHub Release. Do not rerun superseded
-or successful workflows, create duplicate CI runs, force-push, call a real
-model, or begin W9. Do not use broad staging. Explicitly stage only changed W8
+has authorized the minimum normal W8 pushes needed to satisfy one PR gate per
+commit, then merge, post-merge main CI, an annotated tag, and the
+roadmap-required `v0.2.0` GitHub Release. Do not rerun superseded, failed, or
+successful commits, create duplicate CI runs, force-push, call a real model,
+or begin W9. Do not use broad staging. Explicitly stage only changed W8
 allowlist paths after all locally available gates pass and evidence matches.
 
 W8 is locally complete only when deterministic recovery, replay, Checkpoint,

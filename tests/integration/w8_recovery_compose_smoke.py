@@ -80,8 +80,8 @@ def encrypted_start(
         "envelope": {
             "schema_version": "w8-opaque-envelope/1.0",
             "key_id": "w8-local-runtime-key/1",
-            "nonce": base64.urlsafe_b64encode(nonce).decode(),
-            "ciphertext": base64.urlsafe_b64encode(ciphertext).decode(),
+            "nonce": base64.b64encode(nonce).decode(),
+            "ciphertext": base64.b64encode(ciphertext).decode(),
             "associated_data_hash": hashlib.sha256(aad).hexdigest(),
         },
         "fault_scenario": scenario,

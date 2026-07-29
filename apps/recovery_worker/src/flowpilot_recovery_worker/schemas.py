@@ -23,7 +23,7 @@ TaskId = Annotated[
 StepId = Annotated[str, StringConstraints(pattern=r"^[a-z][a-z0-9_]{1,39}$")]
 Sha256 = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{64}$")]
 Base64Text = Annotated[
-    str, StringConstraints(pattern=r"^[A-Za-z0-9_-]+={0,2}$", min_length=16, max_length=16_384)
+    str, StringConstraints(pattern=r"^[A-Za-z0-9+/]+={0,2}$", min_length=16, max_length=16_384)
 ]
 FaultScenario = Literal[
     "none",

@@ -343,12 +343,13 @@ Storage, or machine path.
 ## Git and completion rules
 
 Work only on `week/08-recovery`. The user has authorized the quota-conscious
-W8 remote sequence: one normal feature push, one pull-request CI, normal merge,
-one post-merge main CI, annotated tag `w08-recovery`, and roadmap-required
-GitHub Release `v0.2.0`. Do not rerun the superseded W7 push run, rerun a
-successful workflow, create duplicate CI, force-push, call a real model, or
-begin W9. Stage only exact allowlist paths after all locally available gates
-pass and evidence matches.
+W8 remote sequence: the minimum normal feature pushes needed to satisfy one
+pull-request gate per commit, normal merge, one post-merge main CI, annotated
+tag `w08-recovery`, and roadmap-required GitHub Release `v0.2.0`. Do not rerun
+the superseded W7 push run or any superseded, failed, or successful W8 commit,
+create duplicate CI, force-push, call a real model, or begin W9. Stage only
+exact allowlist paths after all locally available gates pass and evidence
+matches.
 
 W8 local completion requires deterministic/replay tests; W4-W7 regression;
 the W8 no-fault, pre-dispatch, post-commit, epoch-loss, Browser Worker restart,

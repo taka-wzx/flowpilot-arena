@@ -3,6 +3,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import secrets
 from datetime import timedelta
 from typing import Any
@@ -32,7 +33,21 @@ def request_json(url: str, payload: dict[str, Any] | None = None) -> dict[str, A
 
 
 def canonical(value: dict[str, object]) -> bytes:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode()
+
+
+def contains_plaintext(serialized_history: str, sentinel: object) -> bool:
+    if isinstance(sentinel, str):
+        return sentinel in serialized_history
+    token = re.escape(json.dumps(sentinel, ensure_ascii=False, separators=(",", ":")))
+    return (
+        re.search(
+            rf"(?:(?<=:)|(?<=\[)|(?<=,))\s*{token}\s*(?=,|\]|\}})", serialized_history
+        )
+        is not None
+    )
 
 
 def runtime_key() -> bytes:
@@ -47,7 +62,7 @@ def encrypted_start(
     task: dict[str, Any],
     scenario: str,
     ordinal: int,
-) -> tuple[dict[str, object], tuple[str, ...]]:
+) -> tuple[dict[str, object], tuple[object, ...]]:
     workflow_id = f"workflow_w8_{ordinal:03d}"
     run_id = f"run_w8_{ordinal:03d}"
     task_id = task["task_id"]
@@ -90,7 +105,7 @@ def encrypted_start(
     values = task["supplied_values"]
     sentinels = (
         task["human_brief"],
-        *(str(value) for key, value in values.items() if key != "process"),
+        *(value for key, value in values.items() if key != "process"),
         ".invalid",
         "SYN-",
         os.environ["RECOVERY_ENVELOPE_KEY"],
@@ -132,7 +147,10 @@ async def run_case(
     history = await handle.fetch_history()
     serialized = json.dumps(history.to_json_dict(), sort_keys=True)
     for sentinel in sentinels:
-        assert sentinel not in serialized, (scenario, "plaintext_history_match")
+        assert not contains_plaintext(serialized, sentinel), (
+            scenario,
+            "plaintext_history_match",
+        )
     return {
         "scenario": scenario,
         "task_id": task_id,

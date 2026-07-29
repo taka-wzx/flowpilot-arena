@@ -14,6 +14,31 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from flowpilot_control_api.approval import (
+    ApprovalStateConflict,
+    GrantRejected,
+    RiskDenied,
+    TrustedGrantVault,
+    authority_read,
+    claim_grant,
+    close_request,
+    create_authority,
+    create_execution_gate,
+    decide_request,
+    disable_authority,
+    get_authority,
+    get_request,
+    list_authorities,
+    list_requests,
+    request_read,
+)
+from flowpilot_control_api.audit import (
+    AuditChainMissing,
+    append_audit_event,
+    event_read,
+    list_audit_events,
+    verify_audit_chain,
+)
 from flowpilot_control_api.auth import (
     AuthenticationError,
     HttpJwksSource,
@@ -58,14 +83,32 @@ from flowpilot_control_api.repository import (
     update_organization,
     update_user,
 )
+from flowpilot_control_api.risk import RiskSchemaRejected
 from flowpilot_control_api.schemas import (
     ActiveStatus,
     ActorContext,
+    ApprovalAuthorityCreate,
+    ApprovalAuthorityList,
+    ApprovalAuthorityRead,
+    ApprovalDecisionCreate,
+    ApprovalDecisionResult,
+    ApprovalRequestId,
+    ApprovalRequestList,
+    ApprovalRequestRead,
+    AuditEventList,
+    AuditEventType,
+    AuditVerificationResult,
+    AuthorityId,
     AuthorizedContextProjection,
     CountResponse,
+    CurrentApprovalAuthorities,
     CurrentIdentityResponse,
     ErrorCode,
     ErrorResponse,
+    ExecutionClaimRead,
+    ExecutionGateRequest,
+    ExecutionGateResponse,
+    GrantClaimRequest,
     HealthResponse,
     MembershipCreate,
     MembershipId,
@@ -84,6 +127,7 @@ from flowpilot_control_api.schemas import (
     OrganizationRead,
     OrganizationUpdate,
     Permission,
+    RequestClose,
     ResourceKind,
     Role,
     UserCreate,
@@ -93,6 +137,11 @@ from flowpilot_control_api.schemas import (
     UserUpdate,
 )
 from flowpilot_control_api.seed import seed_synthetic_identities
+from flowpilot_control_api.w11_etag import (
+    W11ResourceKind,
+    expected_w11_version,
+    strong_w11_etag,
+)
 
 SessionDependency = Annotated[Session, Depends(get_session)]
 IfMatch = Annotated[str | None, Header(alias="If-Match")]
@@ -171,6 +220,16 @@ def _set_resource_etag(
     response.headers["ETag"] = strong_etag(kind, organization_id, resource_id, version)
 
 
+def _set_w11_etag(
+    response: Response,
+    kind: W11ResourceKind,
+    organization_id: str,
+    resource_id: str,
+    version: int,
+) -> None:
+    response.headers["ETag"] = strong_w11_etag(kind, organization_id, resource_id, version)
+
+
 def create_app(
     *,
     settings: Settings | None = None,
@@ -194,6 +253,7 @@ def create_app(
             HttpJwksSource(current_settings.oidc),
         )
         app.state.oidc_verifier = active_verifier
+        app.state.grant_vault = TrustedGrantVault()
         yield
         await active_verifier.close()
 
@@ -247,6 +307,26 @@ def create_app(
     @application.exception_handler(RequestValidationError)
     async def schema_rejected(_: Request, __: RequestValidationError) -> JSONResponse:
         return _error(ErrorCode.SCHEMA_REJECTED, status.HTTP_422_UNPROCESSABLE_CONTENT)
+
+    @application.exception_handler(RiskSchemaRejected)
+    async def risk_schema_rejected(_: Request, __: RiskSchemaRejected) -> JSONResponse:
+        return _error(ErrorCode.SCHEMA_REJECTED, status.HTTP_422_UNPROCESSABLE_CONTENT)
+
+    @application.exception_handler(RiskDenied)
+    async def risk_denied(_: Request, __: RiskDenied) -> JSONResponse:
+        return _error(ErrorCode.RISK_DENIED, status.HTTP_403_FORBIDDEN)
+
+    @application.exception_handler(ApprovalStateConflict)
+    async def approval_conflict(_: Request, __: ApprovalStateConflict) -> JSONResponse:
+        return _error(ErrorCode.CONFLICT, status.HTTP_409_CONFLICT)
+
+    @application.exception_handler(GrantRejected)
+    async def grant_rejected(_: Request, __: GrantRejected) -> JSONResponse:
+        return _error(ErrorCode.GRANT_REJECTED, status.HTTP_409_CONFLICT)
+
+    @application.exception_handler(AuditChainMissing)
+    async def audit_missing(_: Request, __: AuditChainMissing) -> JSONResponse:
+        return _error(ErrorCode.RESOURCE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
 
     @application.get("/healthz", response_model=HealthResponse, tags=["health"])
     def healthz() -> HealthResponse:
@@ -757,6 +837,377 @@ def create_app(
             organization_id,
             datetime.now(UTC),
         )
+
+    @application.get(
+        "/api/v1/approval-authorities/me",
+        response_model=CurrentApprovalAuthorities,
+    )
+    async def current_approval_authorities(
+        actor: ActorDependency,
+    ) -> CurrentApprovalAuthorities:
+        return CurrentApprovalAuthorities(
+            roles=tuple(item.role for item in actor.approval_authorities),
+            authority_ids=tuple(item.authority_id for item in actor.approval_authorities),
+            authorization_hash=actor.authorization_hash,
+        )
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/approval-authorities",
+        response_model=ApprovalAuthorityList,
+    )
+    async def read_approval_authorities(
+        organization_id: OrganizationId,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ApprovalAuthorityList:
+        authorize(actor, Permission.APPROVAL_AUTHORITY_READ)
+        items = tuple(
+            authority_read(item) for item in list_authorities(session, actor, organization_id)
+        )
+        return ApprovalAuthorityList(items=items, count=len(items))
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/approval-authorities",
+        response_model=ApprovalAuthorityRead,
+        status_code=status.HTTP_201_CREATED,
+    )
+    async def post_approval_authority(
+        organization_id: OrganizationId,
+        payload: ApprovalAuthorityCreate,
+        response: Response,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ApprovalAuthorityRead:
+        authorize(actor, Permission.APPROVAL_AUTHORITY_MANAGE)
+        record = create_authority(session, actor, organization_id, payload)
+        _set_w11_etag(
+            response,
+            W11ResourceKind.AUTHORITY,
+            organization_id,
+            record.authority_id,
+            record.version,
+        )
+        return authority_read(record)
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/approval-authorities/{authority_id}",
+        response_model=ApprovalAuthorityRead,
+    )
+    async def read_approval_authority(
+        organization_id: OrganizationId,
+        authority_id: AuthorityId,
+        response: Response,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ApprovalAuthorityRead:
+        authorize(actor, Permission.APPROVAL_AUTHORITY_READ)
+        record = get_authority(session, actor, organization_id, authority_id)
+        _set_w11_etag(
+            response,
+            W11ResourceKind.AUTHORITY,
+            organization_id,
+            authority_id,
+            record.version,
+        )
+        return authority_read(record)
+
+    @application.delete(
+        "/api/v1/organizations/{organization_id}/approval-authorities/{authority_id}",
+        response_model=ApprovalAuthorityRead,
+    )
+    async def delete_approval_authority(
+        organization_id: OrganizationId,
+        authority_id: AuthorityId,
+        response: Response,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+        if_match: IfMatch = None,
+    ) -> ApprovalAuthorityRead:
+        authorize(actor, Permission.APPROVAL_AUTHORITY_MANAGE)
+        version = expected_w11_version(
+            if_match,
+            kind=W11ResourceKind.AUTHORITY,
+            organization_id=organization_id,
+            resource_id=authority_id,
+        )
+        record = disable_authority(
+            session,
+            actor,
+            organization_id,
+            authority_id,
+            version,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+        _set_w11_etag(
+            response,
+            W11ResourceKind.AUTHORITY,
+            organization_id,
+            authority_id,
+            record.version,
+        )
+        return authority_read(record)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/execution-gates",
+        response_model=ExecutionGateResponse,
+    )
+    async def post_execution_gate(
+        organization_id: OrganizationId,
+        payload: ExecutionGateRequest,
+        response: Response,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ExecutionGateResponse:
+        authorize(actor, Permission.APPROVAL_REQUEST_CREATE)
+        result = create_execution_gate(
+            session,
+            actor,
+            organization_id,
+            payload,
+            now=datetime.now(UTC),
+        )
+        if result.request is not None:
+            _set_w11_etag(
+                response,
+                W11ResourceKind.APPROVAL_REQUEST,
+                organization_id,
+                result.request.request_id,
+                result.request.version,
+            )
+        return result
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/approval-requests",
+        response_model=ApprovalRequestList,
+    )
+    async def read_approval_requests(
+        organization_id: OrganizationId,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ApprovalRequestList:
+        authorize(actor, Permission.APPROVAL_REQUEST_READ)
+        items = tuple(request_read(item) for item in list_requests(session, actor, organization_id))
+        return ApprovalRequestList(items=items, count=len(items))
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/approval-requests/{request_id}",
+        response_model=ApprovalRequestRead,
+    )
+    async def read_approval_request(
+        organization_id: OrganizationId,
+        request_id: ApprovalRequestId,
+        response: Response,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ApprovalRequestRead:
+        authorize(actor, Permission.APPROVAL_REQUEST_READ)
+        record = get_request(session, actor, organization_id, request_id)
+        _set_w11_etag(
+            response,
+            W11ResourceKind.APPROVAL_REQUEST,
+            organization_id,
+            request_id,
+            record.version,
+        )
+        return request_read(record)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/approval-requests/{request_id}/decisions",
+        response_model=ApprovalDecisionResult,
+    )
+    async def post_approval_decision(
+        organization_id: OrganizationId,
+        request_id: ApprovalRequestId,
+        payload: ApprovalDecisionCreate,
+        response: Response,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+        if_match: IfMatch = None,
+    ) -> ApprovalDecisionResult:
+        authorize(actor, Permission.APPROVAL_REQUEST_DECIDE)
+        version = expected_w11_version(
+            if_match,
+            kind=W11ResourceKind.APPROVAL_REQUEST,
+            organization_id=organization_id,
+            resource_id=request_id,
+        )
+        result = decide_request(
+            session,
+            actor,
+            organization_id,
+            request_id,
+            version,
+            payload,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+        _set_w11_etag(
+            response,
+            W11ResourceKind.APPROVAL_REQUEST,
+            organization_id,
+            request_id,
+            result.request.version,
+        )
+        return result
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/approval-requests/{request_id}/cancel",
+        response_model=ApprovalRequestRead,
+    )
+    async def cancel_approval_request(
+        organization_id: OrganizationId,
+        request_id: ApprovalRequestId,
+        payload: RequestClose,
+        response: Response,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+        if_match: IfMatch = None,
+    ) -> ApprovalRequestRead:
+        authorize(actor, Permission.APPROVAL_REQUEST_CANCEL)
+        version = expected_w11_version(
+            if_match,
+            kind=W11ResourceKind.APPROVAL_REQUEST,
+            organization_id=organization_id,
+            resource_id=request_id,
+        )
+        record = close_request(
+            session,
+            actor,
+            organization_id,
+            request_id,
+            version,
+            reason=payload.reason,
+            invalidate=False,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+        _set_w11_etag(
+            response,
+            W11ResourceKind.APPROVAL_REQUEST,
+            organization_id,
+            request_id,
+            record.version,
+        )
+        return request_read(record)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/approval-requests/{request_id}/invalidate",
+        response_model=ApprovalRequestRead,
+    )
+    async def invalidate_approval_request(
+        organization_id: OrganizationId,
+        request_id: ApprovalRequestId,
+        payload: RequestClose,
+        response: Response,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+        if_match: IfMatch = None,
+    ) -> ApprovalRequestRead:
+        authorize(actor, Permission.APPROVAL_AUTHORITY_MANAGE)
+        version = expected_w11_version(
+            if_match,
+            kind=W11ResourceKind.APPROVAL_REQUEST,
+            organization_id=organization_id,
+            resource_id=request_id,
+        )
+        record = close_request(
+            session,
+            actor,
+            organization_id,
+            request_id,
+            version,
+            reason=payload.reason,
+            invalidate=True,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+        _set_w11_etag(
+            response,
+            W11ResourceKind.APPROVAL_REQUEST,
+            organization_id,
+            request_id,
+            record.version,
+        )
+        return request_read(record)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/approval-requests/{request_id}/claim",
+        response_model=ExecutionClaimRead,
+    )
+    async def claim_approval_grant(
+        organization_id: OrganizationId,
+        request_id: ApprovalRequestId,
+        payload: GrantClaimRequest,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ExecutionClaimRead:
+        authorize(actor, Permission.APPROVAL_GRANT_CLAIM)
+        return claim_grant(
+            session,
+            actor,
+            organization_id,
+            request_id,
+            payload,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/audit-events",
+        response_model=AuditEventList,
+    )
+    async def read_audit_events(
+        organization_id: OrganizationId,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> AuditEventList:
+        authorize(actor, Permission.AUDIT_READ)
+        if actor.organization_id != organization_id:
+            raise ResourceNotFound("resource_not_found")
+        events, head = list_audit_events(session, organization_id)
+        return AuditEventList(
+            items=tuple(event_read(item) for item in events),
+            count=len(events),
+            head_sequence=head.head_sequence,
+            head_hash=head.head_hash,
+        )
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/audit-events/verify",
+        response_model=AuditVerificationResult,
+    )
+    async def verify_audit_events(
+        organization_id: OrganizationId,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> AuditVerificationResult:
+        authorize(actor, Permission.AUDIT_VERIFY)
+        if actor.organization_id != organization_id:
+            raise ResourceNotFound("resource_not_found")
+        result = verify_audit_chain(session, organization_id)
+        if not result.valid:
+            return result
+        append_audit_event(
+            session,
+            organization_id=organization_id,
+            event_type=AuditEventType.AUDIT_VERIFIED,
+            actor_reference=actor.authorization_hash,
+            subject_reference=organization_id,
+            payload={
+                "schema_version": "w11-audit-payload/1.0",
+                "valid": True,
+                "count": result.event_count,
+            },
+            now=datetime.now(UTC),
+        )
+        session.commit()
+        return verify_audit_chain(session, organization_id)
 
     return application
 

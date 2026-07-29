@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from flowpilot_control_api.auth import VerifiedIdentity
 from flowpilot_control_api.etag import PreconditionFailed
 from flowpilot_control_api.models import (
+    ApprovalAuthority,
     Membership,
     OidcIdentity,
     Organization,
@@ -20,6 +21,8 @@ from flowpilot_control_api.models import (
 from flowpilot_control_api.rbac import AuthorizationDenied, permissions_for_role
 from flowpilot_control_api.schemas import (
     ActorContext,
+    ApprovalAuthorityContext,
+    ApprovalRole,
     MembershipCreate,
     MembershipUpdate,
     MemoryCreate,
@@ -50,6 +53,7 @@ def _authorization_hash(
     organization: Organization,
     user: User,
     membership: Membership,
+    authorities: tuple[ApprovalAuthority, ...],
 ) -> str:
     return hashlib.sha256(
         canonical_json_bytes(
@@ -64,6 +68,14 @@ def _authorization_hash(
                 "membership_id": membership.membership_id,
                 "membership_version": membership.version,
                 "role": membership.role,
+                "approval_authorities": [
+                    {
+                        "authority_id": authority.authority_id,
+                        "role": authority.role,
+                        "version": authority.version,
+                    }
+                    for authority in authorities
+                ],
             }
         )
     ).hexdigest()
@@ -108,6 +120,17 @@ def resolve_actor(session: Session, verified: VerifiedIdentity) -> ActorContext:
     if verified.claimed_role != role:
         raise AuthorizationDenied("role_claim_mismatch")
     permissions = permissions_for_role(role)
+    authorities = tuple(
+        session.scalars(
+            select(ApprovalAuthority)
+            .where(
+                ApprovalAuthority.organization_id == organization.organization_id,
+                ApprovalAuthority.user_id == user.user_id,
+                ApprovalAuthority.status == "active",
+            )
+            .order_by(ApprovalAuthority.role, ApprovalAuthority.authority_id)
+        )
+    )
     return ActorContext(
         identity_id=identity.identity_id,
         issuer_hash=identity.issuer_hash,
@@ -120,11 +143,20 @@ def resolve_actor(session: Session, verified: VerifiedIdentity) -> ActorContext:
         organization_version=organization.version,
         user_version=user.version,
         membership_version=membership.version,
+        approval_authorities=tuple(
+            ApprovalAuthorityContext(
+                authority_id=authority.authority_id,
+                role=ApprovalRole(authority.role),
+                version=authority.version,
+            )
+            for authority in authorities
+        ),
         authorization_hash=_authorization_hash(
             identity=identity,
             organization=organization,
             user=user,
             membership=membership,
+            authorities=authorities,
         ),
     )
 

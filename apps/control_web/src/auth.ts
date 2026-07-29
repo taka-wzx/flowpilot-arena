@@ -300,6 +300,73 @@ export const loadCurrentIdentity = async (
   return parseCurrentIdentity(await response.json());
 };
 
+export const authorizedApiFetch = async (
+  path: string,
+  init: RequestInit = {},
+  fetcher: typeof fetch = window.fetch.bind(window),
+): Promise<Response> => {
+  const method = (init.method ?? "GET").toUpperCase();
+  const routes: readonly Readonly<{ pattern: RegExp; method: "GET" | "POST" }>[] = [
+    { pattern: /^\/api\/v1\/approval-authorities\/me$/u, method: "GET" },
+    {
+      pattern: /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/approval-requests$/u,
+      method: "GET",
+    },
+    {
+      pattern:
+        /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/approval-requests\/apr_[A-Za-z0-9_-]{8,64}$/u,
+      method: "GET",
+    },
+    {
+      pattern:
+        /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/approval-requests\/apr_[A-Za-z0-9_-]{8,64}\/decisions$/u,
+      method: "POST",
+    },
+    {
+      pattern: /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/audit-events$/u,
+      method: "GET",
+    },
+    {
+      pattern:
+        /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/audit-events\/verify$/u,
+      method: "POST",
+    },
+  ];
+  if (
+    path.includes("?") ||
+    path.includes("#") ||
+    !routes.some((route) => route.method === method && route.pattern.test(path))
+  ) {
+    throw new Error("Control API path is outside the closed allowlist");
+  }
+  const url = new URL(path, CONTROL_API_ORIGIN);
+  if (url.origin !== CONTROL_API_ORIGIN) {
+    throw new Error("Control API origin is outside the closed allowlist");
+  }
+  if (accessToken === null) {
+    throw new Error("No in-memory access token");
+  }
+  const headers = new Headers(init.headers);
+  if (headers.has("Authorization")) {
+    throw new Error("Caller-provided Authorization is forbidden");
+  }
+  headers.set("Authorization", `Bearer ${accessToken}`);
+  const response = await fetcher(url.toString(), {
+    ...init,
+    headers,
+    credentials: "omit",
+    cache: "no-store",
+    redirect: "error",
+  });
+  if (response.status === 403) {
+    throw new ForbiddenError("Identity is authenticated but not authorized");
+  }
+  if (response.status === 401) {
+    accessToken = null;
+  }
+  return response;
+};
+
 export const logoutUrl = (storage: Storage = window.sessionStorage): string => {
   accessToken = null;
   storage.removeItem(TRANSACTION_KEY);

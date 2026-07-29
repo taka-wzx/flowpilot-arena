@@ -60,6 +60,44 @@ h2 {
   border-color: #7f1d1d;
 }
 
+.request-list,
+.audit-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.request-list li,
+.audit-list li {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #475569;
+  border-radius: 0.5rem;
+  background: #111c30;
+}
+
+.request-list li > div:first-child,
+.audit-list li {
+  min-width: 0;
+}
+
+.request-list span,
+.audit-list span {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 button {
   padding: 0.7rem 1rem;
   border: 1px solid #38bdf8;

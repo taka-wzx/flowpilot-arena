@@ -9,6 +9,23 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- W7 strict immutable Planning DAG schemas with deterministic topology,
+  node/edge/depth/width/dependency/field/byte caps, dependency state machine,
+  and no retry or runtime partial replanning.
+- W7 separate fake-only Planning Agent over one W6 Hybrid session, deterministic
+  closed-set tool matching, one monotonic W6+W7 total ledger, step-level runtime
+  Verifier, ungraded finish, and dedicated Worker-only internal network.
+- W7 independent synthetic JML catalog design with 12 Joiner, 8 Mover, and 10
+  Leaver templates, three deterministic variants each, template-level 18/6/6
+  split, stable catalog/instance/split/Reporting checksums, and Apache-2.0 data
+  provenance.
+- W7 minimum typed non-deleting Sandbox transitions for HRIS transfer/disable,
+  ITSM close, IAM revoke, Asset release, and Mail disable, using existing
+  database columns and no migration.
+- W7 deterministic tests/Compose acceptance design for invalid plans/tools,
+  Verifier isolation, dependency execution, total-budget non-reset, terminal
+  cleanup, W4-W6 regression, and independent W3/W7 grading.
+
 - W6 bounded Hybrid Browser Worker session with one fresh Browser/Context/Page,
   selected current DOM or visual observations, safe structural route signals,
   strict session/generation-bound current-mode action envelopes, and
@@ -86,6 +103,14 @@ and this project follows [Semantic Versioning](https://semver.org/).
   aggregate call/token/time/cost limits respected.
 
 ### Security
+
+- Restricted W7 plan authority to finite process/category, closed operations,
+  strict supplied values, four-way tool intersection, current Worker
+  references, and remaining budget; objective/page/model/risk data cannot add
+  tools, routes, actions, approvals, or limits.
+- Isolated runtime Verifier from Task Specs, expected state, Grader predicates/
+  checksums, Arena, database, Reset/Seed, and Reporting results; negative or
+  inconclusive verification cannot become success.
 
 - Restricted W6 routing to bounded Worker-derived structural metadata, safe
   action outcomes, trusted finite categories, and numeric budgets; rejected

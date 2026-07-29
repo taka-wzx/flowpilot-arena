@@ -1,4 +1,4 @@
-name: flowpilot-arena-w6
+name: flowpilot-arena-w7
 
 services:
   control-api:
@@ -127,6 +127,7 @@ services:
       - browser-sandbox
       - agent-worker
       - hybrid-worker
+      - planning-worker
     init: true
     read_only: true
     cap_drop:
@@ -247,6 +248,40 @@ services:
           "python",
           "-c",
           "from urllib.request import urlopen; urlopen('http://127.0.0.1:8005/healthz').read()",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  planning-agent:
+    build:
+      context: ../../apps/planning_agent
+      dockerfile: Dockerfile
+    environment:
+      BROWSER_WORKER_URL: http://browser-worker:8002
+    depends_on:
+      browser-worker:
+        condition: service_healthy
+    networks:
+      - planning-worker
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-planning:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "from urllib.request import urlopen; urlopen('http://127.0.0.1:8006/healthz').read()",
         ]
       interval: 10s
       timeout: 3s
@@ -434,6 +469,47 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  planning-acceptance-smoke:
+    profiles:
+      - planning-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w7_planning_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      HYBRID_AGENT_URL: http://hybrid-agent:8005
+      PLANNING_AGENT_URL: http://planning-agent:8006
+      SANDBOX_WEB_URL: http://sandbox-web
+    depends_on:
+      control-api:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      sandbox-web:
+        condition: service_healthy
+      browser-worker:
+        condition: service_healthy
+      hybrid-agent:
+        condition: service_healthy
+      planning-agent:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - sandbox-backend
+      - hybrid-worker
+      - planning-worker
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
 networks:
   control-backend:
   sandbox-backend:
@@ -442,6 +518,8 @@ networks:
   agent-worker:
     internal: true
   hybrid-worker:
+    internal: true
+  planning-worker:
     internal: true
   model-egress:
 

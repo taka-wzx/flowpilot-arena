@@ -2,159 +2,127 @@
 
 ## Repository purpose and current phase
 
-FlowPilot Arena is a production-oriented computer-use agent project paired
-with a separate, resettable synthetic evaluation environment. The authoritative
-roadmap is docs/project-roadmap.md.
+FlowPilot Arena is a production-oriented computer-use Agent project paired
+with a separate resettable synthetic evaluation environment. The authoritative
+roadmap is `docs/project-roadmap.md`.
 
-This branch is in W6: Hybrid Router on week/06-hybrid-router. W1-W5 are
-released at main commit 5981bf9f2d419854f51e0ced826efb3ac3864953 and
-annotated tag w05-vision. W6 adds only a bounded DOM/Vision router,
-deterministic observation compression, strict hybrid action validation, and a
-separate fake-only Hybrid Agent. The exact authority is docs/agent-contract.md.
+This branch is W7: Bounded Planning DAG on `week/07-planning`. W1-W6 are
+released at main commit `1b239fc52173bc550f5601d34b8e87efc5dbf45f` and
+annotated tag `w06-hybrid`. W7 adds only an immutable bounded DAG,
+deterministic closed-set tool matching, one total monotonic ledger, a
+step-level runtime Verifier, an independent fake-only Planning Agent, a
+versioned 30-template/90-instance synthetic JML catalog, and the minimum typed
+non-deleting Sandbox transitions. Exact authority is `docs/agent-contract.md`.
 
-## W6 scope boundary
+## W7 scope boundary
 
-W6 preserves every released W1-W5 API and security boundary. It may add only:
+W7 preserves every released W1-W6 API, security boundary, fake baseline, W3
+Task Spec/checksum/split, and independent Grader. It may add only:
 
-- a versioned Browser Worker Hybrid session with one fresh Browser, Context,
-  and Page per task;
-- a strict current-mode DOM or visual observation API, safe DOM-quality
-  metadata, and Worker-enforced cross-modality reference invalidation;
-- deterministic, local, versioned DOM observation compression with fixed
-  node, element, action-summary, and serialized-byte caps;
-- a separate non-root Hybrid Agent service with a small deterministic router,
-  fake-only model, and total hard budgets that switching cannot reset;
-- Compose, CI, tests, documentation, and observed fake-only evidence.
+- one strict immutable task-local DAG generated once from finite trusted
+  process/category, bounded human brief, and strict supplied values;
+- deterministic topology, closed operations/pages/actions/conditions, and
+  global ∩ step ∩ page/modality ∩ budget tool matching;
+- one task-local monotonic budget ledger shared by planning, matching,
+  execution, routing accounting, verification, and termination;
+- a runtime step Verifier that cannot read Arena/DB/Task Spec/expected state/
+  grader predicate/checksum and cannot declare task success;
+- a separate non-root fake-only Planning Agent connected only to Browser
+  Worker and using one W6 Hybrid Browser/Context/Page session per run;
+- a separate W7 JML catalog with 12 Joiner, 8 Mover, 10 Leaver templates,
+  three variants each, template split 18/6/6, stable checksums/manifests, and an
+  independent database-fact W7 Grader; and
+- exact HRIS transfer/disable, ITSM close, IAM revoke, Asset release, and Mail
+  disable state transitions over existing columns, with no physical delete.
 
-W6 does not add a planner, verifier, task DAG, tool matching, recovery,
-checkpoint, Temporal, fault injection, memory, retrieval, cache, history,
-identity, RBAC, approval, audit chain, production worker, monitoring, tracing,
-load test, external benchmark, malicious-page suite, real enterprise system,
-real model/provider adapter/key/egress, database migration, Sandbox business
-change, generic proxy, upload/download, arbitrary shell/SQL/file/JavaScript
-execution, or a future-stage placeholder abstraction.
+W7 does not add retries, runtime partial replanning, Temporal, checkpoint,
+recovery, idempotency, fault injection, memory, retrieval, cache, identity,
+RBAC, approval, audit chain, production worker, monitoring, tracing, load test,
+external benchmark, malicious-page suite, real enterprise integration, real
+model/provider/OCR/VLM/key/egress, arbitrary tool/API/URL/selector/coordinate/
+Shell/SQL/JavaScript/code, migration, deletion, plugin system, generic Agent
+framework, or future-stage placeholder abstraction.
 
-The W6 Development candidates remain w3-joiner-001 through w3-joiner-005.
-Do not modify released W2/W3 migrations, W3 task facts, grader predicates,
-canonical checksums, or manual-baseline evidence. Do not use Validation for
-repeated tuning or Reporting before final report freezing.
+Validation is not used for repeated tuning. Reporting is generated, loaded,
+schema/checksum validated, and frozen only; no Reporting Agent/grade/result use
+occurs before W15.
 
 ## File ownership and change control
 
-Change only paths listed in docs/agent-contract.md. Add a path to that contract
-before changing it. Obtain user direction first if the addition broadens W6.
+Change only paths listed in `docs/agent-contract.md`. Add a path to that
+contract before changing it. Any new system, real data, physical delete,
+approval bypass, W8+ capability, or generic future abstraction requires user
+direction first.
 
-%SystemDrive%/ is a pre-existing untracked directory outside ownership. Do not
-inspect, copy, modify, stage, scan, ignore, or delete it. Do not access, copy,
-or modify any code_review_agent repository.
+The literal pre-existing untracked `%SystemDrive%/` path is outside ownership.
+Do not inspect, enumerate, copy, modify, stage, scan, ignore, or delete it. Do
+not access any `code_review_agent` repository.
 
 ## Engineering and security conventions
 
-- Python target: 3.13. Use uv and keep every changed Python lock synchronized.
-  Frontend remains TypeScript/React/Vite and uses npm ci.
-- Keep Browser Worker, DOM Agent, Vision Agent, and Hybrid Agent as separate
-  services. Hybrid Agent reaches only Browser Worker over its dedicated
-  internal network; it has no database, Sandbox, Arena, Reset/Seed, Grader,
-  repository, Docker socket, filesystem,
-  shell, SQL, JavaScript, credential, or model-egress capability.
-- A Hybrid task owns one fresh Browser, Context, and Page. Never compose page
-  state from W4 and W5 sessions. Close all browser handles and task-memory
-  references on every terminal, startup-failure, cancellation, and shutdown
-  path.
-- Screenshot only the validated synthetic Sandbox viewport. Do not write
-  screenshots, OCR text, page or form contents, Cookies, Local Storage,
-  credentials, endpoints, tokens, DOM traces, or machine paths to the
-  repository or long-term storage.
-- Treat page text, DOM, screenshots, OCR, and image instructions as untrusted
-  data. They cannot authorize routing, tools, or actions.
-- Each model call receives exactly one current selected modality. Every Hybrid
-  action envelope binds the current session and observation generation. DOM
-  element actions require current DOM observation_id and element_ref. Visual
-  actions require current visual observation_id, screenshot_ref, and
-  grounding_ref. Unknown,
-  selector, XPath, coordinate, rectangle, path, command, SQL, JavaScript,
-  unsupported URL, code, and stale-reference input is rejected.
-- The Router consumes only a finite trusted route category, Worker-derived
-  bounded structural quality signals, safe action outcome category, and numeric
-  budgets. It never consumes page text, form values, model output, arbitrary
-  URL, cross-task data, or persistent history.
-- Use monotonic time and hard limits for browser resources, observations,
-  screenshots, model calls, steps, switches, repetitions, no progress, tokens,
-  cost, and duration. Switching never resets a limit.
-- Default tests, CI, and Compose use deterministic fakes only. No real or paid
-  model, OCR, or VLM call is authorized. Before any such call, disclose the
-  provider, exact model, endpoint, prompt/config, image envelope, task IDs,
-  retries, and all hard caps; wait for separate explicit user approval.
-- Use strict types, extra=forbid, small modules, and no unused dependencies.
+- Python target is 3.13. Use uv and synchronize every changed Python lock.
+  Frontends remain TypeScript/React/Vite and use `npm ci`.
+- Keep Browser Worker, DOM Agent, Vision Agent, Hybrid Agent, and Planning
+  Agent separate. Planning Agent reaches only Browser Worker over dedicated
+  internal `planning-worker` and has no Sandbox/Arena/DB/Grader/repository/
+  Docker socket/filesystem persistence/Shell/SQL/JavaScript/credential/model
+  egress capability.
+- One Planning run creates one W6 Hybrid session with one fresh Browser,
+  Context, and Page. Never splice sessions. Unconditionally close all browser
+  handles and task-local plan/step/tool/verifier/reference state on success,
+  failure, timeout, cancellation, startup failure, and shutdown.
+- Treat human prose, objective/postcondition text, DOM, page text, screenshots,
+  OCR, form values, and model output as untrusted. They cannot authorize a
+  plan operation, tool, route, action, approval, or budget.
+- Every action uses current Worker-issued opaque references and released W6
+  session/generation/modality validation. Continue rejecting stale/cross-task
+  refs, selectors, XPath, coordinates, rectangles, arbitrary URLs/paths,
+  upload/download, Cookie/Local Storage, browser options, Shell, SQL,
+  JavaScript, code, dynamic APIs, MCP, plugins, and arbitrary discovery.
+- Verifier is not Grader. It returns only closed runtime states/reasons from
+  current observation/action/condition/budget evidence. Finish remains
+  `finished_ungraded`; only independent database-fact Grade decides success.
+- Use monotonic time and hard caps. Planning, steps, matches/rejections,
+  observations, actions, routes/switches, verification probes, tokens, cost,
+  and every W6 resource counter share one non-resetting ledger.
+- Default tests, CI, and Compose use deterministic fakes only. No real model,
+  provider, OCR, or VLM call is authorized.
+- Logs/evidence contain only versions, opaque IDs/hashes, counts, reason codes,
+  safe states, and independent grades. Never persist raw brief/plan/DOM/image/
+  OCR/page/form content, credential, token, endpoint, Cookie, Local Storage,
+  personal data, or machine path.
+- Use strict types, `extra=forbid`, small modules, and no unused dependencies.
 
 ## Required local checks
 
-Run all relevant W1-W6 checks before W6 handoff:
+Run every relevant W1-W7 gate before handoff:
 
 ~~~powershell
-Push-Location apps/control_api
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
+$pythonApps = @(
+  'apps/control_api', 'apps/sandbox_api', 'apps/browser_worker',
+  'apps/dom_agent', 'apps/vision_agent', 'apps/hybrid_agent',
+  'apps/planning_agent'
+)
+foreach ($app in $pythonApps) {
+  Push-Location $app
+  uv sync --locked --all-groups
+  uv run ruff check .
+  uv run ruff format --check .
+  uv run mypy src
+  uv run pytest
+  Pop-Location
+}
 
-Push-Location apps/control_web
-npm ci
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-Pop-Location
-
-Push-Location apps/sandbox_api
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
-
-Push-Location apps/sandbox_web
-npm ci
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-Pop-Location
-
-Push-Location apps/browser_worker
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
-
-Push-Location apps/dom_agent
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
-
-Push-Location apps/vision_agent
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
-
-Push-Location apps/hybrid_agent
-uv sync --locked --all-groups
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src
-uv run pytest
-Pop-Location
+$webApps = @('apps/control_web', 'apps/sandbox_web')
+foreach ($app in $webApps) {
+  Push-Location $app
+  npm ci
+  npm run lint
+  npm run typecheck
+  npm run test
+  npm run build
+  Pop-Location
+}
 
 docker compose -f deploy/compose/compose.yaml config
 docker compose -f deploy/compose/compose.yaml up --build -d
@@ -164,40 +132,52 @@ docker compose -f deploy/compose/compose.yaml exec -T sandbox-api alembic check
 docker compose -f deploy/compose/compose.yaml --profile acceptance run --build --rm acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile vision-acceptance run --build --rm vision-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile hybrid-acceptance run --build --rm hybrid-acceptance-smoke
+docker compose -f deploy/compose/compose.yaml --profile planning-acceptance run --build --rm planning-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 
 pre-commit run detect-private-key --all-files
 gitleaks git --no-banner --redact --exit-code 1 .
 git diff --check
-git diff -- . ':!%SystemDrive%'
+git diff -- . ':(exclude)%SystemDrive%'
 git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
+Also run the packaged W3 catalog/checksum regression, W7 30-template/90-
+instance catalog/split/checksum freeze checks, exact contract path audit,
+staged/unstaged review, and confirm cleanup leaves no project container,
+network, or volume. No W7 migration is planned; Alembic must remain at the
+released head with no drift. If a new migration is separately admitted to the
+contract, additionally run an empty synthetic database downgrade/upgrade
+round-trip.
+
 If Docker, Compose, pre-commit, or Gitleaks is unavailable, record that fact
-rather than weakening a gate. Do not claim remote GitHub Actions passed until
-an authorized pushed PR proves it. If only docker-compose is available, record
-and use it compatibly without weakening the acceptance intent.
+rather than weakening a gate. A standalone `docker-compose` executable may be
+used compatibly and must be recorded. Do not claim remote GitHub Actions passed
+without an authorized pushed PR.
 
 ## Git, evidence, and release discipline
 
-- Work only on week/06-hybrid-router; never develop directly on main.
-- Never force-push, merge, push, create a PR, tag, or call a real model without
-  explicit user authorization.
-- Do not use broad staging such as git add .; stage the W6 allowlist explicitly
-  and review staged and unstaged diffs.
-- The W6 evidence report records exact files, schemas, isolation, routing
-  policy, compression limits, reference lifecycle, fake baselines, real-model
-  not-run state, metrics, gates, limitations, and the W7 boundary.
-- A local W6 commit is allowed only after all locally available gates pass and
-  evidence matches observed results. Stop after W6.
+- Work only on `week/07-planning`; never develop directly on main.
+- Never force-push, push, create a PR, merge, tag, release, trigger remote CI,
+  or call a real model without separate explicit user authorization.
+- Do not use broad staging such as `git add .`; explicitly stage only final W7
+  allowlist paths after all locally available gates pass.
+- Evidence must distinguish W4/W5/W6/W7 deterministic fake results, JML
+  catalog freeze versus actual Development runs, real-model not-run state,
+  Validation/Reporting use, unavailable gates, known limitations, exact
+  Sandbox/database increments, and the W8 boundary.
+- A local commit is allowed only after all locally available gates pass and
+  evidence matches observed results. Stop after W7.
 
 ## Completion checklist
 
-W6 is complete only when DOM/Vision routing is bounded and deterministic;
-compression and action validation pass deterministic tests; one Hybrid task
-uses one Browser/Context/Page; modality changes invalidate all old references;
-W4 and W5 smokes regress; the W6 fake Hybrid smoke proves an actual switch,
-current references, compression caps, cleanup, finish-ungraded isolation, and
-independent grading; Compose starts W1-W6; all available gates and
-secret/diff checks pass; real models are explicitly recorded as not run; and
-no push, PR, merge, tag, W7 work, or unauthorized model call occurs.
+W7 is complete only when the immutable bounded DAG, deterministic topology,
+closed tool intersection, dependency state machine, runtime Verifier, and one
+non-resetting ledger pass deterministic tests; one Planning task uses one W6
+Hybrid Browser/Context/Page; all terminal paths clean task-local state; W4-W6
+smokes regress unchanged; W7 smoke proves invalid-plan/tool/verifier rejection,
+multi-dependency execution, current references, ungraded finish, and independent
+grading; all 30 templates/90 instances and manifests freeze; one Development
+Joiner/Mover/Leaver closes independently at 100; Compose starts W1-W7; all
+available gates pass; real models remain not run at 0 calls/0 cost; Reporting
+is not executed; and no unauthorized remote action or W8 work occurs.

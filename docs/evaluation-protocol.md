@@ -2,86 +2,104 @@
 
 ## Purpose and current boundary
 
-This document freezes W6 Hybrid evaluation discipline without turning a
-deterministic fake route into a Hybrid capability claim. W3 database-fact
-grading remains the sole task-success authority. W6 adds route, compression,
-and cross-modality validation only; no real model is authorized.
+This document freezes W7 Planning and JML evaluation discipline without
+turning deterministic fake execution into a real planning, reasoning, or
+Verifier capability claim. Independent database-fact grading remains the only
+task-success authority. No real model, VLM, or OCR call is authorized.
 
-## Preserved task protocol
+## Preserved W3-W6 protocol
 
-The ten W3 specs, canonical checksums, catalog checksum, fixture version,
-6/2/2 allocation, Reset/Seed semantics, grader predicates, and manual
-baseline remain unchanged. W6 Development candidates are only
-w3-joiner-001 through w3-joiner-005. Validation and Reporting do not influence
-W6 implementation, policy, fake behavior, or compression limits.
+The ten W3 specs, canonical/catalog checksums, fixture version, 6/2/2 split,
+Reset/Seed, grader predicates, and manual evidence remain unchanged. W4 DOM,
+W5 Vision, and W6 Hybrid APIs and fake smokes run without semantic change.
 
-The same fixed synthetic pages support paired DOM-only, Vision-only, and
-Hybrid fake circuit runs. If they cannot establish a required routing,
-compression, or action-validation property, propose the smallest separate W6
-evaluation design and obtain user direction; do not alter a task or grader.
+On `w3-joiner-001`, the trusted caller uses identical Reset/Seed and human
+brief inputs for the released W6 Hybrid baseline and W7 Hybrid+Planner
+baseline. Immediate finish must remain 30/100 false. Fresh bounded completion
+must return `finished_ungraded` and only afterward independently grade exactly
+100/100 true.
 
-## Deterministic fake protocol
+## W7 JML freeze protocol
 
-Unit tests and CI use deterministic fakes with zero external cost. They cover:
+The separate W7 catalog must strictly load exactly 30 templates and generate
+90 instances with stable IDs/checksums:
 
-1. strict Hybrid session, observation request/response, route decision,
-   compression, action envelope/result, model decision, budget, and run/result
-   schemas including unknown fields/types/actions;
-2. one Browser/Context/Page per Hybrid task, current modality only, and no W4
-   or W5 API regression;
-3. fixed DOM structural signal bounds without page content and deterministic
-   compression byte/node/element/history truncation;
-4. DOM-first route default, closed reason codes, refusal rules, switch hard
-   cap, and no cross-task/learned route state;
-5. one-model-modality isolation: DOM model context contains no JPEG/grounding;
-   visual context contains no DOM/AX/title/URL/element ref/page text;
-6. current, forged, wrong-mode, cross-session, stale-generation, stale-observation,
-   stale-screenshot, and stale-grounding rejection before Playwright;
-7. success/failure for current DOM and visual typed actions, observation
-   switching, action failure refresh, and unconditional cleanup;
-8. total step/call/switch/repetition/progress/DOM/image/token/cost/time limits
-   that cannot reset after a switch;
-9. W4 fake DOM Compose regression, W5 fake Vision Compose regression, and W6
-   Hybrid Compose smoke through actual isolated Chromium; and
-10. proof that finish remains ungraded and independent W3 grading sees actual
-    task facts only.
+- 12 Joiner, 8 Mover, 10 Leaver;
+- three variants per template;
+- Development 8/4/6, Validation 2/2/2, Reporting 2/2/2;
+- catalog, generator, fixture, split-manifest, and Reporting-manifest versions
+  and checksums fixed in source/evidence.
 
-## W6 fake Hybrid smoke
+All data is original synthetic Apache-2.0 content using `.invalid` email and
+`SYN-W7-` assets. Tests verify two Reset/Seeds produce the same facts/checksum
+for all 90 instances and that grader schemas are deterministic. Validation is
+not used for repeated tuning. Reporting is generated, loaded, schema/checksum
+validated, and frozen only; no Reporting Agent run, grade inspection, or
+result-driven change occurs before W15.
 
-The trusted outer caller uses the same task ID, human brief construction, and
-equal Reset/Seed protocol as W4/W5. It runs two fresh subruns:
+## Deterministic schema and unit protocol
 
-1. immediate finish must return finished_ungraded at zero external cost and
-   independently grade untouched state at exactly 30/100, passed=false;
-2. after a fresh equal Reset/Seed pair, deterministic completion under the
-   closed visual_recovery route category must make a real Worker DOM-to-Vision
-   switch, deliberately reject wrong-mode and stale visual references, use
-   current references for completion, respect compression and total budgets,
-   clean up, return finished_ungraded, and independently grade exactly
-   100/100, passed=true.
+Unit tests cover:
 
-The smoke records only task/spec/seed checksums, safe route reasons/count,
-numeric DOM/compression/image/action/call/token/cost/latency metrics, terminal
-state, and independent grade. It records no raw DOM, screenshot, OCR, page
-text, or form value. These fake results prove a bounded circuit and Grade
-isolation, not real DOM, Vision, Hybrid, OCR, or VLM performance.
+1. strict versioned plan, DAG, step, dependency, condition, tool, validation,
+   execution, Verifier, ledger, and run/result schemas, including unknown fields;
+2. node/edge/depth/width/dependency/field/serialized-byte caps;
+3. duplicate/unknown IDs, self-dependency, cycle, missing dependency, multiple
+   roots, unreachable nodes, and deterministic lexical topology;
+4. immutable one-plan identity and refusal of execution before dependencies
+   are verified;
+5. the global ∩ step ∩ page/modality ∩ budget tool intersection, plus unknown,
+   disallowed, wrong-page, wrong-modality, and exhausted-budget rejection;
+6. objective/brief/page/model/risk data cannot expand operations or tools;
+7. Verifier closed statuses/reasons, current evidence only, and negative/
+   inconclusive results never treated as success;
+8. one monotonic ledger across planning, matching, action, routing,
+   observation, verification, token/cost, failure, and finish paths;
+9. one W6 Hybrid session per Planning run, current references, verification-
+   probe invalidation, cancellation/startup/terminal cleanup, and no second
+   session or direct Sandbox/Arena/Grader access;
+10. strict synthetic transition prior states, no physical delete, JML
+    Reset/Seed ownership, database-fact grading, and W3 regression.
+
+## W7 fake Planning Compose smoke
+
+The trusted profile-only caller proves:
+
+1. invalid cycle, missing-dependency, over-limit plans and out-of-order step
+   execution are rejected;
+2. an unknown/unauthorized tool probe is rejected without Worker execution;
+3. a forced inconclusive Verifier subrun stops/escalates, cleans up, and is not
+   called success;
+4. immediate finish on the fixed W3 task remains `finished_ungraded` and
+   independently grades 30/100 false;
+5. a fresh W3 completion executes a multi-node, multi-dependency immutable DAG
+   in deterministic order through one W6 session, performs successful matches
+   and step verification, preserves total counters, cleans up, returns
+   `finished_ungraded`, and independently grades 100/100 true; and
+6. one Development Joiner, Mover, and Leaver instance each has equal Reset/
+   Seed results, untouched failing grade, bounded deterministic completion,
+   `finished_ungraded`, and exact independent 100/100 passing grade.
+
+Smoke output is restricted to schema versions, IDs/checksums, DAG counts/depth/
+order, step-state counts, tool/reason counts, route/DOM/compression/image/action/
+call/token/cost/latency metrics, terminal status, and independent grades. It
+contains no raw brief, plan prose, DOM, screenshot, OCR, page/form content,
+credential, endpoint, or machine path.
 
 ## Real-model authorization gate
 
-No W6 real DOM/Vision/Hybrid, VLM, or OCR call is authorized. Before any
-provider call, stop and obtain separate explicit user approval after
-disclosing provider, exact model, endpoint, prompt/config, selected-modality
-input handling, image MIME/resolution/count, task IDs, retries, call/token/
-image/DOM/time/cost caps, and the planned independent grade sequence.
+No W7 real Planner, Verifier, DOM/Vision/Hybrid model, VLM, or OCR call is
+authorized. Before any provider call, stop and obtain separate explicit user
+approval after disclosing provider, exact model, endpoint, prompt/config,
+selected input envelope, task IDs/splits, retries, and every call/token/image/
+DOM/time/cost cap. Without authorization, final evidence records not run,
+0 calls, and 0 cost.
 
-Without authorization, final evidence records all real model rows as not run
-with zero observed calls/tokens/cost. W4 historical DOM authorization and W5
-fake result do not carry forward.
+## Interpretation and W8 boundary
 
-## Result interpretation and W7 boundary
-
-Only observed, separately authorized, independently graded runs may make a
-fixed Development result claim. W6 fake outcomes cannot establish visual
-reasoning, route quality, recovery, generalization, safety against malicious
-pages, production reliability, or enterprise ROI. W7 planning, verifier, task
-DAG, and tool matching remain out of scope.
+Fake results prove strict schemas, deterministic wiring, dependency/tool/
+Verifier/ledger isolation, current Worker action paths, synthetic state
+closure, and independent grading only. They do not establish real planning,
+reasoning, verification quality, generalization, malicious-page resistance,
+production reliability, or enterprise ROI. Retry, checkpoint, recovery,
+idempotency, Temporal, fault injection, and partial replanning begin in W8.

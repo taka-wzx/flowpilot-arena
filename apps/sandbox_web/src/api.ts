@@ -21,3 +21,19 @@ export async function createRecord<RecordType>(
   }
   return (await response.json()) as RecordType;
 }
+
+export async function updateRecord<RecordType>(
+  path: string,
+  payload: Record<string, unknown>,
+): Promise<RecordType> {
+  const response = await fetch(path, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { detail?: string };
+    throw new Error(body.detail ?? `Unable to update record (${response.status})`);
+  }
+  return (await response.json()) as RecordType;
+}

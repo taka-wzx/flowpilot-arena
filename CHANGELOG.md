@@ -5,6 +5,37 @@ All notable changes to this project are documented in this file.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- W9 strict five-layer context schemas and deterministic Context Assembler with
+  fixed layer precedence, source/trust/version/validity provenance, canonical
+  sorted-key JSON/SHA-256, independent layer budgets, and a frozen total cap.
+- W9 fixed fake-only enterprise catalog and closed lexical/hash retrieval with
+  exact/global synthetic scope, source/trust/version/expiry filtering,
+  content-hash dedupe, fixed ordering, and top-3 output.
+- W9 deterministic task-local short-term summary preserving unresolved issues,
+  recent actions, failure reasons, and pending steps under fixed item/byte/token
+  caps without a model call or task-fact mutation.
+- W9 process-local synthetic organization memory with exact scope and owner
+  checks, monotonic versions, deterministic expiry, tombstone delete/reset, and
+  no W10 identity, RBAC, real tenancy, or optimistic-lock claim.
+- W9 additive context and context-backed Planning APIs, five Development-only
+  ablations, cumulative context/retrieval/summary/memory ledger counters, W8
+  durable safe counter projection, unit tests, Compose acceptance, and
+  independent Joiner/Mover/Leaver grading.
+
+### Security
+
+- Kept database facts as the only task-fact authority and independent Grader as
+  the only success authority; rejected cross-scope context/memory operations,
+  untrusted extra fields, free retrieval queries, raw content persistence, and
+  context budget expansion.
+- Added no service, database migration, dependency, vector database, embedding,
+  provider/model/OCR/VLM call, network route, or arbitrary browser/API/code
+  authority.
+
 ## [0.2.0] - 2026-07-29
 
 ### Added

@@ -44,6 +44,20 @@ class _Counters:
     cost_microusd: int = 0
     planning_cost_microusd: int = 0
     verifier_cost_microusd: int = 0
+    context_assemblies: int = 0
+    context_items: int = 0
+    context_bytes: int = 0
+    context_tokens: int = 0
+    retrieval_queries: int = 0
+    retrieval_candidates: int = 0
+    retrieval_selected: int = 0
+    summary_inputs: int = 0
+    summary_outputs: int = 0
+    summary_dropped: int = 0
+    memory_reads: int = 0
+    memory_writes: int = 0
+    memory_deletes: int = 0
+    memory_rejections: int = 0
 
 
 class TotalBudgetLedger:
@@ -139,6 +153,73 @@ class TotalBudgetLedger:
             raise BudgetExceeded("dom_byte_budget_exhausted")
         if counters.compressed_dom_bytes > self.budget.max_compressed_dom_bytes:
             raise BudgetExceeded("compressed_dom_budget_exhausted")
+
+    def charge_context_assembly(self) -> None:
+        self.check_time()
+        self._counters.context_assemblies += 1
+        if self._counters.context_assemblies > self.budget.max_context_assemblies:
+            raise BudgetExceeded("context_assembly_budget_exhausted")
+
+    def charge_context_item(self, *, canonical_bytes: int, estimated_tokens: int) -> None:
+        self.check_time()
+        counters = self._counters
+        counters.context_items += 1
+        counters.context_bytes += canonical_bytes
+        counters.context_tokens += estimated_tokens
+        if counters.context_items > self.budget.max_context_items:
+            raise BudgetExceeded("context_item_budget_exhausted")
+        if counters.context_bytes > self.budget.max_context_bytes:
+            raise BudgetExceeded("context_byte_budget_exhausted")
+        if counters.context_tokens > self.budget.max_context_tokens:
+            raise BudgetExceeded("context_token_budget_exhausted")
+
+    def charge_retrieval(self, *, candidates: int, selected: int) -> None:
+        self.check_time()
+        counters = self._counters
+        counters.retrieval_queries += 1
+        counters.retrieval_candidates += candidates
+        counters.retrieval_selected += selected
+        if (
+            counters.retrieval_queries > self.budget.max_retrieval_queries
+            or counters.retrieval_candidates > self.budget.max_retrieval_candidates
+            or counters.retrieval_selected > self.budget.max_retrieval_selected
+        ):
+            raise BudgetExceeded("retrieval_budget_exhausted")
+
+    def charge_summary(self, *, inputs: int, outputs: int, dropped: int) -> None:
+        self.check_time()
+        counters = self._counters
+        counters.summary_inputs += inputs
+        counters.summary_outputs += outputs
+        counters.summary_dropped += dropped
+        if (
+            counters.summary_inputs > self.budget.max_summary_inputs
+            or counters.summary_outputs > self.budget.max_summary_outputs
+            or counters.summary_dropped > self.budget.max_summary_dropped
+        ):
+            raise BudgetExceeded("summary_budget_exhausted")
+
+    def charge_memory(
+        self,
+        *,
+        reads: int = 0,
+        writes: int = 0,
+        deletes: int = 0,
+        rejections: int = 0,
+    ) -> None:
+        self.check_time()
+        counters = self._counters
+        counters.memory_reads += reads
+        counters.memory_writes += writes
+        counters.memory_deletes += deletes
+        counters.memory_rejections += rejections
+        if (
+            counters.memory_reads > self.budget.max_memory_reads
+            or counters.memory_writes > self.budget.max_memory_writes
+            or counters.memory_deletes > self.budget.max_memory_deletes
+            or counters.memory_rejections > self.budget.max_memory_rejections
+        ):
+            raise BudgetExceeded("memory_budget_exhausted")
 
     def can_execute_action(self) -> bool:
         try:

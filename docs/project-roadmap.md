@@ -529,6 +529,25 @@ git tag -a w01-foundation -m "Week 1: project foundation"
 git push origin w01-foundation
 ```
 
+### 13.2 GitHub Actions 额度纪律
+
+默认策略是：**先诊断、集中修复、一次推送；无代码变化只重跑失败 job。**
+
+- CI 结果绑定具体 commit SHA。新提交会产生新的 PR workflow run，已经通过的
+  jobs 通常也会重新执行，因此不得边猜边改、连续推送试错提交。
+- PR CI 失败后，先读取失败 job 的步骤和日志，只诊断失败项；不得先重跑整个
+  workflow，也不得通过空提交、重复 PR 或 `workflow_dispatch` 获取同一检查。
+- 如果代码、锁文件和 workflow 都没有变化，且确认属于偶发基础设施问题，只使用
+  GitHub Actions 的 **Re-run failed jobs**；禁止使用 **Re-run all jobs**。
+- 如果必须修改代码，先在本地完成根因分析，检查同一根因的全部变体，集中完成修复，
+  运行受影响的本地 gates，再创建一个正常提交并只推送一次。不得 force-push。
+- 新提交确实需要完整 PR gate 时，接受该 commit 的一次完整 run；不得手动重跑旧、
+  失败、已被替代或已经成功的 commit。
+- PR 通过后只合并一次，并只监控合并提交的一次 `main` CI。周标签和 Release 不得
+  触发额外 branch CI；若 workflow 配置会触发，必须在发布前先取得用户授权。
+- 每个额外 Actions run 都必须记录 run ID、触发原因、是否有代码变化，以及为什么
+  不能只重跑失败 job；不能说明必要性的 run 不得触发。
+
 每周 PR 必须包含：
 
 - 本周任务合同
@@ -559,6 +578,24 @@ GitHub 配置：
 - 建立 GitHub Project：`Backlog → This Week → In Progress → Review → Done`
 - 每周建立独立 Milestone
 - W4/W8/W12/W16 创建 GitHub Release
+
+### 13.2 GitHub Actions 额度纪律
+
+每周远程交付遵守：**先诊断、集中修复、一次推送；无代码变化只重跑失败
+job。** CI 结果绑定 commit SHA，新 commit 会产生新的完整 PR run。
+
+- 第一次失败后只读取失败 job 的步骤和日志，先归纳完整根因及同类变体。
+- 需要改代码时，先本地集中修复并运行受影响 gates，再创建一个正常
+  commit，只 push 一次；禁止 force-push、空提交试错和连续小修复 push。
+- 若代码、lockfile、workflow 均无变化且属于偶发基础设施问题，只用
+  `Re-run failed jobs`；禁止 `Re-run all jobs`。
+- 禁止重跑已通过或已被新 commit 替代的 run、创建重复 PR、用
+  `workflow_dispatch` 重复验证，或为绿灯修改无关 CI。
+- PR 通过后只正常 merge 一次，并只监控合并提交的一次 main CI。tag 前
+  确认其 ref 不匹配 `push.branches`，避免多余 run。
+- 每个必要额外 run 记录 run ID、commit SHA、触发原因、是否有代码变化，
+  以及为什么不能只重跑失败 job。网络或基础设施不可用时记录事实，不以
+  重复运行浪费额度。
 
 ## 14. 推荐仓库结构
 

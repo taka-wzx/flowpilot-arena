@@ -1,104 +1,91 @@
 # Architecture
 
-## W8 current-state architecture
+## W9 current-state architecture
 
-W8 preserves W1-W7 and adds one isolated durable orchestration boundary.
-Recovery Workflow Worker does not execute browser or business operations. It
-replays deterministic safe state and calls Planning Agent Activities; Planning
-Agent alone reaches Browser Worker; Browser Worker alone drives the fixed
-synthetic pages. Arena/Grader remain outside every Agent service.
+W9 preserves the W1-W8 service and network topology. Context lives inside the
+existing Planning Agent because it is task-local execution input; there is no
+new service, database, migration, dependency, or network route. Planning Agent
+still reaches only Browser Worker. Recovery Worker still reaches only Temporal
+and Planning Agent. Arena and independent Graders remain outside every Agent.
 
 ~~~mermaid
 flowchart LR
-    Caller["Trusted W8 acceptance caller<br/>encrypt · start · independent grade"]
-    Caller -->|"opaque ciphertext + closed fault"| Temporal["Temporal Server 1.31.2"]
-    Temporal -->|"temporal-control"| Recovery["Recovery Workflow Worker<br/>Workflow + Activities"]
-    Recovery -->|"recovery-planning"| Planning["W7 Planning Agent<br/>W8 recovery/step API"]
-    Planning -->|"planning-worker"| Browser["Browser Worker<br/>epoch + current refs"]
-    Browser -->|"browser-sandbox"| Web["Five synthetic Sandbox pages"]
-    Web --> API["Typed Sandbox API<br/>business fact + receipt transaction"]
-    API --> SandboxDB["Synthetic PostgreSQL"]
-    Temporal --> TemporalDB["Independent Temporal PostgreSQL"]
-    Caller --> Arena["W3/W7 Reset/Seed + Grader"]
-    Arena --> SandboxDB
+    Caller["Trusted synthetic caller<br/>scope + DB safe fact projection"] --> Context["W9 Context Assembler"]
+    BrowserMemory["Current safe browser events"] --> Context
+    Session["Closed task-local events"] --> Summary["Deterministic summary"]
+    Summary --> Context
+    Org["Process-local scoped org memory"] --> Context
+    Catalog["Fixed enterprise catalog"] --> Retrieval["Closed lexical/hash retrieval"]
+    Retrieval --> Context
+    Context --> Ledger["One W7-W9 total ledger"]
+    Ledger --> Planning["W7 bounded Planning Agent"]
+    Recovery["W8 Recovery Activities"] --> Planning
+    Planning --> Browser["Browser Worker"]
+    Browser --> Web["Five synthetic Sandbox pages"]
+    Web --> DB["Sandbox database"]
+    Grader["Independent Grader"] --> DB
 ~~~
 
-Temporal Server joins two networks: `temporal-db` with only its persistence
-database, and `temporal-control` with Recovery Worker and profile-only trusted
-acceptance. Recovery Worker additionally joins `recovery-planning` with
-Planning Agent. It cannot resolve Browser Worker, Sandbox Web/API, Arena,
-Grader, or either database. Planning Agent retains only `planning-worker` for
-Browser Worker. No Temporal UI or host port exists.
-
-## Durable lifecycle
+## Five-layer assembly
 
 ~~~mermaid
-sequenceDiagram
-    participant C as Trusted caller
-    participant T as Temporal
-    participant R as Recovery Worker
-    participant P as Planning Agent
-    participant B as Browser Worker
-    participant S as Sandbox transaction
-    participant G as Independent Grader
-
-    C->>C: validate and AES-GCM encrypt strict input
-    C->>T: start workflow with opaque envelope
-    T->>R: replay deterministic workflow state
-    R->>P: Activity decrypts and starts epoch 1
-    P->>B: fresh Browser/Context/Page + observation
-    loop lexical remaining steps
-        T->>R: schedule bounded step Activity
-        R->>P: strict step request + latest Checkpoint
-        P->>B: current epoch/generation/ref action
-        B->>S: fixed mutation + key/hash headers
-        S-->>B: committed or receipt replay safe code
-        B-->>P: current observation + safe receipt result
-        P-->>R: closed verified step result
-        R->>R: update ledger and hash Checkpoint
-    end
-    Note over R,P: closed fault may force retry, fresh epoch, or one replan
-    R-->>C: finished_ungraded + safe hashes/counters
-    C->>G: independent database-fact grade
+flowchart TD
+    A["Validate task/scope/process/phase/as_of"] --> B["Apply exact-scope org-memory mutations"]
+    B --> C["1. authoritative task_facts"]
+    C --> D["2. current browser_working"]
+    D --> E["3. deterministic short_term"]
+    E --> F["4. active exact-scope org_memory"]
+    F --> G["5. closed enterprise_knowledge retrieval"]
+    G --> H["Expiry/trust/source filters"]
+    H --> I["Earlier-layer content-hash dedupe"]
+    I --> J["Per-layer then total budget"]
+    J --> K["Canonical provenance + context hash"]
 ~~~
 
-The Workflow never sees decrypted business input. Only Activity code decrypts
-immediately before its Planning call and returns safe hashes/counters. Planner,
-Browser, persistence, fault injection I/O, and cleanup are Activities.
+Task facts are accepted only with `sandbox_database` source,
+`authoritative` trust, exact task/scope owner, snapshot version, and database
+snapshot hash. The assembler does not read Arena, Task Spec, expected state,
+Grader predicate/checksum, or Reporting result. Lower layers cannot replace a
+task fact or declare success.
 
-## Checkpoint and browser epochs
+The context-backed Planning endpoint creates one `TotalBudgetLedger`, assembles
+context, then passes that same ledger to the unchanged W7 executor. Planning,
+tool matching, browser actions, observations, Verifier calls, context items,
+retrieval, summary, and memory usage therefore share one non-resetting task
+counter set. The released W8 Planning usage projection copies all W9 counters
+into Checkpoints and rejects a decrease; it persists counts only, never semantic
+context.
 
-A Checkpoint is a canonical safe-state projection, not a browser snapshot. It
-contains immutable plan/revision hashes, topology and safe step states,
-verified/completed/remaining IDs, session epoch, deadline and total usage,
-retry/recovery/replan/fault counters, receipt hashes, and parent/current hash.
-It contains no handle, observation/reference, page/model content, task spec, or
-grader data.
+## Retrieval and summary
 
-Epoch 1 is the no-fault path. Each recovery first closes/invalidates current
-state, then opens one wholly fresh Browser, Context, and Page. Epochs 2 and 3
-are the only recovery epochs. Planning resumes from the latest verified
-Checkpoint and re-observes current Sandbox facts; it never combines epochs.
+Enterprise knowledge is a fixed tuple packaged with Planning Agent. A trusted
+process/phase maps to one closed category. Each category maps to frozen lexical
+terms. Retrieval filters scope, source, trust, version, and explicit UTC
+validity; deduplicates content hashes by highest active version; ranks by
+lexical score, version, hash, and ID; and emits at most three records. It has no
+free string query, embedding, vector store, network, provider, or model.
 
-## Idempotency transaction
+Short-term summary accepts at most 12 closed safe events. It sorts by fixed
+event priority and descending ordinal, deduplicates kind/value pairs, preserves
+one present unresolved issue/recent action/failure reason/pending step before
+supplements, and emits at most 8 entries/4,096 bytes/1,024 estimated tokens.
+Summary hashes cover the complete safe result excluding only the hash field.
 
-For a fixed W8 mutation click, Browser Worker temporarily attaches only the
-validated W8 task/key/hash/revision/step/operation headers to the exact
-same-origin request. Sandbox validates the typed body, recomputes the canonical
-hash, and in one database transaction either applies the business change plus
-receipt or returns the existing receipt. Hash mismatch returns 409 before the
-business change. Grader reads business facts only and ignores receipts.
+## Organization memory
 
-## Failure and replan policy
+The W9 store is process-local and fake-only. A key is exact synthetic scope plus
+memory ID. Records contain closed field/value, source/trust, owner task, version,
+status, validity, expiry, and content hash. Upsert increments version by one;
+delete creates a tombstone; read omits tombstones/expired records; reset
+tombstones only exact task/scope-owned active records. Cross-scope or owner-
+changing mutation fails before lookup/write. Process restart reconstructs an
+empty fixed fake store, so this is not production durability or W10 identity,
+tenant, RBAC, or optimistic locking.
 
-Recovery order is fresh observation, one transient retry, new epoch, verified
-Checkpoint resume, one local replan, then escalation/safe failure. All attempts,
-faults, receipts, replays, Checkpoints, epochs, and revisions accumulate in the
-same total ledger. Revision 2 may replace only the failed and not-started
-descendant subgraph; completed nodes and side effects remain immutable.
+## Preserved W8 boundary
 
-## W9 boundary
-
-W8 adds no context builder, memory, summary, retrieval, cache, or cross-task
-history. Temporal durable state is strictly operational safe state and cannot
-be used as semantic memory.
+Temporal Workflow history still stores only opaque input, closed operational
+state, hashes, topology, and counters. It never receives raw W9 context,
+summary, memory values, catalog records, browser content, or task facts. W8
+epochs, receipt transactions, retry/recovery/replan caps, cleanup, and
+`finished_ungraded` semantics remain unchanged.

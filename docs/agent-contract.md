@@ -1,90 +1,103 @@
-# W8 agent contract - Durable Recovery
+# W9 agent contract - Context, Retrieval, Summary, and Organization Memory
 
 ## Authority, baseline, and sole objective
 
-This contract translates the W8 row of `docs/project-roadmap.md` and the
-user-authorized W8 brief into the only implementation authority for the local
-stacked branch `week/08-recovery`.
+This contract translates the W9 row and section 7 of
+`docs/project-roadmap.md` plus the user-authorized W9 brief into the only
+implementation authority for `week/09-context`.
 
-W8 is restacked on released W7 main commit
-`0aa1349ffee0bfabdb8c9f02787f37dfe7f7c029`, which contains unchanged W7
-source commit `146ab46b5b1753e16c64cbc46198668dba08ce01`. PR #29
-merged normally after pull-request run `30342549814`, attempt 2, passed all 15
-jobs. Post-merge main run `30416799576` also passed all 15 jobs, and annotated
-tag `w07-planning` resolves to the W7 merge commit. The W8 rebase changed only
-commit ancestry; its tree remained unchanged.
+W9 starts from the released W8 merge commit
+`9ecc31f3e525ae57260bc47ddab5d1d8c1baba6f`. Pull request #30 merged normally;
+pull-request run `30419997200` and post-merge main run `30420371034` each passed
+17/17 jobs on their first attempt. Annotated tag `w08-recovery` dereferences to
+that merge commit and the published release is `v0.2.0 - Hybrid + Recovery`.
+W8 is immutable and is neither amended nor republished by W9.
 
 The literal `%SystemDrive%/` path remains outside every read, enumeration,
 scan, diff, status, staging, and modification operation. No
 `code_review_agent` repository may be accessed.
 
-W8 has one outcome: preserve W1-W7 while adding deterministic Temporal
-orchestration, versioned durable Checkpoints, fresh-epoch browser recovery,
-transactional idempotency, bounded retry, trusted deterministic faults, and
-one bounded immutable DAG revision. Independent database-fact grading remains
-the only success authority; Agent finish remains `finished_ungraded`.
+W9 has one outcome: preserve every W1-W8 API, database fact, Grader,
+Reporting freeze, security boundary, budget, and deterministic fake baseline
+while adding a strict five-layer task-local context result, deterministic
+fixed-catalog retrieval, deterministic short-term summary, scoped synthetic
+organization memory, context ablations, and cumulative context accounting.
+Database facts remain the only task-fact authority; Agent finish remains
+`finished_ungraded`; only the independent database-fact Grader decides
+success.
 
-## Exact scope
+## Exact W9 scope
 
-W8 may add only:
+W9 may add only:
 
-1. one independent Python 3.13 Recovery Workflow Worker using Temporal Python
-   SDK `1.30.0`, connected only to fixed Temporal Server and Planning Agent;
-2. one fixed `temporalio/server:1.31.2` local server, fixed
-   `temporalio/admin-tools:1.31.2` one-shot schema/namespace bootstrap, and a
-   separate fixed PostgreSQL persistence service, with no UI, cloud service,
-   or host port;
-3. a deterministic Workflow that stores only versioned safe state, schedules
-   Activities, uses Temporal workflow time/IDs, and chooses from closed reason
-   codes;
-4. an AES-256-GCM opaque durable envelope encrypted outside Workflow code with
-   a runtime-injected key, so Temporal history never receives plaintext brief,
-   objective, supplied values, DOM, screenshot, form content, or endpoint;
-5. strict frozen W8 schemas for start/result, workflow state, Checkpoint,
-   Activity, session epoch, retry, receipt, recovery, fault, DAG revision,
-   budget, cleanup, and terminal results;
-6. explicit fresh Browser/Context/Page session epochs, at most two recoveries,
-   with old session/generation/observation/element/screenshot/grounding refs
-   invalidated before a new epoch;
-7. a forward-only Sandbox migration adding only the task-owned
-   `w8_operation_receipts` table and its constraints/indexes;
-8. transactionally atomic receipt creation and fixed synthetic mutation,
-   same-key/same-hash replay, and same-key/different-hash rejection;
-9. closed `no_retry` and `transient_once` policies, at most two attempts per
-   Activity, and the fixed recovery order in this contract;
-10. one deterministic fake-only partial replan that preserves completed steps
-    and replaces only a failed step plus not-started descendants;
-11. trusted acceptance-only fault scenarios, replay/determinism tests, W4-W7
-    regressions, W8 Compose acceptance, and safe numeric/hash evidence; and
-12. a CI trigger optimization that retains full pull-request CI, runs push CI
-    only on main, and does not remove or weaken any W1-W8 job.
+1. five ordered layers named `task_facts`, `browser_working`, `short_term`,
+   `org_memory`, and `enterprise_knowledge` inside the existing Planning Agent;
+2. strict frozen W9 schemas with closed enums, explicit schema versions,
+   canonical sorted-key UTF-8 JSON, and reproducible SHA-256 hashes;
+3. task facts supplied only as a trusted synthetic Sandbox-database safe
+   projection; no page, model, summary, or memory value may create or override
+   a task fact;
+4. browser working memory made only from current closed browser event codes,
+   current opaque references/hashes, expiry, and pending step IDs; it stores no
+   DOM, screenshot, OCR, page, form, URL, selector, or arbitrary text;
+5. one deterministic task-local short-term summarizer over closed safe events,
+   preserving unresolved issues, recent actions, failure reasons, and pending
+   steps under frozen item/byte/token limits;
+6. one process-local fake-only organization-memory store for closed synthetic
+   department, role, location, device preference, and approval-chain
+   projections, with trusted scope/task ownership, monotonic versions,
+   deterministic expiry and tombstones, and default-deny cross-scope access;
+7. one fixed local synthetic enterprise-knowledge catalog with version,
+   source, trust, validity, scope, closed category, keywords, content hash, and
+   deterministic lexical/hash retrieval;
+8. one deterministic Context Assembler that filters identity/scope, routes by
+   closed task phase, retrieves, filters expiry/trust, deduplicates, sorts,
+   budgets each layer and the whole result, and emits complete provenance;
+9. frozen Development-only ablations `full_five_layer`, `task_facts_only`,
+   `no_short_term`, `no_enterprise_retrieval`, and
+   `no_organization_memory`; no browser-working-memory ablation is admitted;
+10. additive W9 endpoints for context assembly and context-backed Planning
+    runs without modifying or replacing any released W7/W8 endpoint;
+11. additive context/retrieval/summary/memory counters in the same task-local
+    W7 total ledger and its W8 durable safe projection, with every released
+    W6-W8 cap unchanged; and
+12. deterministic unit, API, replay/round-trip, Compose, ablation, JML
+    Development, independent-grade, regression, cleanup, and safe evidence
+    checks.
+
+The organization-memory store is deliberately process-local and synthetic.
+It proves strict schemas, version/delete/expiry behavior, and scope rejection;
+it is not a claim of production durability, authentication, tenancy, or
+authorization. Fixed seed records can be reconstructed after process restart.
+No hidden cross-task conversation history exists.
 
 ## Explicit non-goals
 
-W8 adds no W9 context, summary, memory, retrieval, cache, or cross-task
-history; W10 OIDC, users, organizations, RBAC, tenancy, or optimistic locking;
-W11 HITL, approval service/token, risk-policy execution, or audit chain; W12
-production worker, backpressure, rate limiting, load test, or production
-deployment; W13 OTel, tracing, dashboard, replay platform, or monitoring; W14
-malicious-page suite; W15 external benchmark, Reporting execution, formal
-ablation, or repeated runs; or W16 Helm, cloud deployment, repository
-publication, tag, release, or release automation.
+W9 adds no W10 OIDC, login, user/organization directory, RBAC, authenticated
+tenant isolation, real tenant, optimistic locking, or identity provider; W11
+HITL, approval service/token, risk execution, or audit chain; W12 production
+worker, backpressure, rate limiting, concurrency/load test, or deployment; W13
+OTel, tracing, dashboard, replay platform, or monitoring; W14 malicious-page
+suite; W15 external benchmark, formal Reporting, repeated evaluation, or
+result inspection; or W16 Helm, cloud, publication, tag, or release.
 
-It adds no real model/provider/OCR/VLM/key/egress, real enterprise system,
-account, or data; arbitrary URL/header/interception/API/selector/XPath/
-coordinate/rectangle/path/Shell/SQL/JavaScript/code; dynamic plugin, MCP, tool
-discovery, generic Agent/workflow framework; physical deletion, compensating
-transaction, business rollback, approval bypass, or W9 placeholder.
+It adds no real vector database, embedding, model, provider, OCR, VLM, key,
+credential, or egress; arbitrary query, URL, header, interception, API,
+selector, XPath, coordinate, rectangle, path, Shell, SQL, JavaScript, or code;
+real enterprise system/account/data; generic Agent/memory/retrieval framework;
+dynamic plugin/MCP/tool discovery; cache; physical business-data deletion;
+cross-scope fallback; or W10+ placeholder abstraction.
 
-Released W2/W3 migrations, W3 Task Specs/fixtures/predicates/checksums/split,
-W7 catalog/instances/checksums/split/Reporting manifest, and manual-baseline
-evidence are immutable.
+Released W2/W3 migrations, W3 Task Specs/fixtures/predicates/checksums/splits,
+W7 catalog/instances/checksums/splits, W8 migration/receipt/Checkpoint/recovery
+contracts, independent Graders, and Reporting manifests are immutable. W9
+introduces no database migration and Alembic must remain at released W8 head
+`20260728_0003` with no drift.
 
-## Exact W8 file allowlist
+## Exact W9 file allowlist
 
-Only the following paths may be created or modified. Any new path must be
-added here before it changes; scope-expanding additions require new user
-direction.
+Only the following paths may be created or modified. A new path must be added
+here before it changes; any scope-expanding path requires new user direction.
 
 ~~~text
 AGENTS.md
@@ -94,268 +107,250 @@ CHANGELOG.md
 .github/workflows/ci.yml
 
 docs/agent-contract.md
+docs/project-roadmap.md
 docs/architecture.md
 docs/threat-model.md
 docs/evaluation-protocol.md
-docs/adr/0008-w8-durable-recovery.md
-docs/plans/week-08-recovery.md
-docs/evidence/week-08-report.md
-docs/data/week-08-recovery-data.md
+docs/adr/0009-w9-context.md
+docs/plans/week-09-context.md
+docs/evidence/week-09-report.md
+docs/data/week-09-context-data.md
+
+apps/planning_agent/src/flowpilot_planning_agent/budget.py
+apps/planning_agent/src/flowpilot_planning_agent/context.py
+apps/planning_agent/src/flowpilot_planning_agent/context_catalog.py
+apps/planning_agent/src/flowpilot_planning_agent/context_schemas.py
+apps/planning_agent/src/flowpilot_planning_agent/executor.py
+apps/planning_agent/src/flowpilot_planning_agent/main.py
+apps/planning_agent/src/flowpilot_planning_agent/memory.py
+apps/planning_agent/src/flowpilot_planning_agent/retrieval.py
+apps/planning_agent/src/flowpilot_planning_agent/schemas.py
+apps/planning_agent/src/flowpilot_planning_agent/summary.py
+apps/planning_agent/tests/test_api.py
+apps/planning_agent/tests/test_budget.py
+apps/planning_agent/tests/test_context.py
+apps/planning_agent/tests/test_context_schemas.py
+apps/planning_agent/tests/test_executor.py
+apps/planning_agent/tests/test_memory.py
+apps/planning_agent/tests/test_retrieval.py
+apps/planning_agent/tests/test_summary.py
+
+apps/recovery_worker/src/flowpilot_recovery_worker/schemas.py
+apps/recovery_worker/tests/test_schemas.py
 
 deploy/compose/compose.yaml
-deploy/compose/temporal/Dockerfile
-deploy/compose/temporal/create-namespace.sh
-deploy/compose/temporal/dynamicconfig/development-sql.yaml
-deploy/compose/temporal/server.Dockerfile
-deploy/compose/temporal/setup-postgres.sh
-
-apps/recovery_worker/.dockerignore
-apps/recovery_worker/Dockerfile
-apps/recovery_worker/pyproject.toml
-apps/recovery_worker/uv.lock
-apps/recovery_worker/src/flowpilot_recovery_worker/__init__.py
-apps/recovery_worker/src/flowpilot_recovery_worker/activities.py
-apps/recovery_worker/src/flowpilot_recovery_worker/client.py
-apps/recovery_worker/src/flowpilot_recovery_worker/crypto.py
-apps/recovery_worker/src/flowpilot_recovery_worker/main.py
-apps/recovery_worker/src/flowpilot_recovery_worker/schemas.py
-apps/recovery_worker/src/flowpilot_recovery_worker/workflow.py
-apps/recovery_worker/tests/conftest.py
-apps/recovery_worker/tests/test_activities.py
-apps/recovery_worker/tests/test_client.py
-apps/recovery_worker/tests/test_crypto.py
-apps/recovery_worker/tests/test_replay.py
-apps/recovery_worker/tests/test_schemas.py
-apps/recovery_worker/tests/test_workflow.py
-
-apps/planning_agent/src/flowpilot_planning_agent/client.py
-apps/planning_agent/src/flowpilot_planning_agent/main.py
-apps/planning_agent/src/flowpilot_planning_agent/worker_schemas.py
-apps/planning_agent/src/flowpilot_planning_agent/receipts.py
-apps/planning_agent/src/flowpilot_planning_agent/recovery.py
-apps/planning_agent/src/flowpilot_planning_agent/recovery_schemas.py
-apps/planning_agent/src/flowpilot_planning_agent/replan.py
-apps/planning_agent/tests/test_client.py
-apps/planning_agent/tests/test_receipts.py
-apps/planning_agent/tests/test_recovery.py
-apps/planning_agent/tests/test_recovery_api.py
-apps/planning_agent/tests/test_replan.py
-
-apps/browser_worker/src/flowpilot_browser_worker/main.py
-apps/browser_worker/src/flowpilot_browser_worker/recovery.py
-apps/browser_worker/src/flowpilot_browser_worker/runtime.py
-apps/browser_worker/src/flowpilot_browser_worker/schemas.py
-apps/browser_worker/tests/test_api.py
-apps/browser_worker/tests/test_recovery.py
-
-apps/sandbox_api/migrations/versions/20260728_0003_w8_operation_receipts.py
-apps/sandbox_api/src/flowpilot_sandbox_api/idempotency.py
-apps/sandbox_api/src/flowpilot_sandbox_api/main.py
-apps/sandbox_api/src/flowpilot_sandbox_api/models.py
-apps/sandbox_api/src/flowpilot_sandbox_api/schemas.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/service.py
-apps/sandbox_api/src/flowpilot_sandbox_api/arena/jml/service.py
-apps/sandbox_api/tests/test_idempotency.py
-apps/sandbox_api/tests/test_models.py
-apps/sandbox_api/tests/test_arena_service.py
-apps/sandbox_api/tests/test_jml_service.py
-
 tests/integration/Dockerfile
-tests/integration/pyproject.toml
-tests/integration/uv.lock
-tests/integration/w8_recovery_compose_smoke.py
-tests/integration/w8_restart_driver.py
+tests/integration/w9_context_compose_smoke.py
 ~~~
 
-## Temporal and opaque-input contract
+No dependency or lockfile change is planned. If implementation discovers that
+one is necessary, both manifest and lockfile must first be added to this
+allowlist and the addition must remain inside the user-authorized W9 scope.
 
-The Workflow may hold only strict deterministic data: schema/status versions,
-opaque run/task/workflow IDs, plan and revision hashes, deterministic topology,
-step safe states, completed/verified/remaining IDs, session epoch, absolute
-workflow deadline, total usage, retry/recovery/replan/fault counts,
-idempotency/request/result hashes, Checkpoint lineage, and closed reason codes.
+## Strict schemas, canonicalization, and provenance
 
-Workflow code may schedule Activities; use Temporal workflow time, IDs, and
-timers; update counters; validate closed state transitions; and choose the next
-closed recovery decision. It must not perform HTTP, database, filesystem,
-environment, random, system-time, Planner/model, Browser/Playwright, Sandbox,
-Arena, Grader, page-text, or dynamic-tool work. It must not use unordered
-iteration to create commands. Continue-As-New is prohibited.
+All W9 Pydantic models inherit the existing strict/frozen/`extra=forbid`
+configuration. Collections are immutable tuples after JSON-array validation.
+Closed enums define layer, process, phase, category, source, trust, status,
+event, memory field, mutation, ablation, and rejection values. Unknown fields,
+versions, values, scope, task owner, expiry, trust, source, or hash fail closed.
 
-Human brief and strict supplied values are canonicalized, encrypted with
-AES-256-GCM outside Workflow code, and passed as `w8-opaque-envelope/1.0`.
-The envelope binds schema version, opaque run/task IDs, workflow ID, key ID,
-nonce, ciphertext, and associated-data hash. Only Activity code reads the
-runtime `RECOVERY_ENVELOPE_KEY` and decrypts. The key is never committed,
-logged, returned, put in Temporal payloads, or treated as a production secret.
-Authentication failure, unknown key/version, malformed base64, or identity
-mismatch fails closed before Planning is called.
+Canonical JSON is UTF-8 with sorted keys, no insignificant whitespace, and
+unescaped Unicode. SHA-256 is lowercase hexadecimal. A context-result hash
+excludes only `context_hash`; a summary hash excludes only `summary_hash`; a
+catalog checksum covers the ordered canonical catalog; memory content hashes
+cover only the safe closed projection. Ordering never depends on set/dict
+iteration.
 
-Tests and Compose acceptance export raw Workflow history and reject any
-occurrence of the synthetic brief, objective, supplied values, `.invalid`,
-`SYN-`, page/form data, key material, or configured endpoint. The history scan
-is a completion gate, not a best-effort check.
+Every emitted context item includes its layer, closed category, safe value,
+source ID, source version, trust level, validity/expiry, content hash, byte
+count, and deterministic token estimate. Runtime values are safe synthetic
+projections, not raw brief/objective/form/page/DOM/image/OCR/model content.
 
-## Workflow state, Checkpoint, and retention
+## Five-layer authority and trust boundary
 
-Workflow states are exactly `received`, `planning`, `executing`,
-`checkpointed`, `recovering`, `replanning`, `verifying`,
-`finished_ungraded`, `escalated`, `failed`, and `cancelled`. Unknown state,
-version, field, transition, hash, counter, or reason fails closed.
+Layer order and precedence are fixed:
 
-Checkpoint schema `w8-checkpoint/1.0` stores only the allowed Workflow fields
-plus a SHA-256 hash over canonical sorted-key UTF-8 JSON excluding the hash
-field. Maximum canonical serialized size is 65,536 bytes and maximum count is
-18. Every new Checkpoint names its parent hash; the first uses an explicit
-genesis hash. Only a step with a positive runtime Verifier result can enter the
-verified/completed sets and advance the recoverable Checkpoint.
+1. `task_facts`: `sandbox_database` source and `authoritative` trust only;
+2. `browser_working`: current Worker-issued safe observation/action projection
+   with `runtime_observed` trust;
+3. `short_term`: deterministic current-task summary with `task_supplied` trust;
+4. `org_memory`: exact trusted synthetic scope, active record, and
+   `organization_curated` trust; and
+5. `enterprise_knowledge`: fixed catalog with `enterprise_curated` trust.
 
-Checkpoint never stores Browser/Context/Page handles; DOM, screenshot, OCR,
-page/form text; observation/element/screenshot/grounding refs; raw brief,
-objective, postcondition, Planner/model output; Task Spec, expected state,
-grader predicate/checksum; Cookie/Local Storage, credential, token, endpoint,
-or machine path. Current Browser/session references remain process-local and
-are erased on every terminal/recovery/shutdown path.
+Lower layers can add context but can never replace, contradict, close, or mark
+success for a task fact. Duplicate content hashes keep the earliest layer;
+within a layer, the deterministic ranking rules apply. Browser/page/email/PDF
+text is untrusted data and has no schema path for selecting a query, tool,
+route, phase, action, permission, budget, memory scope, write, delete, or
+success state.
 
-Temporal namespace retention is fixed to one day for local synthetic W8.
-Sandbox Reset/Seed deletes only receipts owned by the selected synthetic task.
-No long-term checkpoint export or application database copy exists. Compose
-cleanup removes the independent Temporal database volume and Sandbox volume.
+`task_facts` accepts only closed safe facts whose request declares the exact
+task ID, trusted synthetic scope ID, `sandbox_database` source, snapshot
+version, and database snapshot hash. The Context Assembler does not read the
+Arena, Task Spec, expected state, Grader predicate/checksum, or Reporting
+result. A caller that cannot provide the trusted snapshot fails closed instead
+of substituting memory or browser content.
 
-## Session epoch and reference lifecycle
+## Deterministic retrieval contract
 
-Normal W8 execution creates epoch 1 with one fresh Browser, Context, and Page.
-Recovery may create epoch 2 and then epoch 3; more than two recoveries fails
-closed. Before opening a new epoch, Planning Agent closes the current session
-best-effort and clears every task-local current reference. Browser Worker W8
-session creation and action envelopes bind the exact epoch. W8 actions also
-retain W6 session, generation, modality, observation, and opaque-reference
-validation.
+Enterprise queries are selected only from the closed categories
+`joiner_policy`, `mover_policy`, `leaver_policy`, `permission_matrix`,
+`device_standard`, and `operating_manual`. The assembler derives the category
+from trusted process and task phase. It accepts no free query string or page/
+model-proposed term.
 
-A recovered epoch never reuses or composes prior DOM/image data. It obtains a
-fresh observation and continues only from the latest verified Checkpoint.
-Actions carrying an old epoch, session, generation, observation, element,
-screenshot, or grounding reference are rejected before execution. Success,
-failure, timeout, cancellation, startup failure, Worker shutdown, and replay
-failure unconditionally close the current epoch and clear task-local state.
+Each closed query maps to frozen lexical terms. Retrieval filters exact/global
+synthetic scope, allowed source, minimum trust, active version, and validity at
+the request's explicit UTC `as_of`. It groups by content hash, keeps the
+highest-version trusted active item, then sorts by descending lexical score,
+descending trust rank, descending version, content hash, and item ID. The
+content hash is also the deterministic final tie breaker. `top_k` is fixed at
+3. Zero-score items are rejected. No embedding, vector index, network, model,
+or provider is called.
 
-## Transactional idempotency and receipt contract
+## Deterministic summary contract
 
-The only new business-database object is `w8_operation_receipts`. Each row has:
+Short-term input is limited to closed safe event kinds
+`unresolved_issue`, `recent_action`, `failure_reason`, `pending_step`, and
+`user_supplement`, each with a safe code/value, source hash, ordinal, and task
+owner. The summarizer validates task/scope ownership, sorts by fixed kind
+priority then descending ordinal then source hash, deduplicates equal
+kind/value pairs, and applies the frozen item/byte/token caps. It preserves at
+least one entry of every present required kind before lower-priority duplicate
+or supplemental entries.
 
-- `task_id` (synthetic task owner, maximum 40 characters);
-- `idempotency_key` (`op_` plus 64 lowercase hex characters);
-- `request_hash` (64 lowercase hex);
-- `plan_revision` (1 or 2);
-- `step_id` (maximum 40 characters);
-- `operation` (the existing closed W7 operation enum);
-- `outcome_code` (`committed` only in stored rows);
-- `result_hash` (hash of a safe canonical outcome projection); and
-- database-created `created_at`.
+Summary output records ordered entries, ordered source hashes, input count,
+deduplicated count, emitted count, dropped count, canonical byte/token counts,
+and summary hash. It never modifies task facts, calls a model, creates an
+implicit memory write, or carries data to another task.
 
-Primary uniqueness is `(task_id, idempotency_key)`. Additional constraints
-bind non-empty closed fields and revision range. No receipt stores raw payload,
-form value, page/DOM text, credential, browser ref, or result body. A run may
-create or replay at most 24 receipts.
+## Organization-memory contract
 
-The key is deterministically derived from opaque run ID, plan revision, step
-ID, and operation index. The request hash covers schema version, task owner,
-revision, step ID, closed operation, and canonical strict mutation payload.
-For an existing task/key: equal hash returns the stored safe outcome and does
-not execute; unequal hash returns HTTP 409 `idempotency_mismatch` and does not
-execute. For a new key, receipt insert and the fixed business mutation commit
-in the same SQLAlchemy transaction. Integrity races re-read and apply the same
-rule. Grader ignores receipts and scores business facts only.
+Synthetic scope IDs and task IDs are supplied only by the trusted Development
+harness. Read/upsert/delete requires the same actor scope, record scope, and
+task owner; mismatch is rejected before lookup or mutation. There is no
+wildcard, administrator bypass, fallback scope, or tenant claim.
 
-W8 Browser Worker accepts idempotency metadata only in the W8 typed action
-envelope, only for a closed mutation click, and only through fixed
-`X-FlowPilot-W8-*` headers attached temporarily to the exact synthetic UI
-request. It rejects arbitrary header names/values, URLs, interception rules,
-and non-mutation use. Sandbox recomputes the request hash from its validated
-typed body before applying the transaction.
+Records contain only closed memory field and safe synthetic value, source,
+trust, version, active/tombstone status, validity interval, and content hash.
+The store increments version exactly by one per `(scope_id, memory_id)` write.
+Delete creates a deterministic tombstone and does not physically erase prior
+business data. Reads omit tombstones and expired records. Reset is limited to
+the exact task/scope owner. Optimistic locking is deliberately absent because
+it belongs to W10; W9 serializes process-local mutations.
 
-## Retry, recovery, fault, and replan rules
+## Context budgets and one monotonic ledger
 
-The recovery order is fixed:
+Layer caps are frozen:
 
-1. request a fresh current observation;
-2. retry one explicitly transient, not-safely-completed Activity once;
-3. create a fresh Browser session epoch;
-4. resume from the latest verified Checkpoint;
-5. perform one eligible local replan of the failed/not-started subgraph; then
-6. escalate or terminate safely.
+| Layer | Items | Canonical bytes | Estimated tokens |
+|---|---:|---:|---:|
+| task facts | 8 | 4,096 | 1,024 |
+| browser working | 6 | 3,072 | 768 |
+| short term | 8 | 4,096 | 1,024 |
+| organization memory | 6 | 3,072 | 768 |
+| enterprise knowledge | 6 | 4,096 | 1,024 |
 
-Retry policies are exactly `no_retry` and `transient_once`. Temporal Activity
-retry is fixed to maximum attempts 2, bounded initial/maximum interval, and no
-unbounded exponential schedule. Validation, permission, schema, Checkpoint
-version/hash, idempotency mismatch, unknown operation, budget exhaustion, and
-permanent faults are non-retryable. Attempt numbers survive Worker restart.
+The whole result is capped at 32 items, 16,384 canonical bytes, and 4,096
+estimated tokens. Tokens are deterministically estimated as
+`ceil(UTF-8 bytes / 4)`. Earlier-layer precedence is preserved when the total
+cap truncates later layers. Oversized single items are rejected, never partly
+cut. Frozen short-term caps are 12 inputs, 8 outputs, 4,096 bytes, and 1,024
+tokens. Retrieval is at most 6 candidates and fixed top-3 output. Organization
+memory is at most 6 reads, 6 writes, and 6 deletes per task context run.
 
-Run maxima are: 2 Activity attempts; 2 session recoveries; 1 replan; 2 DAG
-revisions; 18 Checkpoints; 24 receipts; 2 injected faults; and the existing
-300-second duration. Retry, replay, recovery, fault, receipt, Checkpoint, and
-replan counters join the same non-resetting W6/W7 ledger; no existing action,
-model, token, cost, step, switch, repetition, no-progress, DOM, or image cap is
-increased.
+New cumulative counters are `context_assemblies`, `context_items`,
+`context_bytes`, `context_tokens`, `retrieval_queries`,
+`retrieval_candidates`, `retrieval_selected`, `summary_inputs`,
+`summary_outputs`, `summary_dropped`, `memory_reads`, `memory_writes`,
+`memory_deletes`, and `memory_rejections`. They live in the existing sole
+Planning `TotalBudgetLedger`; W8 copies them into its existing durable safe
+usage high-water projection and rejects decreases. They never reset during a
+task or recovery and contain no raw content.
 
-Fault scenarios are a trusted acceptance-only closed enum:
-`none`, `activity_pre_dispatch_once`, `post_commit_pre_checkpoint_once`,
-`browser_session_lost_once`, `browser_worker_restart_once`,
-`recovery_worker_restart_once`, `transient_timeout_once`,
-`permanent_failure`, `checkpoint_version_mismatch`,
-`checkpoint_hash_mismatch`, `idempotency_mismatch`,
-`replan_eligible_once`, and `replan_disallowed`. Each has a fixed injection
-point, maximum count, retry/recovery classification, and expected terminal
-status. No normal API exposes a generic fault endpoint; page/model data cannot
-select a fault.
+No released W6/W7/W8 action, step, observation, image, model, token, cost,
+time, retry, recovery, receipt, Checkpoint, fault, or replan limit is raised.
+Context exhaustion safely stops the W9 context-backed run before Planning
+execution; it does not borrow from or enlarge an existing cap.
 
-Revision 1 remains immutable. One revision 2 may replace only the failed step
-and its not-started descendants, preserving all verified/completed nodes,
-receipts, Checkpoints, authority, supplied values, process/category, and total
-budget. It records parent plan hash, replacement boundary, replaced IDs, and a
-canonical revision hash. The union of old/new nodes remains charged and must
-fit W7 node/edge/depth/width/dependency/byte limits. No completed side effect is
-rolled back or compensated.
+## Context assembly and ablations
 
-## Verifier, Grader, data, and evidence
+Assembly order is fixed: validate trusted identity/scope/task/process/phase;
+charge the ledger; apply exact-scope memory mutations; validate authoritative
+task facts; filter current browser working entries; summarize short-term
+events; retrieve the closed enterprise category; read active organization
+memory; normalize provenance; deduplicate by content hash; enforce each layer
+budget; enforce total budget; canonicalize and hash.
 
-Runtime Verifier remains strictly weaker than Grader. It may read only current
-observation/action result, safe receipt replay state, closed step conditions,
-and ledger. It receives no Task Spec, expected state, predicate/checksum,
-Arena/DB/Reporting result, page-success prose, or Planner self-report.
-Negative/inconclusive results cannot advance a Checkpoint.
+The frozen Development matrix is:
 
-W3 catalog/checksum/6-2-2 split and W7 30-template/90-instance catalog,
-12/8/10 distribution, 18/6/6 split, checksums, IDs, Grader, and Reporting
-freeze remain unchanged. Development may run the fault matrix. Validation may
-run at most one preregistered final recovery check after parameters freeze.
-Reporting is limited to load/schema/checksum validation and receives no
-Reset/Seed, Agent, fault, recovery, grade, or result inspection.
+| Profile | task facts | browser | short term | org memory | enterprise |
+|---|---:|---:|---:|---:|---:|
+| full_five_layer | on | on | on | on | on |
+| task_facts_only | on | off | off | off | off |
+| no_short_term | on | on | off | on | on |
+| no_enterprise_retrieval | on | on | on | on | off |
+| no_organization_memory | on | on | on | off | on |
 
-Evidence records only versions, opaque IDs/hashes, safe statuses/reasons,
-Checkpoint/revision topology and counts, Activity attempts, retry/recovery/
-epoch counts, receipt create/replay/mismatch counts, duplicate-side-effect
-count, fault/replan counters, inherited W6/W7 counters, terminal state, and
-independent grade. It records no raw brief, objective, supplied value, DOM,
-image, OCR, page/form content, credential, key, endpoint, token, Cookie, Local
-Storage, or machine path.
+Every profile retains authoritative task facts. The matrix is immutable before
+any Validation run. Ablations run only on deterministic synthetic Development
+instances; Reporting is not executed and W15 formal evaluation is not claimed.
 
-## Git and completion rules
+## Evaluation, evidence, and data discipline
 
-Work only on `week/08-recovery`. The user has authorized the quota-conscious
-W8 remote sequence: the minimum normal feature pushes needed to satisfy one
-pull-request gate per commit, normal merge, one post-merge main CI, annotated
-tag `w08-recovery`, and roadmap-required GitHub Release `v0.2.0`. Do not rerun
-the superseded W7 push run or any superseded, failed, or successful W8 commit,
-create duplicate CI, force-push, call a real model, or begin W9. Stage only
-exact allowlist paths after all locally available gates pass and evidence
-matches.
+Unit and API tests cover strict/frozen schemas; canonical replay and checksum;
+all five layers; task-fact precedence; browser expiry; summary preservation,
+dedupe, truncation, and no fact mutation; retrieval scope/version/source/trust/
+expiry/dedupe/order; organization-memory version/scope/delete/expiry/reset;
+cross-scope rejection; untrusted instruction rejection; item/byte/token and
+ledger budgets; deterministic ordering; all frozen ablations; and W8 durable
+counter monotonicity.
 
-W8 local completion requires deterministic/replay tests; W4-W7 regression;
-the W8 no-fault, pre-dispatch, post-commit, epoch-loss, Browser Worker restart,
-Recovery Worker restart, transient/permanent, Checkpoint mismatch,
-idempotency mismatch, partial-replan, budget, and cleanup proofs; migration
-round-trip; history plaintext scan; zero duplicate side effects; Development
-Joiner/Mover/Leaver recovery; independent grades; secret/diff/path checks; and
-complete Compose cleanup. Unavailable tooling is recorded, never treated as a
-pass. A local commit is allowed only after all locally available gates pass.
+Compose Development runs one Joiner, one Mover, and one Leaver through the W9
+context-backed Planning path after equal Reset/Seed, expects
+`finished_ungraded`, and independently grades database facts. W4-W8 smokes run
+unchanged. Immediate finish still fails independent grading. W3 and W7 catalog,
+split, checksum, and Reporting-manifest freeze checks remain required.
+
+Validation may run at most one preregistered final context check and only after
+catalog, budgets, ordering, and ablation matrix freeze. Evidence must state
+whether it ran. Reporting is limited to generation/load/schema/checksum
+validation and receives no Reset, Seed, Agent, context, memory, retrieval,
+grade, result execution, or result inspection before W15.
+
+Logs, evidence, durable usage, and CI output may contain only schema/catalog
+versions, opaque synthetic IDs/hashes, counts, closed status/reason/source/
+trust codes, ablation names, and independent numeric grades. They must not
+contain raw brief, objective, supplied/form value, DOM, screenshot, OCR,
+page/email/PDF content, model output, credential, token, key, endpoint, Cookie,
+Local Storage, personal data, or machine path. Real model/provider/OCR/VLM/
+embedding calls remain not run at 0 calls and 0 cost.
+
+## GitHub Actions quota and Git completion rules
+
+W9 remote delivery is not authorized. Do not push, create a PR, merge, tag,
+release, trigger/rerun remote CI, or call a real model without separate explicit
+user authorization in the current conversation. W9 creates no `v0.3.0`
+Release; that version belongs to W12.
+
+If remote delivery is later authorized, diagnose all failures first, make one
+concentrated fix and one necessary feature push. With no code/lock/workflow
+change and a transient infrastructure failure, rerun failed jobs only. Never
+rerun all jobs, a successful run, a superseded run, or create an empty commit,
+duplicate PR, quota-only workflow dispatch, force-push, or unrelated CI change.
+Record every necessary extra run ID, commit SHA, trigger, code-change state,
+and why failed-job-only rerun was insufficient.
+
+Local completion requires all app locks/quality/tests; W3/W7 data freeze;
+W4-W9 Compose smokes; released Alembic head/current/check with no migration;
+one frozen Development Joiner/Mover/Leaver at independent grade 100; all five
+ablations; exact allowlist audit; secret/diff/path checks; staged and unstaged
+review; and zero remaining project container, network, or volume. Unavailable
+Docker, Compose, pre-commit, Gitleaks, or network tooling is recorded, never
+treated as a pass or repeatedly retried.
+
+After every locally available gate passes and evidence matches observed
+results, explicitly stage only exact allowlist paths, create one local W9
+commit, and stop. Do not begin W10.

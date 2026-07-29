@@ -1,3 +1,4 @@
+from flowpilot_planning_agent.budget import TotalBudgetLedger
 from flowpilot_planning_agent.executor import PlanningExecutor
 from flowpilot_planning_agent.schemas import JoinerSuppliedValues, PlanningRunRequest
 from flowpilot_planning_agent.worker_schemas import (
@@ -158,7 +159,11 @@ def request(scenario: str = "complete_with_rejection_probe") -> PlanningRunReque
 
 async def test_executor_runs_multi_dependency_dag_and_cleans_up() -> None:
     browser = FakeBrowser()
-    result = await PlanningExecutor(browser).run(request())  # type: ignore[arg-type]
+    payload = request()
+    ledger = TotalBudgetLedger(payload.budget)
+    ledger.charge_context_assembly()
+    ledger.charge_context_item(canonical_bytes=100, estimated_tokens=25)
+    result = await PlanningExecutor(browser).run(payload, ledger=ledger)  # type: ignore[arg-type]
     assert result.status == "finished_ungraded"
     assert len(result.step_results) == 6
     assert all(item.state == "verified" for item in result.step_results)
@@ -167,6 +172,8 @@ async def test_executor_runs_multi_dependency_dag_and_cleans_up() -> None:
     assert result.usage.verifier_probes == 1
     assert result.usage.worker_actions == 22
     assert result.usage.cost_microusd == 0
+    assert result.usage.context_assemblies == 1
+    assert result.usage.context_items == 1
     assert browser.closed == 1
 
 

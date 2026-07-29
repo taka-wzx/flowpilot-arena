@@ -10,6 +10,8 @@ RUN pip install --no-cache-dir "uv==0.11.14"
 
 COPY pyproject.toml uv.lock ./
 COPY src ./src
+COPY alembic.ini ./alembic.ini
+COPY migrations ./migrations
 RUN uv sync --locked --no-dev
 
 RUN useradd --create-home --uid 10001 flowpilot
@@ -17,4 +19,4 @@ USER flowpilot
 
 EXPOSE 8000
 
-CMD ["uvicorn", "flowpilot_control_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "flowpilot_control_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]

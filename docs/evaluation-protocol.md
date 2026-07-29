@@ -2,99 +2,124 @@
 
 ## Purpose and preserved boundary
 
-W9 evaluates deterministic fake-only context construction, not real retrieval,
-memory quality, production tenancy, or model reasoning. W3/W7 database-fact
-Graders remain the only success authority. No real model, provider, OCR, VLM,
-embedding, vector database, or cloud call is authorized.
+W10 evaluates strict authentication, database-derived authorization, synthetic
+tenant isolation, and optimistic concurrency under a pinned local identity
+provider. It does not evaluate a real enterprise IdP, production tenancy,
+prompt-injection resistance, identity UX, or load. W3/W7 database-fact Graders
+remain the only task-success authority.
 
-W3 ten-task catalog/checksum/6-2-2 split, W7 30-template/90-instance catalog,
-12/8/10 processes, 18/6/6 split, stable manifests/checksums, W4 DOM, W5 Vision,
-W6 Hybrid, W7 Planning, W8 Recovery, Reset/Seed, receipts, and Graders remain
+W3 ten-task catalog/checksum/6-2-2 split; W7 30-template/90-instance catalog,
+12/8/10 process counts, 18/6/6 split, manifests/checksums and Reporting freeze;
+W4 DOM; W5 Vision; W6 Hybrid; W7 Planning; W8 recovery/receipts/Checkpoints/
+replay; and W9 five-layer context/retrieval/summary/memory/ablations remain
 unchanged.
 
-## Unit and schema protocol
+## Frozen Development configuration
 
-Tests cover:
+| Field | Value |
+|---|---|
+| IdP | local Keycloak `26.3.2` |
+| issuer | `http://127.0.0.1:8080/realms/flowpilot` |
+| audience | `flowpilot-control-api` |
+| browser client | `flowpilot-control-web` |
+| algorithm | `RS256` |
+| organizations | 2 synthetic |
+| users / identities / memberships | 6 / 6 / 6 |
+| roles per organization | organization_admin / operator / auditor |
+| initial mutable version | 1 |
+| HTTP concurrency | strong ETag + required If-Match |
 
-1. strict/frozen/extra-forbid W9 request/result, five-layer item, fact, browser,
-   event, summary, memory, knowledge, retrieval, budget, and ablation schemas;
-2. canonical JSON/hash replay, JSON round-trip, stable catalog checksum, closed
-   enums, exact UTC validity, and rejection of unknown/raw fields;
-3. task-fact source/trust/owner validation and earlier-layer precedence;
-4. browser expiry and exclusion of stale working memory;
-5. summary priority, required-kind preservation, dedupe, truncation, source/
-   compression counts, deterministic hash, and no task-fact mutation;
-6. retrieval category routing, lexical score, exact/global scope, version,
-   source, trust, expiry, dedupe-before-sort, fixed top-3, and stable ordering;
-7. organization-memory monotonic version, field identity, expiry, tombstone,
-   exact-owner reset, cross-task mutation rejection, and cross-scope rejection;
-8. per-layer and total item/byte/token limits, cumulative retrieval/summary/
-   memory counters, fail-closed exhaustion, and no W6-W8 cap increase;
-9. all five frozen ablations and deterministic replay; and
-10. W8 durable Planning high-water projection containing W9 counts only and
-    rejecting any counter decrease.
+Realm/client/redirect/role/users are loaded from one checksum-frozen import.
+Control Plane seed IDs and subjects are fixed opaque synthetic values. Unit
+tests create ephemeral signing keys at runtime; no private key or real token is
+committed.
 
-## Frozen Development matrix
+## Authentication protocol
 
-| Profile | task facts | browser | short term | org memory | enterprise |
-|---|---:|---:|---:|---:|---:|
-| full_five_layer | on | on | on | on | on |
-| task_facts_only | on | off | off | off | off |
-| no_short_term | on | on | off | on | on |
-| no_enterprise_retrieval | on | on | on | on | off |
-| no_organization_memory | on | on | on | off | on |
+Unit/API tests cover missing and malformed Bearer input; `alg=none`; algorithm
+confusion; wrong signature; unknown `kid`; malformed/duplicate/non-RSA/wrong-
+use JWKS; wrong issuer/audience/client/header type/token type; missing subject;
+expired token; future `nbf`; invalid/future `iat`; bounded refresh; redirect
+rejection; and valid local tokens. Invalid authentication returns one closed
+401 before a tenant lookup.
 
-No browser-working ablation is admitted. Every profile retains authoritative
-task facts. This matrix, catalog, ranking, top-k, validity window, and all
-budgets freeze before any Validation run.
+Control Web tests cover cryptographic state/nonce/verifier generation,
+S256 PKCE, exact redirect/origin/post-logout allowlists, callback missing/
+mismatched state/nonce/issuer/audience/expiry/code/transaction rejection,
+transaction removal, module-memory token storage, current identity, forbidden,
+and logout. Tests assert no token in URL, Local Storage, rendered output, log,
+database, Temporal, or evidence.
+
+## Authorization and tenant protocol
+
+The complete frozen role/permission allow/deny matrix is exercised. Unknown
+roles/permissions, no/inactive membership, inactive identity/user/organization,
+role claim mismatch, auditor writes, operator membership administration, and
+request/page/model role or organization injection are rejected.
+
+With two synthetic organizations, tests cover same-organization read/list/
+count/create/update/disable, membership and memory operations, then reject
+cross-organization get/list/count/create owner injection/update/disable,
+membership mutation, memory read/write/tombstone/reset, and context projection.
+Before and after each rejection, both organizations' state is unchanged. Cross-
+organization and nonexistent resources have identical closed response bodies
+and do not disclose IDs, counts, versions, or ETags. No global/default/fallback
+organization path is admitted.
+
+## Optimistic-lock protocol
+
+Tests require version 1 on create, success increment exactly once, missing
+If-Match 428, malformed/weak/wildcard/cross-resource/stale precondition 412,
+stale update/disable/memory mutation with no effect, repeat of one old version
+with no duplicate side effect, transaction rollback, and tenant mismatch with
+no true version disclosure. SQLite repository tests and PostgreSQL integration
+both require exactly one winner from two concurrent writes using one ETag.
+
+## Database and migration protocol
+
+The independent Control Plane migration runs on an empty PostgreSQL database:
+upgrade, `current`, `check`, downgrade to base, second upgrade, `current`, and
+`check`. Schema inspection verifies organization-aware foreign keys, unique
+constraints, and indexes. Released Sandbox migration bytes remain identical to
+W9; online Sandbox Alembic remains at `20260728_0003 (head)` with no drift.
+Control data is never included in Sandbox Reset/Seed/Grader or Temporal state.
 
 ## Compose Development protocol
 
-After equal Reset/Seed, W9 Context acceptance:
+After a clean-volume start, W10 identity acceptance uses the pinned local issuer
+and verifies authentication allow/reject, authorization rejection, two-
+organization rejection, optimistic success/stale, concurrent exactly-one-
+winner, and safe context projection. It reports counts and closed booleans only,
+with real identity-provider calls 0, real model/provider calls 0, cost 0,
+Validation false, and Reporting false.
 
-- verifies W7 catalog/split/Reporting checksums without running Reporting;
-- runs all five ablations and checks expected layer/counter absence;
-- replays a task-facts-only request and requires byte-equivalent context;
-- rejects cross-scope actor, untrusted extra page instruction, and a deliberately
-  insufficient context-item budget;
-- runs one W7 Development Joiner, Mover, and Leaver through the additive
-  context-backed Planning endpoint;
-- requires `finished_ungraded`, cumulative W9 plus W7 counters, zero cost, and
-  no success claim in the Agent/context result; and
-- invokes the independent database-fact Grader after execution and requires
-  100 for each task.
+W4-W9 smokes run in release order. W9 must retain all five frozen ablation
+hashes, enterprise catalog checksum, context-backed Development Joiner/Mover/
+Leaver grade 100, and `finished_ungraded`. W8 retains zero duplicate effects
+and all fault/recovery/replay caps. W3/W7 freeze checks and independent grading
+remain authoritative.
 
-W4-W8 Compose smokes run separately and unchanged. Immediate finish continues
-to fail independent grading in released regression. Alembic remains at W8 head
-`20260728_0003`; W9 adds no migration.
+## Data, Validation, and Reporting discipline
 
-## Data and checksum freeze
+The realm checksum, deterministic identity counts, closed role/permission
+matrix, ETag encoding, and Control migration revision are frozen in
+`docs/data/week-10-identity-data.md`. Development may rerun while implementing.
+After all parameters freeze, Validation may run at most one preregistered final
+identity check; evidence states whether it ran.
 
-The W9 enterprise catalog is code-local, synthetic, Apache-2.0 repository data.
-Its schema version, nine records, six closed categories, intentional
-version-dedup pairs, UTC validity, query terms, and checksum are frozen in
-`docs/data/week-09-context-data.md`. Evidence records only checksums, hashes,
-counts, closed codes, ablation names, and grades.
+Reporting is limited to generation/load/schema/checksum validation. Before W15
+it receives no Reset, Seed, Agent, OIDC login, identity, organization, user,
+membership, RBAC, tenant, memory, context, grade, or result execution or result
+inspection.
 
-## Validation and Reporting discipline
+## Interpretation and real-call boundary
 
-Development may rerun while implementing. After parameters freeze, Validation
-may run at most one preregistered final context check; evidence states whether
-it ran. Reporting is limited to generation/load/schema/checksum validation. It
-receives no Reset, Seed, Agent, context, memory, retrieval, grade, or result
-execution/inspection before W15.
+Passing results establish deterministic local authentication, authorization,
+two-organization isolation, non-enumeration, optimistic concurrency, migration,
+regression, and cleanup behavior. They do not prove production identity
+security, real enterprise isolation, external generalization, malicious-page
+resistance, production availability, load capacity, SLOs, or ROI.
 
-## Interpretation
-
-Passing results establish strict deterministic schemas, provenance, ordering,
-hashing, scope rejection, fake memory lifecycle, budget accumulation,
-context-backed fake Planning, cleanup, and independent grading on fixed pages.
-They do not prove real enterprise retrieval, semantic memory quality, prompt-
-injection resistance, authenticated tenancy, durable production storage,
-external generalization, causal ablation benefit, production SLOs, or ROI.
-
-## Real-call and W10 boundary
-
-Real model/provider/OCR/VLM/embedding calls remain not run at 0 calls and 0
-cost. W10 identity, users, organizations, RBAC, real tenant isolation, durable
-authorized memory, and optimistic locking are outside W9.
+Calls to a real identity provider/account/data source and real model/provider/
+OCR/VLM/embedding services remain not run at 0 calls and 0 cost. W11 approvals
+and audit are outside W10.

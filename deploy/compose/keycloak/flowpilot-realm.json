@@ -1,0 +1,238 @@
+{
+  "realm": "flowpilot",
+  "enabled": true,
+  "displayName": "FlowPilot Local Synthetic Realm",
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": false,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": false,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 0,
+  "ssoSessionIdleTimeout": 600,
+  "ssoSessionMaxLifespan": 1800,
+  "offlineSessionIdleTimeout": 0,
+  "roles": {
+    "realm": [
+      {
+        "name": "organization_admin",
+        "description": "Synthetic local organization administrator marker"
+      },
+      {
+        "name": "operator",
+        "description": "Synthetic local operator marker"
+      },
+      {
+        "name": "auditor",
+        "description": "Synthetic local auditor marker"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "flowpilot-control-web",
+      "name": "FlowPilot Local Control Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "http://127.0.0.1:5173/callback"
+      ],
+      "webOrigins": [
+        "http://127.0.0.1:5173"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://127.0.0.1:5173/"
+      },
+      "protocolMappers": [
+        {
+          "name": "flowpilot-control-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "flowpilot-control-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        },
+        {
+          "name": "flowpilot-role-claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "flowpilot_role",
+            "claim.name": "flowpilot_role",
+            "jsonType.label": "String",
+            "multivalued": "false",
+            "aggregate.attrs": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "id": "10000000-0000-0000-0000-000000000001",
+      "username": "syn-alpha-admin",
+      "firstName": "Synthetic",
+      "lastName": "AlphaAdmin",
+      "email": "syn-alpha-admin@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "organization_admin"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "organization_admin"
+      ]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000002",
+      "username": "syn-alpha-operator",
+      "firstName": "Synthetic",
+      "lastName": "AlphaOperator",
+      "email": "syn-alpha-operator@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000003",
+      "username": "syn-alpha-auditor",
+      "firstName": "Synthetic",
+      "lastName": "AlphaAuditor",
+      "email": "syn-alpha-auditor@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "auditor"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "auditor"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000001",
+      "username": "syn-beta-admin",
+      "firstName": "Synthetic",
+      "lastName": "BetaAdmin",
+      "email": "syn-beta-admin@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "organization_admin"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "organization_admin"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000002",
+      "username": "syn-beta-operator",
+      "firstName": "Synthetic",
+      "lastName": "BetaOperator",
+      "email": "syn-beta-operator@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000003",
+      "username": "syn-beta-auditor",
+      "firstName": "Synthetic",
+      "lastName": "BetaAuditor",
+      "email": "syn-beta-auditor@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "auditor"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "auditor"
+      ]
+    }
+  ]
+}

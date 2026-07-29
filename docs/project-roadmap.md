@@ -474,13 +474,19 @@ Agent 指标：
 | W7 | 动态计划 DAG、工具匹配、预算、Verifier、JML 完整任务 | 30 个模板冻结 | `w07-planning` |
 | W8 | Temporal Checkpoint、恢复、幂等、故障注入、局部重规划 | Worker/浏览器崩溃后恢复 | `w08-recovery` |
 | W9 | 五层上下文、知识检索、短期摘要、组织记忆 | Context 消融可运行 | `w09-context` |
-| W10 | OIDC、组织/用户/RBAC、租户隔离、乐观锁 | 跨组织访问测试全部拒绝 | `w10-identity` |
+| W10 | 固定本地 OIDC、组织/用户/Membership、闭集 RBAC、租户隔离、强 ETag 乐观锁 | 跨组织访问全部拒绝，同版本并发写入恰好一个成功 | `w10-identity` |
 | W11 | HITL、风险策略、一次性审批、审计链 | 所有 L2/L3 操作必须审批 | `w11-approval` |
 | W12 | API/Worker 分离、背压、限流、负载测试、Compose 完整部署 | 50 API 用户、4 浏览器任务稳定 | `w12-production` |
 | W13 | OTel Trace、成本、Dashboard、失败分类和回放 | 单任务可完整追踪和复盘 | `w13-observability` |
 | W14 | Prompt Injection、恶意页面、越权、secret redaction、浏览器沙箱 | 安全套件和威胁模型闭环 | `w14-security` |
 | W15 | 外部 Benchmark、三次重复、消融、Reporting 终测 | 生成冻结评测报告 | `w15-evaluation` |
 | W16 | 云端 Demo、Helm、双语 README、视频、文档、SBOM、v1.0 Release | 陌生人可复现，仓库公开 | `v1.0.0` |
+
+W10 的本地实现边界固定为 deterministic synthetic Keycloak 与独立 Control
+Plane 数据库。W9 的 `scope_id` 不构成身份或授权；新的 actor/organization
+必须由已验证 OIDC identity 与 active database membership 派生。W10 不包含
+W11 审批、W12 生产化、真实企业 IdP/账号/个人数据、全局管理员、跨租户绕过、
+物理删除或 Reporting 执行。
 
 阶段版本：
 

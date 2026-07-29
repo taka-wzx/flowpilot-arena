@@ -1,91 +1,116 @@
 # Architecture
 
-## W9 current-state architecture
+## W10 current-state architecture
 
-W9 preserves the W1-W8 service and network topology. Context lives inside the
-existing Planning Agent because it is task-local execution input; there is no
-new service, database, migration, dependency, or network route. Planning Agent
-still reaches only Browser Worker. Recovery Worker still reaches only Temporal
-and Planning Agent. Arena and independent Graders remain outside every Agent.
+W10 adds identity only to the Control Plane. A pinned local Keycloak is the
+synthetic OIDC issuer, and a new Control PostgreSQL database owns organization,
+user, external identity, membership, and durable organization-memory state.
+Sandbox/Arena, Temporal, and Control persistence remain separate. Planning
+Agent still reaches only Browser Worker and receives neither tokens nor any
+database capability.
 
 ~~~mermaid
 flowchart LR
-    Caller["Trusted synthetic caller<br/>scope + DB safe fact projection"] --> Context["W9 Context Assembler"]
-    BrowserMemory["Current safe browser events"] --> Context
-    Session["Closed task-local events"] --> Summary["Deterministic summary"]
-    Summary --> Context
-    Org["Process-local scoped org memory"] --> Context
-    Catalog["Fixed enterprise catalog"] --> Retrieval["Closed lexical/hash retrieval"]
-    Retrieval --> Context
-    Context --> Ledger["One W7-W9 total ledger"]
-    Ledger --> Planning["W7 bounded Planning Agent"]
-    Recovery["W8 Recovery Activities"] --> Planning
+    Human["Local browser"] -->|"Authorization Code + S256 PKCE"| KC["Keycloak 26.3.2\nflowpilot realm"]
+    Human --> CW["Control Web"]
+    CW -->|"Authorization: Bearer"| CA["Control API"]
+    KC -->|"fixed JWKS\ninternal identity network"| CA
+    CA --> CPDB["Control PostgreSQL\norganizations/users/identities/\nmemberships/org memory"]
+    CA -->|"closed authorized projection"| Context["W9 Context boundary"]
+    Recovery["W8 Recovery Worker"] --> Planning["W9 Planning Agent"]
     Planning --> Browser["Browser Worker"]
-    Browser --> Web["Five synthetic Sandbox pages"]
-    Web --> DB["Sandbox database"]
-    Grader["Independent Grader"] --> DB
+    Browser --> Web["Synthetic Sandbox pages"]
+    Web --> SDB["Sandbox PostgreSQL"]
+    Grader["Independent Grader"] --> SDB
+    Recovery --> Temporal["Temporal + separate PostgreSQL"]
 ~~~
 
-## Five-layer assembly
+Keycloak is published only on host loopback `127.0.0.1:8080` for browser
+redirects and is also connected to internal `identity` for Control API JWKS.
+Control Web/API use `control-backend`; only Control API joins
+`control-database`. Keycloak, Control Web, Planning, Browser, Sandbox, Recovery,
+and Temporal have no Control database route. Planning/Browser/Sandbox have no
+Keycloak administration capability or credential.
+
+## Authentication and ActorContext
+
+The deployment freezes one issuer, internal JWKS URL, audience, browser client,
+RS256 algorithm, JWT header type, and Bearer token type. The verifier accepts
+Bearer material only in the Authorization header, never follows JWKS redirects,
+uses one bounded refresh, and validates key metadata plus signature, `kid`,
+issuer, audience, authorized party, subject, expiry, `nbf`, and `iat` before any
+tenant query.
+
+Successful verification produces only closed issuer/subject hashes and a
+claimed closed role. One organization-qualified database join then resolves
+active external identity, user, organization, and membership. The resulting
+strict immutable `ActorContext` contains opaque IDs, the database role and
+permission set, authorization versions, and one stable authorization hash. It
+contains no token, raw claim/subject, name, email, username, password, code,
+cookie, private key, or request-derived actor/organization.
 
 ~~~mermaid
 flowchart TD
-    A["Validate task/scope/process/phase/as_of"] --> B["Apply exact-scope org-memory mutations"]
-    B --> C["1. authoritative task_facts"]
-    C --> D["2. current browser_working"]
-    D --> E["3. deterministic short_term"]
-    E --> F["4. active exact-scope org_memory"]
-    F --> G["5. closed enterprise_knowledge retrieval"]
-    G --> H["Expiry/trust/source filters"]
-    H --> I["Earlier-layer content-hash dedupe"]
-    I --> J["Per-layer then total budget"]
-    J --> K["Canonical provenance + context hash"]
+    Header["One Bearer header"] --> Verify["Fixed-policy JWT + JWKS verify"]
+    Verify -->|"closed 401"| RejectAuth["Stop before tenant query"]
+    Verify --> Lookup["Joined active identity/user/org/membership lookup"]
+    Lookup -->|"inactive/missing/role mismatch"| RejectRole["Closed authorization rejection"]
+    Lookup --> Actor["Immutable ActorContext"]
+    Actor --> Permission["Closed route permission"]
+    Permission --> Scoped["Organization-qualified repository"]
 ~~~
 
-Task facts are accepted only with `sandbox_database` source,
-`authoritative` trust, exact task/scope owner, snapshot version, and database
-snapshot hash. The assembler does not read Arena, Task Spec, expected state,
-Grader predicate/checksum, or Reporting result. Lower layers cannot replace a
-task fact or declare success.
+Keycloak realm roles do not grant application permissions. The token role must
+exactly match the active local membership. Permissions are a fixed mapping for
+`organization_admin`, `operator`, and read-only `auditor`. There is no global
+role, cross-organization role, wildcard, fallback, impersonation, or policy
+expression.
 
-The context-backed Planning endpoint creates one `TotalBudgetLedger`, assembles
-context, then passes that same ledger to the unchanged W7 executor. Planning,
-tool matching, browser actions, observations, Verifier calls, context items,
-retrieval, summary, and memory usage therefore share one non-resetting task
-counter set. The released W8 Planning usage projection copies all W9 counters
-into Checkpoints and rejects a decrease; it persists counts only, never semantic
-context.
+## Tenant-safe persistence
 
-## Retrieval and summary
+Control Plane tables are organizations, users, OIDC identities, memberships,
+and organization memories. Tenant-owned rows carry non-null
+`organization_id`; composite keys/foreign keys/uniqueness/indexes preserve that
+ownership. External identity uniqueness is the verified issuer plus subject
+hash. Membership uniqueness is organization plus user. All business foreign
+keys use `RESTRICT`, and lifecycle transitions are active/disabled or active/
+tombstone; no physical-delete route exists.
 
-Enterprise knowledge is a fixed tuple packaged with Planning Agent. A trusted
-process/phase maps to one closed category. Each category maps to frozen lexical
-terms. Retrieval filters scope, source, trust, version, and explicit UTC
-validity; deduplicates content hashes by highest active version; ranks by
-lexical score, version, hash, and ID; and emits at most three records. It has no
-free string query, embedding, vector store, network, provider, or model.
+Repositories expose organization-qualified get/list/count/create/update/
+disable/tombstone/reset only. Actor organization is database-derived. A path ID
+can select an object but cannot authorize it. Cross-organization and nonexistent
+objects have the same stable 404 response, and no list/count/page/error/version/
+ETag reveals another tenant. There is no unscoped convenience lookup followed
+by Python filtering and no global/default/first/synthetic fallback.
 
-Short-term summary accepts at most 12 closed safe events. It sorts by fixed
-event priority and descending ordinal, deduplicates kind/value pairs, preserves
-one present unresolved issue/recent action/failure reason/pending step before
-supplements, and emits at most 8 entries/4,096 bytes/1,024 estimated tokens.
-Summary hashes cover the complete safe result excluding only the hash field.
+## Optimistic locking
 
-## Organization memory
+Mutable W10 resources start at version 1. A strong ETag includes a closed
+resource kind, a 24-hex SHA-256 owner/resource fingerprint, and the version.
+Mutations require one exact If-Match. Missing input returns 428. Malformed,
+weak, wildcard, cross-resource, cross-organization, and stale input returns one
+412 body without the current version.
 
-The W9 store is process-local and fake-only. A key is exact synthetic scope plus
-memory ID. Records contain closed field/value, source/trust, owner task, version,
-status, validity, expiry, and content hash. Upsert increments version by one;
-delete creates a tombstone; read omits tombstones/expired records; reset
-tombstones only exact task/scope-owned active records. Cross-scope or owner-
-changing mutation fails before lookup/write. Process restart reconstructs an
-empty fixed fake store, so this is not production durability or W10 identity,
-tenant, RBAC, or optimistic locking.
+Update/disable/tombstone is one transaction with one conditional SQL mutation
+over organization ID, resource ID, and expected version. Success increments
+exactly once. A zero-row result has no fallback lookup or side effect. Memory
+reset uses the organization's memory-collection version and atomically
+tombstones only its active memories. PostgreSQL concurrent writes from the same
+old version have exactly one winner; SQLite unit tests exercise the same
+repository contract.
 
-## Preserved W8 boundary
+## W9 context and W8 recovery preservation
 
-Temporal Workflow history still stores only opaque input, closed operational
-state, hashes, topology, and counters. It never receives raw W9 context,
-summary, memory values, catalog records, browser content, or task facts. W8
-epochs, receipt transactions, retry/recovery/replan caps, cleanup, and
-`finished_ungraded` semantics remain unchanged.
+Released W9 endpoints, synthetic scope, five-layer order, hashes, budgets,
+ablations, fake memory store, and results are unchanged. The W10 protected
+projection reads only actor-organization durable active memory and returns a
+closed safe record containing opaque memory ID, field, safe value, version,
+validity/expiry, content hash, and opaque actor/organization authorization
+hashes. It is data for a trusted later Context input, not a Planning database
+route or authorization declaration.
+
+Temporal history and Checkpoints continue to store only opaque W8 input,
+closed operational state, hashes, topology, and numeric high-water counters.
+They receive no bearer token, claims, complete ActorContext, or semantic W10
+memory. Recovery caps, current-reference validation, total-ledger accounting,
+cleanup, `finished_ungraded`, and independent grading remain unchanged.

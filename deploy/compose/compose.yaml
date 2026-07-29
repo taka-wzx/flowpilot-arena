@@ -1,12 +1,22 @@
-name: flowpilot-arena-w8
+name: flowpilot-arena-w10
 
 services:
   control-api:
     build:
       context: ../../apps/control_api
       dockerfile: Dockerfile
+    environment:
+      CONTROL_DATABASE_URL: postgresql+psycopg://flowpilot_control:flowpilot_control_local_only@control-postgres:5432/flowpilot_control
+      W10_SYNTHETIC_SEED: "1"
+    depends_on:
+      control-postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
     networks:
       - control-backend
+      - control-database
+      - identity
     ports:
       - "127.0.0.1:8000:8000"
     healthcheck:
@@ -39,6 +49,52 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+
+  control-postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: flowpilot_control
+      POSTGRES_USER: flowpilot_control
+      POSTGRES_PASSWORD: flowpilot_control_local_only
+    networks:
+      - control-database
+    volumes:
+      - control-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U flowpilot_control -d flowpilot_control"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.2
+    command:
+      - start-dev
+      - --import-realm
+      - --hostname=http://127.0.0.1:8080
+      - --hostname-backchannel-dynamic=true
+      - --http-port=8080
+    environment:
+      KC_HEALTH_ENABLED: "true"
+    networks:
+      - control-backend
+      - identity
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - ./keycloak/flowpilot-realm.json:/opt/keycloak/data/import/flowpilot-realm.json:ro
+      - keycloak-data:/opt/keycloak/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200 OK' <&3",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 20s
 
   postgres:
     image: postgres:17-alpine
@@ -721,8 +777,40 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  identity-acceptance-smoke:
+    profiles:
+      - identity-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w10_identity_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/flowpilot/protocol/openid-connect/token
+      W10_SYNTHETIC_PASSWORD: flowpilot-local-only
+    depends_on:
+      control-api:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - identity
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
 networks:
   control-backend:
+  control-database:
+    internal: true
+  identity:
+    internal: true
   sandbox-backend:
   browser-sandbox:
     internal: true
@@ -741,5 +829,7 @@ networks:
   model-egress:
 
 volumes:
+  control-postgres-data:
+  keycloak-data:
   sandbox-postgres-data:
   temporal-postgres-data:

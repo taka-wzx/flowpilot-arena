@@ -9,6 +9,26 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- W10 fixed local Keycloak 26.3.2 OIDC realm, strict Control API bearer/JWT/JWKS
+  verification, frozen issuer/audience/client/RS256 policy, bounded JWKS
+  refresh, and deterministic negative authentication coverage.
+- W10 independent Control Plane PostgreSQL/Alembic schema for organizations,
+  users, OIDC identities, memberships, and durable organization memory, with
+  organization-aware keys/foreign keys/uniqueness/indexes and non-deleting
+  disable/tombstone states.
+- W10 database-derived `ActorContext`, closed organization-admin/operator/
+  auditor roles and permissions, protected identity/organization/user/
+  membership/memory/context routes, and default-deny non-enumerating tenant
+  repositories.
+- W10 strong resource-bound ETags, required If-Match preconditions, atomic
+  organization/resource/version mutations, monotonic versions, stale-write
+  rollback, memory-collection reset, and concurrent exactly-one-winner tests.
+- W10 Control Web Authorization Code + S256 PKCE login/callback/logout/current-
+  identity/forbidden experience with exact URI/origin allowlists, transient
+  transaction state, and access/ID tokens held only in module memory.
+- W10 deterministic two-organization/six-user identity seed, local identity
+  Compose acceptance, one additional CI job, and authorized safe W9 memory/
+  context projection without changing the released fake Planning path.
 - W9 strict five-layer context schemas and deterministic Context Assembler with
   fixed layer precedence, source/trust/version/validity provenance, canonical
   sorted-key JSON/SHA-256, independent layer budgets, and a frozen total cap.
@@ -28,6 +48,19 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Validated token signature, algorithm, `kid`, issuer, audience, client,
+  subject, expiry, `nbf`, `iat`, header type, and token type before tenant
+  lookup; rejected arbitrary issuer/JWKS/discovery/algorithm and prevented raw
+  token/claim/code/cookie/secret persistence.
+- Bound all business authority to active local identity/user/organization/
+  membership rows and exact role agreement; added no global administrator,
+  wildcard tenant, impersonation, fallback organization, or policy language.
+- Qualified tenant-owned reads/counts/writes/disables/tombstones/resets and
+  constraints by organization, unified cross-organization/nonexistent errors,
+  and protected all mutable resources against unconditional or stale writes.
+- Kept Control Plane, Sandbox, and Temporal persistence separate; retained
+  Planning Agent isolation, W8 recovery limits, W9 fake regressions,
+  `finished_ungraded`, and independent database-fact grading.
 - Kept database facts as the only task-fact authority and independent Grader as
   the only success authority; rejected cross-scope context/memory operations,
   untrusted extra fields, free retrieval queries, raw content persistence, and

@@ -1,4 +1,4 @@
-name: flowpilot-arena-w10
+name: flowpilot-arena-w11
 
 services:
   control-api:
@@ -788,6 +788,35 @@ services:
       CONTROL_API_URL: http://control-api:8000
       KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/flowpilot/protocol/openid-connect/token
       W10_SYNTHETIC_PASSWORD: flowpilot-local-only
+    depends_on:
+      control-api:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - identity
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
+  approval-acceptance-smoke:
+    profiles:
+      - approval-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w11_approval_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/flowpilot/protocol/openid-connect/token
+      W11_SYNTHETIC_PASSWORD: flowpilot-local-only
+      W11_EVALUATION_SPLIT: ${W11_EVALUATION_SPLIT:-development}
     depends_on:
       control-api:
         condition: service_healthy

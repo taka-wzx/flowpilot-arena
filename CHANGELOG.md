@@ -9,6 +9,24 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- W11 closed trusted server-side 2/2/7/5/5 L0-L4 action catalog, strict
+  action-specific parameter schemas, canonical bindings, database-fact risk
+  promotion, automatic audited L0/L1, mandatory L2/L3 approval, and permanent
+  L4/unknown-action denial.
+- W11 organization-qualified manager/security authorities independent from W10
+  business roles, L3 distinct-user separation of duties, requester/executor
+  self-approval denial, current-active-state rechecks, and strong-ETag approval
+  lifecycle mutations with immutable append-only decisions.
+- W11 hash-only short-lived one-time grants, bounded in-process raw credential
+  vault, atomic exactly-one-winner claims, durable execution references,
+  receipt-bound completion/recovery, and parameter/authority invalidation.
+- W11 per-organization append-only canonical SHA-256 audit heads/events with
+  atomic sequence allocation and genesis-to-head verification, plus a minimal
+  Control Web request/detail/decision/audit experience that never receives
+  grant material.
+- W11 Control Plane revision `20260729_0002`, deterministic two-organization/
+  sixteen-user/eight-authority seed and realm, Approval/Audit Compose smoke,
+  and W4-W11 consolidated CI regression without a new job or dependency.
 - W10 fixed local Keycloak 26.3.2 OIDC realm, strict Control API bearer/JWT/JWKS
   verification, frozen issuer/audience/client/RS256 policy, bounded JWKS
   refresh, and deterministic negative authentication coverage.
@@ -48,6 +66,15 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Bound approval authority to active organization-qualified database rows,
+  kept it separate from business RBAC and JWT claims, and rejected self,
+  inactive, insufficient, duplicate, stale, cross-tenant, and L4 approval.
+- Persisted only one-time credential/nonce hashes; kept raw grant material out
+  of Web, URLs, browser storage, logs, evidence, Temporal, Checkpoints,
+  Planning, Sandbox, and Grader; replay and concurrent claim fail closed.
+- Added organization-local tamper-evident audit chains and immutable decision/
+  event database protections without claiming tamper-proof storage,
+  blockchain, electronic signature, or legal compliance.
 - Validated token signature, algorithm, `kid`, issuer, audience, client,
   subject, expiry, `nbf`, `iat`, header type, and token type before tenant
   lookup; rejected arbitrary issuer/JWKS/discovery/algorithm and prevented raw

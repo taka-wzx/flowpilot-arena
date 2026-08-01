@@ -319,3 +319,116 @@ def test_disabled_authorization_fact_takes_effect_immediately(
 
     assert response.status_code == 403
     assert response.json()["code"] == "forbidden"
+
+
+def test_w11_authenticated_approval_web_contract_and_one_time_claim(
+    client: TestClient,
+    token_factory: TokenFactory,
+) -> None:
+    operator = _headers(
+        token_factory,
+        subject="10000000-0000-0000-0000-000000000002",
+        role="operator",
+    )
+    manager = _headers(
+        token_factory,
+        subject="10000000-0000-0000-0000-000000000004",
+        role="operator",
+    )
+    admin = _headers(
+        token_factory,
+        subject="10000000-0000-0000-0000-000000000001",
+        role="organization_admin",
+    )
+    current = client.get("/api/v1/approval-authorities/me", headers=manager)
+    assert current.status_code == 200
+    assert current.json()["roles"] == ["manager"]
+
+    automatic = client.post(
+        f"/api/v1/organizations/{ALPHA}/execution-gates",
+        headers=operator,
+        json={
+            "task_id": "task_syn_alpha_0001",
+            "step_id": "inspect_task",
+            "action_type": "inspect_task",
+            "parameters": {"task_reference": "task_syn_alpha_0001"},
+        },
+    )
+    assert automatic.status_code == 200
+    assert automatic.json()["status"] == "automatic"
+    denied = client.post(
+        f"/api/v1/organizations/{ALPHA}/execution-gates",
+        headers=operator,
+        json={
+            "task_id": "task_syn_alpha_0001",
+            "step_id": "blocked_action",
+            "action_type": "unknown_action",
+            "parameters": {"model_risk": "L0"},
+        },
+    )
+    assert denied.status_code == 403 and denied.json()["code"] == "risk_denied"
+
+    gate_body = {
+        "task_id": "task_syn_alpha_0001",
+        "step_id": "assign_asset",
+        "action_type": "assign_asset",
+        "parameters": {"employee_id": 41001, "asset_code": "asset.standard"},
+    }
+    waiting = client.post(
+        f"/api/v1/organizations/{ALPHA}/execution-gates",
+        headers=operator,
+        json=gate_body,
+    )
+    assert waiting.status_code == 200
+    assert waiting.json()["status"] == "waiting_approval"
+    request_id = waiting.json()["request"]["request_id"]
+    etag = waiting.headers["etag"]
+    assert etag.startswith('"w11-approval-request-')
+
+    missing = client.post(
+        f"/api/v1/organizations/{ALPHA}/approval-requests/{request_id}/decisions",
+        headers=manager,
+        json={"decision": "approved", "reason": "policy_satisfied"},
+    )
+    assert missing.status_code == 428
+    admin_without_authority = client.post(
+        f"/api/v1/organizations/{ALPHA}/approval-requests/{request_id}/decisions",
+        headers={**admin, "If-Match": etag},
+        json={"decision": "approved", "reason": "policy_satisfied"},
+    )
+    assert admin_without_authority.status_code == 403
+    approved = client.post(
+        f"/api/v1/organizations/{ALPHA}/approval-requests/{request_id}/decisions",
+        headers={**manager, "If-Match": etag},
+        json={"decision": "approved", "reason": "policy_satisfied"},
+    )
+    assert approved.status_code == 200 and approved.json()["grant_issued"] is True
+    assert "credential" not in approved.text.lower()
+    assert "nonce" not in approved.text.lower()
+    stale = client.post(
+        f"/api/v1/organizations/{ALPHA}/approval-requests/{request_id}/decisions",
+        headers={**manager, "If-Match": etag},
+        json={"decision": "approved", "reason": "policy_satisfied"},
+    )
+    assert stale.status_code == 412
+
+    claimed = client.post(
+        f"/api/v1/organizations/{ALPHA}/approval-requests/{request_id}/claim",
+        headers=operator,
+        json=gate_body,
+    )
+    assert claimed.status_code == 200
+    assert claimed.json()["grant_status"] == "claimed"
+    replay = client.post(
+        f"/api/v1/organizations/{ALPHA}/approval-requests/{request_id}/claim",
+        headers=operator,
+        json=gate_body,
+    )
+    assert replay.status_code == 409 and replay.json()["code"] == "grant_rejected"
+
+    audit = client.get(f"/api/v1/organizations/{ALPHA}/audit-events", headers=admin)
+    assert audit.status_code == 200 and audit.json()["count"] >= 9
+    verified = client.post(f"/api/v1/organizations/{ALPHA}/audit-events/verify", headers=admin)
+    assert verified.status_code == 200 and verified.json()["valid"] is True
+    cross = client.get("/api/v1/organizations/org_syn_beta_0001/audit-events", headers=admin)
+    assert cross.status_code == 404

@@ -163,6 +163,126 @@
       ]
     },
     {
+      "id": "10000000-0000-0000-0000-000000000004",
+      "username": "syn-alpha-manager",
+      "firstName": "Synthetic",
+      "lastName": "AlphaManager",
+      "email": "syn-alpha-manager@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000005",
+      "username": "syn-alpha-security",
+      "firstName": "Synthetic",
+      "lastName": "AlphaSecurity",
+      "email": "syn-alpha-security@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000006",
+      "username": "syn-alpha-disabled-manager",
+      "firstName": "Synthetic",
+      "lastName": "AlphaDisabledManager",
+      "email": "syn-alpha-disabled-manager@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000007",
+      "username": "syn-alpha-disabled-security",
+      "firstName": "Synthetic",
+      "lastName": "AlphaDisabledSecurity",
+      "email": "syn-alpha-disabled-security@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "10000000-0000-0000-0000-000000000008",
+      "username": "syn-alpha-noauthority",
+      "firstName": "Synthetic",
+      "lastName": "AlphaNoAuthority",
+      "email": "syn-alpha-noauthority@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
       "id": "20000000-0000-0000-0000-000000000001",
       "username": "syn-beta-admin",
       "firstName": "Synthetic",
@@ -232,6 +352,126 @@
       ],
       "realmRoles": [
         "auditor"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000004",
+      "username": "syn-beta-manager",
+      "firstName": "Synthetic",
+      "lastName": "BetaManager",
+      "email": "syn-beta-manager@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000005",
+      "username": "syn-beta-security",
+      "firstName": "Synthetic",
+      "lastName": "BetaSecurity",
+      "email": "syn-beta-security@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000006",
+      "username": "syn-beta-disabled-manager",
+      "firstName": "Synthetic",
+      "lastName": "BetaDisabledManager",
+      "email": "syn-beta-disabled-manager@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000007",
+      "username": "syn-beta-disabled-security",
+      "firstName": "Synthetic",
+      "lastName": "BetaDisabledSecurity",
+      "email": "syn-beta-disabled-security@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
+      ]
+    },
+    {
+      "id": "20000000-0000-0000-0000-000000000008",
+      "username": "syn-beta-noauthority",
+      "firstName": "Synthetic",
+      "lastName": "BetaNoAuthority",
+      "email": "syn-beta-noauthority@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "operator"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "operator"
       ]
     }
   ]

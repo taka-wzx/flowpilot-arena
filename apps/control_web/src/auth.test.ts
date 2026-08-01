@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearInMemoryAuth,
+  authorizedApiFetch,
   handleCallback,
   hasInMemoryToken,
   loadCurrentIdentity,
@@ -43,6 +44,7 @@ describe("W10 browser OIDC", () => {
     expect(url.searchParams.get("nonce")).toBe(transaction.nonce);
     expect(JSON.stringify(transaction).toLowerCase()).not.toContain("token");
     expect(window.localStorage.length).toBe(0);
+
   });
 
   it("validates callback state and nonce, keeps access token only in memory, and loads identity", async () => {
@@ -101,6 +103,26 @@ describe("W10 browser OIDC", () => {
       .Authorization;
     expect(authorization).toBe("Bearer runtime-access-token");
     expect(window.localStorage.length).toBe(0);
+
+    const approvalFetch = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ schema_version: "w11-test/1.0" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    await authorizedApiFetch(
+      "/api/v1/approval-authorities/me",
+      { method: "GET" },
+      approvalFetch,
+    );
+    const approvalCall = approvalFetch.mock.calls[0];
+    expect(approvalCall?.[0]).toBe(
+      "http://127.0.0.1:8000/api/v1/approval-authorities/me",
+    );
+    expect((approvalCall?.[1]?.headers as Headers).get("Authorization")).toBe(
+      "Bearer runtime-access-token",
+    );
+    expect(window.localStorage.length).toBe(0);
   });
 
   it("rejects state and nonce mismatch before retaining authentication", async () => {
@@ -158,5 +180,23 @@ describe("W10 browser OIDC", () => {
       "http://127.0.0.1:5173/",
     );
     expect(url.toString().toLowerCase()).not.toContain("token");
+  });
+
+  it("rejects caller-selected API origins, query paths, and Authorization", async () => {
+    await expect(authorizedApiFetch("/api/v1/approval-authorities/me")).rejects.toThrow(
+      /in-memory/iu,
+    );
+    await expect(authorizedApiFetch("https://example.invalid/api/v1/a")).rejects.toThrow(
+      /allowlist/iu,
+    );
+    await expect(
+      authorizedApiFetch("/api/v1/approval-requests?organization=other"),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch("/api/v1/organizations/org_syn_alpha_0001/memberships"),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch("/api/v1/approval-authorities/me", { method: "POST" }),
+    ).rejects.toThrow(/allowlist/iu);
   });
 });

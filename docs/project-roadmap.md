@@ -482,11 +482,12 @@ Agent 指标：
 | W15 | 外部 Benchmark、三次重复、消融、Reporting 终测 | 生成冻结评测报告 | `w15-evaluation` |
 | W16 | 云端 Demo、Helm、双语 README、视频、文档、SBOM、v1.0 Release | 陌生人可复现，仓库公开 | `v1.0.0` |
 
-W10 的本地实现边界固定为 deterministic synthetic Keycloak 与独立 Control
-Plane 数据库。W9 的 `scope_id` 不构成身份或授权；新的 actor/organization
-必须由已验证 OIDC identity 与 active database membership 派生。W10 不包含
-W11 审批、W12 生产化、真实企业 IdP/账号/个人数据、全局管理员、跨租户绕过、
-物理删除或 Reporting 执行。
+W11 在 W10 deterministic synthetic Keycloak 与独立 Control Plane 数据库上
+增加冻结的 L0-L4 风险策略、数据库派生 manager/security authority、L2/L3
+HITL、参数绑定的一次性 grant、恢复引用和按组织 tamper-evident audit chain。
+W9 `scope_id` 仍不构成身份或授权；Planning 仍无 Control Plane 能力。W11 不
+包含 W12 生产 Worker/API 分离、真实企业 IdP/账号/个人数据、动态策略、全局
+审批人、跨租户绕过、物理删除、L4 override 或 Reporting 执行。
 
 阶段版本：
 

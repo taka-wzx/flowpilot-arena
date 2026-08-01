@@ -1,4 +1,4 @@
-name: flowpilot-arena-w11
+name: flowpilot-arena-w12
 
 services:
   control-api:
@@ -19,6 +19,15 @@ services:
       - identity
     ports:
       - "127.0.0.1:8000:8000"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot:rw,noexec,nosuid,size=16m
     healthcheck:
       test:
         [
@@ -43,6 +52,19 @@ services:
       - control-backend
     ports:
       - "127.0.0.1:5173:80"
+    user: "101:101"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+      - /var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0750
+      - /var/run:rw,noexec,nosuid,size=4m,uid=101,gid=101,mode=0750
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 10s
@@ -60,6 +82,21 @@ services:
       - control-database
     volumes:
       - control-postgres-data:/var/lib/postgresql/data
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /var/run/postgresql:rw,noexec,nosuid,size=8m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U flowpilot_control -d flowpilot_control"]
       interval: 5s
@@ -68,15 +105,17 @@ services:
       start_period: 5s
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.3.2
+    build:
+      context: ./keycloak
+      dockerfile: Dockerfile
     command:
-      - start-dev
+      - start
+      - --optimized
       - --import-realm
+      - --http-enabled=true
       - --hostname=http://127.0.0.1:8080
       - --hostname-backchannel-dynamic=true
       - --http-port=8080
-    environment:
-      KC_HEALTH_ENABLED: "true"
     networks:
       - control-backend
       - identity
@@ -85,11 +124,19 @@ services:
     volumes:
       - ./keycloak/flowpilot-realm.json:/opt/keycloak/data/import/flowpilot-realm.json:ro
       - keycloak-data:/opt/keycloak/data
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 512
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200 OK' <&3",
+          "exec 3<>/dev/tcp/127.0.0.1/8080; printf 'GET /realms/flowpilot/.well-known/openid-configuration HTTP/1.1\\r\\nHost: 127.0.0.1\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '200 OK' <&3",
         ]
       interval: 5s
       timeout: 3s
@@ -106,6 +153,21 @@ services:
       - sandbox-backend
     volumes:
       - sandbox-postgres-data:/var/lib/postgresql/data
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /var/run/postgresql:rw,noexec,nosuid,size=8m
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U flowpilot -d flowpilot_sandbox"]
       interval: 5s
@@ -126,6 +188,15 @@ services:
       - sandbox-backend
     ports:
       - "127.0.0.1:8001:8001"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot:rw,noexec,nosuid,size=16m
     healthcheck:
       test:
         [
@@ -151,6 +222,19 @@ services:
       - browser-sandbox
     ports:
       - "127.0.0.1:5174:80"
+    user: "101:101"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+      - /var/cache/nginx:rw,noexec,nosuid,size=16m,uid=101,gid=101,mode=0750
+      - /var/run:rw,noexec,nosuid,size=4m,uid=101,gid=101,mode=0750
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
       interval: 10s
@@ -169,6 +253,7 @@ services:
       MAX_WAIT_MS: "5000"
       MAX_FILL_CHARS: "300"
       MAX_SESSION_SECONDS: "300"
+      BROWSER_ACTION_TIMEOUT_MS: "20000"
       VISION_VIEWPORT_WIDTH: "960"
       VISION_VIEWPORT_HEIGHT: "540"
       MAX_VISION_SCREENSHOT_BYTES: "184320"
@@ -190,7 +275,7 @@ services:
       - ALL
     security_opt:
       - no-new-privileges:true
-    pids_limit: 256
+    pids_limit: 512
     shm_size: 1gb
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=512m
@@ -453,6 +538,44 @@ services:
     pids_limit: 32
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
+
+  workflow-worker:
+    build:
+      context: ../../apps/workflow_worker
+      dockerfile: Dockerfile
+    environment:
+      CONTROL_DATABASE_URL: postgresql+psycopg://flowpilot_control:flowpilot_control_local_only@control-postgres:5432/flowpilot_control
+      TEMPORAL_ADDRESS: temporal:7233
+      W12_WORKER_INSTANCE_ID: worker_w12_compose_0001
+      RECOVERY_ENVELOPE_KEY: ${RECOVERY_ENVELOPE_KEY:?RECOVERY_ENVELOPE_KEY must be runtime-injected}
+    depends_on:
+      control-api:
+        condition: service_healthy
+      control-postgres:
+        condition: service_healthy
+      temporal:
+        condition: service_healthy
+      temporal-namespace:
+        condition: service_completed_successfully
+    networks:
+      - control-database
+      - temporal-control
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 64
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+      - /home/flowpilot-workflow:rw,noexec,nosuid,size=16m
+    healthcheck:
+      test: ["CMD", "python", "-m", "flowpilot_workflow_worker.main", "--healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   recovery-worker:
     build:
@@ -834,6 +957,75 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  production-acceptance-smoke:
+    profiles:
+      - production-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w12_production_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/flowpilot/protocol/openid-connect/token
+      W12_SYNTHETIC_PASSWORD: flowpilot-local-only
+    depends_on:
+      control-api:
+        condition: service_healthy
+      workflow-worker:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - identity
+      - sandbox-backend
+    volumes:
+      - w12-results:/results
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
+  production-load:
+    profiles:
+      - production-load
+    build:
+      context: ../../tests/load
+      dockerfile: Dockerfile
+    command: ["python", "run_profile.py", "--development"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/flowpilot/protocol/openid-connect/token
+      W12_SYNTHETIC_PASSWORD: flowpilot-local-only
+    depends_on:
+      control-api:
+        condition: service_healthy
+      workflow-worker:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - identity
+    volumes:
+      - w12-results:/results
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+      - /home/flowpilot-load:rw,noexec,nosuid,size=16m
+
 networks:
   control-backend:
   control-database:
@@ -862,3 +1054,4 @@ volumes:
   keycloak-data:
   sandbox-postgres-data:
   temporal-postgres-data:
+  w12-results:

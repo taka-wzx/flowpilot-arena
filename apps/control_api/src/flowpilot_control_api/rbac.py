@@ -32,6 +32,9 @@ _ROLE_PERMISSIONS = MappingProxyType(
                 Permission.APPROVAL_GRANT_CLAIM,
                 Permission.AUDIT_READ,
                 Permission.AUDIT_VERIFY,
+                Permission.PRODUCTION_RUN_READ,
+                Permission.PRODUCTION_RUN_SUBMIT,
+                Permission.PRODUCTION_RUN_MUTATE,
             }
         ),
         Role.OPERATOR: frozenset(
@@ -47,6 +50,9 @@ _ROLE_PERMISSIONS = MappingProxyType(
                 Permission.APPROVAL_REQUEST_DECIDE,
                 Permission.APPROVAL_REQUEST_CANCEL,
                 Permission.APPROVAL_GRANT_CLAIM,
+                Permission.PRODUCTION_RUN_READ,
+                Permission.PRODUCTION_RUN_SUBMIT,
+                Permission.PRODUCTION_RUN_MUTATE,
             }
         ),
         Role.AUDITOR: frozenset(
@@ -59,6 +65,7 @@ _ROLE_PERMISSIONS = MappingProxyType(
                 Permission.APPROVAL_REQUEST_READ,
                 Permission.AUDIT_READ,
                 Permission.AUDIT_VERIFY,
+                Permission.PRODUCTION_RUN_READ,
             }
         ),
     }

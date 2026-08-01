@@ -3,19 +3,19 @@
 > A governed enterprise computer-use Agent project and a separate resettable
 > synthetic evaluation environment.
 
-**Current status: local W11 - HITL, closed risk policy, one-time approval, and
-a tamper-evident audit chain.** W11 builds on the immutable W10 identity tag
-`w10-identity` at `9bbb0303c6bc795468b094df676a86dfcbc69dcb`. It adds
-database-derived manager/security authority, mandatory L2/L3 approval,
-parameter-bound one-time grant claims, recovery-safe execution references, and
-per-organization canonical audit chains. Independent Sandbox database-fact
-grading remains the only task-success authority.
+**Current status: local W12 - Production Control Plane, private Workflow
+Worker, bounded queue/rates, and deterministic load tooling.** W12 builds on
+the immutable W11 merge `84336fdc1dd056110b2dfb32383ce938361bf316` and tag
+`w11-approval`. It adds asynchronous 202 admission, a durable organization-
+fair PostgreSQL outbox, one private four-slot Workflow Worker, leases and
+fencing, persistent actor/organization token buckets, backpressure, and one
+checksum-frozen 50-user synthetic load profile. W11 approval/audit and W8
+receipt/recovery boundaries remain authoritative; independent Sandbox
+database-fact grading is still the only task-success authority.
 
-The local W11 branch starts from quota-maintenance commit
-`b90cd44ec440eef2d69f12d03890bae57c845e37`. Maintenance PR #33 remains
-open/blocked because its first run exhausted Actions quota before fourteen jobs
-started; that remote state does not weaken local gates. The current published
-release remains `v0.2.0 - Hybrid + Recovery` using `w08-recovery`.
+Development is on `week/12-production`. The current published release remains
+`v0.2.0 - Hybrid + Recovery` using `w08-recovery`; no W12 push, PR, merge, tag,
+Release, or remote CI run has been performed.
 
 ## Current architecture
 
@@ -27,6 +27,7 @@ release remains `v0.2.0 - Hybrid + Recovery` using `w08-recovery`.
 | W9 | Five strict context layers, fixed retrieval/summary/fake memory | Vector DB, embedding, real provider |
 | W10 | Local OIDC, identity DB, closed RBAC, tenant-safe repositories, ETags | Global admin, approvals, production identity platform |
 | W11 | Closed L0-L4 risk, L2/L3 HITL, one-time grants, audit chain | Dynamic policy, L4 override, production worker split |
+| W12 | Durable admission/outbox, private fenced Worker, rate/backpressure, 50-user load profile | Broker, autoscaling, W13 telemetry, real production SLO |
 
 ~~~mermaid
 flowchart LR
@@ -40,6 +41,10 @@ flowchart LR
     Approval --> IdentityDB
     API --> Audit["Per-organization audit chain"]
     Audit --> IdentityDB
+    API --> Run["W12 run + durable outbox\nrate buckets + idempotency"]
+    Run --> IdentityDB
+    IdentityDB --> Worker["Private Workflow Worker\n4 slots + fenced lease"]
+    Worker --> Temporal["Temporal\nreleased W8 workflow"]
     API -->|"authorized safe projection only"| Context["W9 Context boundary"]
     Planning["Planning Agent"] --> Browser["Browser Worker"]
     Browser --> Sandbox["Synthetic Sandbox"]
@@ -129,31 +134,40 @@ docker compose -f deploy/compose/compose.yaml --profile recovery-acceptance run 
 docker compose -f deploy/compose/compose.yaml --profile context-acceptance run --build --rm context-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile identity-acceptance run --build --rm identity-acceptance-smoke
 docker compose -f deploy/compose/compose.yaml --profile approval-acceptance run --build --rm approval-acceptance-smoke
+docker compose -f deploy/compose/compose.yaml --profile production-acceptance run --build --rm production-acceptance-smoke
+docker compose -f deploy/compose/compose.yaml --profile production-load run --build --rm production-load python run_profile.py --development
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 Remove-Item Env:RECOVERY_ENVELOPE_KEY
 ~~~
 
 The W10 smoke retains the pinned local issuer/RBAC/tenant/locking regression.
-The W11 smoke then exercises L0-L4 policy, L2/L3 separation of duties,
+The W11 smoke exercises L0-L4 policy, L2/L3 separation of duties,
 self/inactive/cross-organization rejection, parameter invalidation, one-winner
-claim/replay, and audit verification. It executes no Reporting, calls no real
-identity provider or model service, and incurs zero actual cost.
+claim/replay, and audit verification. W12 then exercises L1 fail-closed effect
+authority, L2/L3 approval-to-outbox handoff, eight disjoint executable tasks,
+four-slot concurrency, tenant-uniform lookup, independent grading, and audit
+verification. The repeatable load command is Development, never formal
+Validation. These paths execute no Reporting or real provider and incur zero
+actual cost.
 
 Exact local gates are in [AGENTS.md](AGENTS.md), scope is in
-[the W11 contract](docs/agent-contract.md), design is in
-[ADR 0011](docs/adr/0011-w11-approval.md), and implementation stages are in
-[the W11 plan](docs/plans/week-11-approval.md).
+[the W12 contract](docs/agent-contract.md), design is in
+[ADR 0012](docs/adr/0012-w12-production.md), and implementation stages are in
+[the W12 plan](docs/plans/week-12-production.md).
 
 ## Evaluation and release discipline
 
-W3/W7 catalogs, W9 context hashes/ablations, and W10 identity/tenant behavior
-remain immutable. W11 matrices use deterministic synthetic Development data.
-Validation may run exactly once only after every risk, approval, grant,
-recovery, audit, seed, and expected result freezes. Reporting is load/schema/
-checksum validated only and is not executed before W15.
+W3/W7 catalogs, W9 hashes/ablations, W10 identity/tenant behavior, and W11
+approval/audit behavior remain immutable. Formal W12 ordinals 1 and 2 are
+preserved failures. The user explicitly authorized exactly one replacement
+Validation ordinal 3 after the run/work schemas, handoff, queue/rates, fault
+matrix, profile, result hashes, and Compose topology freeze. Its ordinal-3
+guard is acquired before pre-staging; cleanup counts are observed before the
+final result hash is sealed. No ordinal 4 run is authorized. Reporting remains
+load/schema/checksum-only and unexecuted before W15.
 
-W11 remote delivery is not authorized by default: no push, PR, merge, tag,
-Release, or remote CI. If later authorized, the tag is `w11-approval`; W11
-creates no Release or `v0.3.0`, which belongs to W12.
+W12 remote delivery is not authorized by default. If separately authorized
+after local completion, its tag is `w12-production` and Release title is
+`v0.3.0 - Production Control Plane`; neither exists yet.
 
 Licensed under Apache-2.0.

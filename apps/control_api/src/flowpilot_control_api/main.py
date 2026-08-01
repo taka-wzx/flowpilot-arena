@@ -13,6 +13,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from flowpilot_control_api.approval import (
     ApprovalStateConflict,
@@ -55,6 +56,19 @@ from flowpilot_control_api.etag import (
     strong_etag,
 )
 from flowpilot_control_api.models import Membership, Organization, OrganizationMemory, User
+from flowpilot_control_api.production import (
+    BackpressureExceeded,
+    IdempotencyConflict,
+    ProductionStateConflict,
+    RateLimitExceeded,
+    admit_production_run,
+    cancel_production_run,
+    claim_production_run,
+    ensure_scheduler_partitions,
+    get_production_run,
+    list_production_runs,
+    run_read,
+)
 from flowpilot_control_api.rbac import AuthorizationDenied, require_permission
 from flowpilot_control_api.repository import (
     ResourceConflict,
@@ -110,6 +124,7 @@ from flowpilot_control_api.schemas import (
     ExecutionGateResponse,
     GrantClaimRequest,
     HealthResponse,
+    IdempotencyKey,
     MembershipCreate,
     MembershipId,
     MembershipList,
@@ -127,6 +142,11 @@ from flowpilot_control_api.schemas import (
     OrganizationRead,
     OrganizationUpdate,
     Permission,
+    ProductionRunClaim,
+    ProductionRunCreate,
+    ProductionRunId,
+    ProductionRunList,
+    ProductionRunRead,
     RequestClose,
     ResourceKind,
     Role,
@@ -248,6 +268,8 @@ def create_app(
             if current_settings.seed_synthetic_identities:
                 with Session(engine) as session:
                     seed_synthetic_identities(session, current_settings.oidc)
+            with Session(engine) as session:
+                ensure_scheduler_partitions(session, now=datetime.now(UTC))
         active_verifier = verifier or OidcVerifier(
             current_settings.oidc,
             HttpJwksSource(current_settings.oidc),
@@ -258,8 +280,8 @@ def create_app(
         await active_verifier.close()
 
     application = FastAPI(
-        title="FlowPilot W10 Control API",
-        version="0.10.0",
+        title="FlowPilot W12 Control API",
+        version="0.12.0",
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
@@ -270,8 +292,8 @@ def create_app(
         allow_origins=[current_settings.allowed_origin],
         allow_credentials=False,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "If-Match"],
-        expose_headers=["ETag"],
+        allow_headers=["Authorization", "Content-Type", "If-Match", "Idempotency-Key"],
+        expose_headers=["ETag", "Retry-After"],
         max_age=600,
     )
 
@@ -324,6 +346,26 @@ def create_app(
     async def grant_rejected(_: Request, __: GrantRejected) -> JSONResponse:
         return _error(ErrorCode.GRANT_REJECTED, status.HTTP_409_CONFLICT)
 
+    @application.exception_handler(IdempotencyConflict)
+    async def idempotency_conflict(_: Request, __: IdempotencyConflict) -> JSONResponse:
+        return _error(ErrorCode.CONFLICT, status.HTTP_409_CONFLICT)
+
+    @application.exception_handler(ProductionStateConflict)
+    async def production_conflict(_: Request, __: ProductionStateConflict) -> JSONResponse:
+        return _error(ErrorCode.CONFLICT, status.HTTP_409_CONFLICT)
+
+    @application.exception_handler(RateLimitExceeded)
+    async def rate_limited(_: Request, exc: RateLimitExceeded) -> JSONResponse:
+        response = _error(ErrorCode.RATE_LIMITED, status.HTTP_429_TOO_MANY_REQUESTS)
+        response.headers["Retry-After"] = str(exc.retry_after)
+        return response
+
+    @application.exception_handler(BackpressureExceeded)
+    async def backpressure(_: Request, exc: BackpressureExceeded) -> JSONResponse:
+        response = _error(ErrorCode.BACKPRESSURE, status.HTTP_503_SERVICE_UNAVAILABLE)
+        response.headers["Retry-After"] = str(exc.retry_after)
+        return response
+
     @application.exception_handler(AuditChainMissing)
     async def audit_missing(_: Request, __: AuditChainMissing) -> JSONResponse:
         return _error(ErrorCode.RESOURCE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
@@ -344,7 +386,7 @@ def create_app(
         )
         oidc = request.app.state.oidc_verifier
         verified = await oidc.verify(token)
-        return resolve_actor(session, verified)
+        return await run_in_threadpool(resolve_actor, session, verified)
 
     ActorDependency = Annotated[ActorContext, Depends(current_actor)]
 
@@ -1208,6 +1250,170 @@ def create_app(
         )
         session.commit()
         return verify_audit_chain(session, organization_id)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/production-runs",
+        response_model=ProductionRunRead,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def post_production_run(
+        organization_id: OrganizationId,
+        payload: ProductionRunCreate,
+        response: Response,
+        session: SessionDependency,
+        actor: ActorDependency,
+        idempotency_key: Annotated[IdempotencyKey, Header(alias="Idempotency-Key")],
+    ) -> ProductionRunRead:
+        authorize(actor, Permission.PRODUCTION_RUN_SUBMIT)
+        record = admit_production_run(
+            session,
+            actor,
+            organization_id,
+            idempotency_key,
+            payload,
+            current_settings.production,
+            now=datetime.now(UTC),
+        )
+        _set_resource_etag(
+            response,
+            ResourceKind.PRODUCTION_RUN,
+            organization_id,
+            record.run_id,
+            record.version,
+        )
+        return run_read(record)
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/production-runs",
+        response_model=ProductionRunList,
+    )
+    def read_production_runs(
+        organization_id: OrganizationId,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ProductionRunList:
+        authorize(actor, Permission.PRODUCTION_RUN_READ)
+        items = tuple(
+            run_read(record)
+            for record in list_production_runs(
+                session,
+                actor,
+                organization_id,
+                current_settings.production,
+                now=datetime.now(UTC),
+            )
+        )
+        return ProductionRunList(items=items, count=len(items))
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/production-runs/{run_id}",
+        response_model=ProductionRunRead,
+    )
+    def read_production_run(
+        organization_id: OrganizationId,
+        run_id: ProductionRunId,
+        response: Response,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> ProductionRunRead:
+        authorize(actor, Permission.PRODUCTION_RUN_READ)
+        record = get_production_run(
+            session,
+            actor,
+            organization_id,
+            run_id,
+            current_settings.production,
+            now=datetime.now(UTC),
+        )
+        _set_resource_etag(
+            response,
+            ResourceKind.PRODUCTION_RUN,
+            organization_id,
+            run_id,
+            record.version,
+        )
+        return run_read(record)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/production-runs/{run_id}/claim",
+        response_model=ProductionRunRead,
+        status_code=status.HTTP_202_ACCEPTED,
+    )
+    def claim_waiting_production_run(
+        organization_id: OrganizationId,
+        run_id: ProductionRunId,
+        payload: ProductionRunClaim,
+        response: Response,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+        if_match: IfMatch = None,
+    ) -> ProductionRunRead:
+        authorize(actor, Permission.PRODUCTION_RUN_MUTATE)
+        version = expected_version(
+            if_match,
+            kind=ResourceKind.PRODUCTION_RUN,
+            organization_id=organization_id,
+            resource_id=run_id,
+        )
+        record = claim_production_run(
+            session,
+            actor,
+            organization_id,
+            run_id,
+            version,
+            payload,
+            current_settings.production,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+        _set_resource_etag(
+            response,
+            ResourceKind.PRODUCTION_RUN,
+            organization_id,
+            run_id,
+            record.version,
+        )
+        return run_read(record)
+
+    @application.post(
+        "/api/v1/organizations/{organization_id}/production-runs/{run_id}/cancel",
+        response_model=ProductionRunRead,
+    )
+    def cancel_waiting_production_run(
+        organization_id: OrganizationId,
+        run_id: ProductionRunId,
+        response: Response,
+        request: Request,
+        session: SessionDependency,
+        actor: ActorDependency,
+        if_match: IfMatch = None,
+    ) -> ProductionRunRead:
+        authorize(actor, Permission.PRODUCTION_RUN_MUTATE)
+        version = expected_version(
+            if_match,
+            kind=ResourceKind.PRODUCTION_RUN,
+            organization_id=organization_id,
+            resource_id=run_id,
+        )
+        record = cancel_production_run(
+            session,
+            actor,
+            organization_id,
+            run_id,
+            version,
+            current_settings.production,
+            now=datetime.now(UTC),
+            vault=request.app.state.grant_vault,
+        )
+        _set_resource_etag(
+            response,
+            ResourceKind.PRODUCTION_RUN,
+            organization_id,
+            run_id,
+            record.version,
+        )
+        return run_read(record)
 
     return application
 

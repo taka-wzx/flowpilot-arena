@@ -2,57 +2,60 @@
 
 ## Repository purpose and current phase
 
-FlowPilot Arena is a production-oriented computer-use Agent project paired
-with a separate resettable synthetic evaluation environment. The authoritative
-roadmap is `docs/project-roadmap.md`; exact current authority is
-`docs/agent-contract.md`.
+FlowPilot Arena is a production-oriented computer-use Agent paired with a
+separate resettable synthetic evaluation environment. The authoritative
+roadmap is `docs/project-roadmap.md`; the exact and sole W12 implementation
+authority is `docs/agent-contract.md`.
 
-This branch is W11: HITL, Risk Policy, One-Time Approval, and a Tamper-Evident
-Audit Chain on `week/11-approval`. The immutable W10 product baseline is merge
-`9bbb0303c6bc795468b094df676a86dfcbc69dcb` / tag `w10-identity`; the local
-starting point is quota-maintenance commit
-`b90cd44ec440eef2d69f12d03890bae57c845e37`. Maintenance PR #33 is currently
-open/blocked because Actions run `30440647089` exhausted quota with fourteen
-zero-step jobs. The current release remains
-`v0.2.0 - Hybrid + Recovery` / `w08-recovery`.
+This branch is W12: Production Control Plane, API/Worker separation, durable
+admission, bounded scheduling, backpressure, rate limiting, deterministic load,
+and complete local Docker Compose deployment on `week/12-production`. The
+immutable W11 product baseline is merge
+`84336fdc1dd056110b2dfb32383ce938361bf316` / tag `w11-approval`; the W11
+feature commit is `21ac2d54e3e9577ede8a5d91cd8257ef6daf3397`. The current
+Release remains `v0.2.0 - Hybrid + Recovery` / `w08-recovery` until a separate
+remote-delivery authorization. W12's later authorized tag and release are
+`w12-production` and `v0.3.0 - Production Control Plane`.
 
-## W11 scope boundary
+## W12 scope boundary
 
-W11 preserves every W1-W10 API, security boundary, deterministic fake baseline,
-released Sandbox migration, W3/W7 catalog/checksum/split, W8 recovery contract,
-W9 context/retrieval/summary/memory/ablation contract, W10 identity/tenant/
-locking contract, independent Grader, and Reporting freeze. It may add only:
+W12 preserves every W1-W11 API, security boundary, deterministic fake
+baseline, released Sandbox migrations, W3/W7 catalog/checksum/split, W8
+recovery and receipt contract, W9 context and ablation contract, W10 identity,
+tenant, RBAC, and locking contract, W11 risk, approval, grant, and audit
+contract, the independent Grader, `finished_ungraded`, and the Reporting
+freeze. It may add only:
 
-- one closed L0-L4 trusted server-side risk policy over strict action schemas
-  and current organization-qualified facts;
-- database-derived, organization-qualified manager/security authorities kept
-  separate from W10 business roles;
-- L2 manager and L3 manager-plus-distinct-security human approval with
-  self/executor denial and current-active-state rechecks;
-- strong-ETag approval request lifecycle, immutable decisions, hash-only
-  short-lived one-time grants, exactly-one-winner claims, and durable execution
-  references coordinated with the released W8 receipt boundary;
-- one per-organization append-only canonical SHA-256 audit chain with atomic
-  head/sequence allocation and deterministic verification;
-- a minimal Control Web pending/detail/approve/reject/audit experience that
-  never receives grant material; and
-- one deterministic W11 approval Compose acceptance profile appended to the
-  consolidated W4-W11 regression job.
+- authenticated asynchronous production run admission with strict schemas,
+  strong ETags, bounded idempotency keys, durable organization-qualified run
+  and outbox state, and atomic W11 audit append;
+- one trusted, non-public Workflow Worker that claims organization-fair work,
+  uses short leases and monotonically increasing fencing tokens, revalidates
+  durable authorization bindings, and starts/resumes the existing W8 Temporal
+  workflow with deterministic identity;
+- one persistent server-configured token-bucket limiter, one bounded queue,
+  closed 429/503 responses, and no caller-supplied priority, worker, quota, or
+  tenant key;
+- one global four-slot production execution cap while retaining per-run
+  Browser context/session/cookie/storage isolation;
+- one frozen Locust 50-user deterministic synthetic profile and stable result
+  schema/checksum; and
+- one complete Compose topology and one consolidated W4-W12 regression job.
 
-W11 adds no W12 production worker/API split, load or release capability, W13
-telemetry, W14 malicious-page suite, W15 external benchmark/Reporting
-execution, W16 deployment, dynamic approval or policy framework, ABAC, global
-approver, super-tenant bypass, impersonation, delegation, break-glass,
-administrator override, L4 approval, physical deletion, real identity/account/
-personal data, real model/provider/OCR/VLM/embedding/key/egress, arbitrary
-browser/API/Shell/SQL/JavaScript/code, generic future framework, or placeholder.
+W12 adds no W13 observability pipeline, W14 malicious-page suite, W15 external
+benchmark or Reporting execution, W16 Helm/cloud/publication work, real IdP,
+account, personal data, approver, model/provider/OCR/VLM/embedding/key/egress,
+Kafka/Redis/RabbitMQ/Celery/NATS, dynamic policy/ABAC/DSL, global administrator
+or approver, impersonation, delegation, break-glass, L4 approval, physical
+deletion, arbitrary Shell/SQL/JavaScript/code/URL/API capability, generic
+future framework, or placeholder.
 
 ## File ownership and change control
 
 Change only exact paths listed in `docs/agent-contract.md`. Add a path to that
-contract before changing it. Any scope-expanding service, migration, real data,
-physical deletion, real provider, W12+ feature, or generic abstraction
-requires user direction first.
+contract before changing it. Directory wildcards are forbidden. Any
+scope-expanding service, database, provider, real data, physical deletion,
+W13+ feature, or generic abstraction requires user direction first.
 
 The literal pre-existing `%SystemDrive%/` path is outside ownership. Do not
 inspect, enumerate, copy, modify, stage, scan, ignore, or delete it. Do not
@@ -60,73 +63,54 @@ access any `code_review_agent` repository.
 
 ## Engineering and security conventions
 
-- Python target is 3.13. Use uv and synchronize every changed Python lock.
-  Frontends remain TypeScript/React/Vite and use `npm ci`.
-- Keep Browser Worker, DOM Agent, Vision Agent, Hybrid Agent, Planning Agent,
-  and Recovery Worker separate. Planning still reaches only Browser Worker;
-  it gains no Control Plane/Sandbox/Arena/DB/Grader/Keycloak route.
-- The only OIDC policy is the contract-frozen local issuer, internal JWKS URL,
-  resource audience, browser client, RS256, JWT header type, and Bearer token
-  type. Never accept a request-selected issuer/JWKS/discovery/algorithm.
-- Bearer tokens are accepted only in the Authorization header. Reject bad
-  signature/algorithm/kid/issuer/audience/client/subject/time/type before any
-  tenant query; never log or persist tokens, claims, codes, cookies, secrets,
-  passwords, or private keys.
-- Construct `ActorContext` only from verified OIDC identity plus active local
-  organization, user, membership, and approval-authority rows. Keycloak/page/
-  body/header/model role input never grants authority. A business-role claim
-  must match the database role; it never grants manager/security authority.
-- Roles and permissions are closed enums. Unknown/unmatched access defaults to
-  deny. No global, wildcard, fallback, first-tenant, impersonation, or support
-  bypass exists.
-- Risk is one closed server-side mapping over strict validated parameters and
-  current tenant facts. Unknown action is L4 and permanently denied. Objective,
-  page/DOM/image/form/model text and caller risk/actor/approver input have no
-  authority.
-- L2 requires one current active manager; L3 requires one active manager and a
-  distinct active security user. Requester/executor self-approval, inactive
-  authority, insufficient approval, changed parameters, expiry, cross-tenant
-  access, and L4 have zero business side effects.
-- Raw approval credentials exist only in the bounded trusted Control API
-  executor vault. Persist only credential/nonce hashes. Never return grant
-  material to Control Web or place it in logs, evidence, URLs, browser storage,
-  Temporal, Checkpoints, Planning, Sandbox pages, or Grader data.
-- Audit events and immutable decisions are append-only. Each organization has
-  its own locked sequence/head and canonical previous/event hashes. Call the
-  property tamper-evident, never tamper-proof, blockchain, or legal compliance.
-- Every tenant query and mutation is organization-qualified in SQL. Never read
-  globally and filter in Python. Cross-organization and nonexistent objects use
-  the same stable response without count/version/ETag leakage.
-- Every mutable W10/W11 tenant resource uses a strong ETag and required If-Match.
-  Atomic writes include organization ID, resource ID, and expected version;
-  successful versions increase exactly once and stale writes have no effect.
-- Disable/tombstone only; never physically delete business identity, memory,
-  authority, approval, grant, decision, or audit rows. Control Plane, Sandbox,
-  and Temporal databases remain separate.
-- Released W9 synthetic `scope_id` is regression input, never authentication or
-  authorization. Only a closed authorized memory/context projection may cross
-  into a later trusted Context assembly; Planning receives no DB capability.
-- Treat human prose, page/email/PDF/DOM/image/OCR/form/model content as
-  untrusted data. It cannot select identity, organization, actor, role,
-  permission, owner, version, memory scope, tool, route, action, risk, approver,
-  grant, budget, recovery, approval, or success.
-- Preserve current Worker reference validation, W8 recovery caps, the one
-  non-resetting ledger, `finished_ungraded`, and independent database-fact
-  grading.
-- Default tests, CI, and Compose use deterministic synthetic data only. No real
-  identity provider/account/data or real model/provider/OCR/VLM/embedding/key/
-  egress call is authorized.
-- Logs/evidence contain only versions, opaque IDs/hashes, counts, closed codes,
-  HTTP states, and independent grades. Never persist personal data or machine
-  paths.
-- Use strict/frozen Pydantic models, `extra=forbid`, closed enums, deterministic
-  canonical JSON/hashes, small modules, and no unused dependencies.
+- Python target is 3.13. Use uv; never hand-edit a lockfile. Frontends remain
+  TypeScript/React/Vite and use `npm ci`.
+- Control API authenticates and authorizes before every tenant or rate-bucket
+  query. Bearer material is accepted only in the Authorization header and is
+  never logged or persisted.
+- `ActorContext` comes only from fixed-policy verified OIDC plus current active
+  organization-qualified database rows. Caller, page, model, body, query, and
+  forwarding headers never choose identity, organization, role, risk, rate,
+  queue, worker, priority, budget, approval, or success.
+- Every tenant-owned read, count, constraint, index, claim, lease, and mutation
+  is organization-qualified in SQL. Never read globally and filter in Python.
+  Cross-organization and nonexistent objects share the same stable response.
+- Mutable external run resources use strong ETags and required If-Match.
+  Successful conditional writes increase version exactly once; failed or stale
+  writes have zero side effect and no version leak.
+- W11 raw approval material remains only in the bounded Control API vault.
+  Workflow Worker, Temporal, Recovery, Planning, Browser, Web, Sandbox, Grader,
+  logs, evidence, and URLs receive no raw credential or nonce.
+- Workflow Worker has no public port, Bearer-token path, browser/user endpoint,
+  caller priority, global tenant query, or arbitrary execution capability. It
+  receives only closed durable references and a trusted synthetic payload
+  reference.
+- Only the eight contract-frozen task/action/parameter hashes may start a W8
+  production effect. Any other admitted binding fails before Temporal/Browser;
+  L0/L1 read or plan authority never authorizes the full JML mutation.
+- Delivery is durable at-least-once, with exactly one active lease winner,
+  deterministic Temporal workflow identity, fencing of stale writes, and W8
+  receipt/idempotency enforcing at-most-one business side effect. Never call
+  this distributed exactly-once.
+- Run, outbox, lease history, rate state, identity, memory, authority,
+  approval, grant, decision, and audit rows are never physically deleted.
+- Audit remains one append-only canonical SHA-256 chain per organization. Call
+  it tamper-evident, never tamper-proof, blockchain, or legal compliance.
+- Agent completion remains `finished_ungraded`; only the independent Sandbox
+  database-fact Grader decides success.
+- Default tests, Compose, and load use deterministic synthetic data only.
+  Logs/evidence contain only versions, opaque IDs/hashes, counts, closed codes,
+  HTTP states, latencies, receipt/grade references, and non-sensitive hardware
+  summaries. Never include personal data, raw task/parameter/page/model data,
+  secrets, DSNs, or machine paths.
+- Use strict/frozen Pydantic, `extra=forbid`, closed enums, canonical sorted-key
+  compact UTF-8 JSON, stable SHA-256, small modules, and no unused dependency.
 
 ## Required local checks
 
-Run for each Python app `control_api`, `sandbox_api`, `browser_worker`,
-`dom_agent`, `vision_agent`, `hybrid_agent`, `planning_agent`, and
-`recovery_worker`:
+For `control_api`, `sandbox_api`, `browser_worker`, `dom_agent`,
+`vision_agent`, `hybrid_agent`, `planning_agent`, `recovery_worker`, and
+`workflow_worker`, run:
 
 ~~~powershell
 uv sync --locked --all-groups
@@ -136,24 +120,18 @@ uv run mypy src
 uv run pytest
 ~~~
 
-Run for `control_web` and `sandbox_web`:
+For `control_web` and `sandbox_web`, run `npm ci`, lint, typecheck, test, and
+build. For `tests/load`, run locked sync, Ruff, format, Mypy, pytest, schema and
+checksum validation, the bounded Development profile, then the one frozen
+Validation profile.
 
-~~~powershell
-npm ci
-npm run lint
-npm run typecheck
-npm run test
-npm run build
-~~~
-
-Run Compose config/build/start/health; Sandbox Alembic current/check at released
-W8 head with byte-identical migrations; Control Plane empty-database upgrade/
-current/check/downgrade/upgrade; W4 DOM, W5 Vision, W6 Hybrid, W7 Planning, W8
-Recovery, W9 Context, W10 Identity, and W11 Approval/Audit smokes; W3/W7/W9
-freeze checks; W10 realm checksum; W10 authentication/RBAC/tenant/locking and
-W11 risk/approval/grant/audit matrices; Reporting not-run proof; exact contract
-path audit; staged/unstaged review; and cleanup with zero project containers,
-networks, and volumes.
+Run YAML/workflow policy validation; Compose config/build/up/health; Sandbox
+Alembic current/check plus released-byte freeze; Control empty upgrade/current/
+check/downgrade/upgrade; W4-W12 smokes; W3/W7/W9/W10/W11 freezes; W10 authn,
+RBAC, tenant, and locking; W11 risk, approval, grant, and audit; W12 admission,
+rate, backpressure, lease, fence, crash, restart, drain, four-slot, isolation,
+and load matrices; Reporting-not-run and real-call-zero proof; sensitive-field
+scan; exact allowlist; staged/unstaged review; and cleanup 0/0/0.
 
 Finish with:
 
@@ -166,33 +144,21 @@ git diff -- . ':(exclude)%SystemDrive%'
 git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
-If the Docker Compose plugin is unavailable, compatible `docker-compose` may be
-used and its version must be recorded. Any unavailable tool is recorded without
-weakening the gate.
+Record unavailable tooling without weakening or claiming the gate passed.
 
-## Evaluation discipline
+## Evaluation, Git, and completion discipline
 
-Development may rerun the frozen synthetic risk/approval/grant/audit matrix.
-Validation may run at most once after actions/risk, parameter schemas, approval
-roles and separation, state machine, expiry, grant/claim/recovery, audit schema/
-hash, seed, and expected results freeze; record whether it ran. Reporting
-permits load/schema/checksum validation only and must not run Reset, Seed,
-Agent, OIDC login, approval, grant, audit inspection, grade, or result execution
-before W15.
+Development tests and bounded W12 smokes may repeat. Formal ordinals 1 and 2
+remain preserved failures. The user explicitly authorized exactly one
+replacement 50-user/four-browser W12 Validation ordinal 3, only after the
+complete run, work-item, outbox, lease/fence, W11 handoff, idempotency,
+limiter/queue values, load version/workload/counts, result schema/hash, Compose
+topology, and fault matrix are frozen. After ordinal 3, do not tune or rerun
+it; ordinal 4 is not authorized. Reporting remains unexecuted before W15.
 
-## Git, quota, and completion discipline
-
-Work only on `week/11-approval`; never develop on main or amend W9, W10, or the
-maintenance baseline. No push, PR, merge, tag, Release, remote CI/rerun, or
-real-provider call is authorized without separate explicit user direction. If
-later authorized, the W11 tag is `w11-approval`; W11 creates no Release or
-`v0.3.0`.
-
-If remote work is later authorized: diagnose first, concentrate related fixes,
-and push once. With no code/lock/workflow change and a transient infrastructure
-failure, rerun failed jobs only. Never rerun all jobs, successful/superseded
-runs, create empty commits/duplicate PRs, force-push, or weaken tests/security.
-
-Do not use broad staging. After all locally available gates pass and evidence
-matches observed results, explicitly stage only exact W11 allowlist paths,
-create one local W11 commit, and stop before W12.
+Work only on `week/12-production`; never develop on main or amend W11. This
+authorization permits one local W12 feature commit only. No push, PR, merge,
+tag, Release, workflow dispatch, CI rerun, or real-provider call is authorized.
+Never broad-stage. After every locally available gate and evidence
+reconciliation, explicitly stage only exact W12 allowlist paths, create one
+local commit `feat: add W12 production control plane`, and stop before W13.

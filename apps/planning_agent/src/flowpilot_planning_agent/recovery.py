@@ -20,9 +20,11 @@ from flowpilot_planning_agent.recovery_schemas import (
 )
 from flowpilot_planning_agent.replan import partial_replan
 from flowpilot_planning_agent.schemas import (
+    Page,
     PlanningDag,
     PlanRequest,
     PlanStep,
+    SuppliedValues,
     TotalBudget,
     VerifierRequest,
 )
@@ -51,8 +53,15 @@ class RecoveryRunState:
     observation: HybridDomObservation
     ledger: TotalBudgetLedger
     completed: set[str] = field(default_factory=set)
+    completed_results: dict[str, PlanningActivityResult] = field(default_factory=dict)
     injected_faults: set[str] = field(default_factory=set)
     action_number: int = 0
+
+
+@dataclass(slots=True)
+class _RunGate:
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    users: int = 0
 
 
 class RecoveryCoordinator:
@@ -61,23 +70,43 @@ class RecoveryCoordinator:
         self._planner = DeterministicPlanner()
         self._verifier = DeterministicStepVerifier()
         self._runs: dict[str, RecoveryRunState] = {}
-        self._lock = asyncio.Lock()
+        self._run_gates: dict[str, _RunGate] = {}
+        self._registry_lock = asyncio.Lock()
+        self._closing = False
+
+    async def _acquire_run_gate(self, run_id: str) -> _RunGate:
+        async with self._registry_lock:
+            if self._closing:
+                raise ValueError("recovery coordinator is closing")
+            gate = self._run_gates.setdefault(run_id, _RunGate())
+            gate.users += 1
+            return gate
+
+    async def _release_run_gate(self, run_id: str, gate: _RunGate) -> None:
+        async with self._registry_lock:
+            gate.users -= 1
+            if gate.users == 0 and run_id not in self._runs and self._run_gates.get(run_id) is gate:
+                del self._run_gates[run_id]
 
     async def invoke(self, request: PlanningRecoveryActivity) -> PlanningActivityResult:
-        async with self._lock:
-            if request.command == "start":
-                return await self._start(request)
-            state = self._require_state(request)
-            if request.command == "cleanup":
-                return await self._cleanup(request, state)
-            self._validate_checkpoint(request, state)
-            if request.command == "refresh":
-                return await self._refresh(request, state)
-            if request.command == "recover":
-                return await self._recover(request, state)
-            if request.command == "replan":
-                return self._replan(request, state)
-            return await self._step(request, state)
+        gate = await self._acquire_run_gate(request.run_id)
+        try:
+            async with gate.lock:
+                if request.command == "start":
+                    return await self._start(request)
+                state = self._require_state(request)
+                if request.command == "cleanup":
+                    return await self._cleanup(request, state)
+                self._validate_checkpoint(request, state)
+                if request.command == "refresh":
+                    return await self._refresh(request, state)
+                if request.command == "recover":
+                    return await self._recover(request, state)
+                if request.command == "replan":
+                    return self._replan(request, state)
+                return await self._step(request, state)
+        finally:
+            await self._release_run_gate(request.run_id, gate)
 
     async def _start(self, request: PlanningRecoveryActivity) -> PlanningActivityResult:
         if request.run_id in self._runs:
@@ -128,6 +157,16 @@ class RecoveryCoordinator:
             return self._result(
                 request, state, "permanent_failure", "step is outside current revision"
             )
+        if request.step_id in state.completed:
+            return state.completed_results.get(
+                request.step_id,
+                self._result(
+                    request,
+                    state,
+                    "verified",
+                    "step already verified in recovery state",
+                ),
+            )
         if (
             request.fault_scenario == "permanent_failure"
             and "permanent_failure" not in state.injected_faults
@@ -163,7 +202,11 @@ class RecoveryCoordinator:
             observation = state.observation
             action_success = False
             receipt: ReceiptRecord | None = None
-            for instruction in PlanningExecutor._instructions(step, request.supplied_values):
+            for instruction in self._instructions_for_step(
+                step,
+                request.supplied_values,
+                current_page=PlanningExecutor._page(observation),
+            ):
                 state.ledger.charge_action()
                 envelope, binding = self._envelope(request, state, step, observation, instruction)
                 result = await self._browser.execute_recovery_action(state.session_id, envelope)
@@ -191,6 +234,14 @@ class RecoveryCoordinator:
                             "Sandbox rejected changed-hash replay",
                             receipt=receipt,
                         )
+                if self._is_recoverable_browser_failure(result.success, result.error_category):
+                    return self._result(
+                        request,
+                        state,
+                        "session_lost",
+                        "recoverable Browser action failure",
+                        receipt=receipt,
+                    )
                 if not result.success:
                     break
             verification = self._verifier.verify(
@@ -210,13 +261,15 @@ class RecoveryCoordinator:
                     request, state, "permanent_failure", "runtime Verifier did not verify step"
                 )
             state.completed.add(request.step_id)
-            return self._result(
+            verified = self._result(
                 request,
                 state,
                 "verified",
                 "step verified from current safe evidence",
                 receipt=receipt,
             )
+            state.completed_results[request.step_id] = verified
+            return verified
         except (BudgetExceeded, ExecutionFailure):
             return self._result(
                 request, state, "permanent_failure", "total ledger or tool limit reached"
@@ -299,6 +352,28 @@ class RecoveryCoordinator:
         ):
             raise ValueError("recovery run identity not found")
         return state
+
+    @staticmethod
+    def _instructions_for_step(
+        step: PlanStep,
+        supplied_values: SuppliedValues,
+        *,
+        current_page: Page,
+    ) -> tuple[_Instruction, ...]:
+        instructions = PlanningExecutor._instructions(step, supplied_values)
+        return tuple(
+            instruction
+            for instruction in instructions
+            if not (step.operation == "finalize" and instruction.action == "read")
+            and not (
+                instruction.action == "navigate"
+                and PlanningExecutor._required_page(instruction) == current_page
+            )
+        )
+
+    @staticmethod
+    def _is_recoverable_browser_failure(success: bool, error_category: str | None) -> bool:
+        return not success and error_category in {"browser_timeout", "browser_error"}
 
     @staticmethod
     def _validate_checkpoint(request: PlanningRecoveryActivity, state: RecoveryRunState) -> None:
@@ -401,9 +476,17 @@ class RecoveryCoordinator:
         )
 
     async def close_all(self) -> None:
-        async with self._lock:
-            states = list(self._runs.values())
-            self._runs.clear()
+        async with self._registry_lock:
+            self._closing = True
+            gates = list(self._run_gates.values())
+        for gate in gates:
+            await gate.lock.acquire()
+        states = list(self._runs.values())
+        self._runs.clear()
+        for gate in gates:
+            gate.lock.release()
+        async with self._registry_lock:
+            self._run_gates.clear()
         for state in states:
             with suppress(Exception):
                 await self._browser.close_recovery_session(state.session_id)

@@ -66,9 +66,9 @@ def test_actor_resolution_and_every_tenant_query_are_organization_qualified(
             ),
         )
 
-        assert len(list_users(session, alpha, alpha.organization_id)) == 8
-        assert count_users(session, alpha, alpha.organization_id) == 8
-        assert count_memberships(session, alpha, alpha.organization_id) == 8
+        assert len(list_users(session, alpha, alpha.organization_id)) == 9
+        assert count_users(session, alpha, alpha.organization_id) == 9
+        assert count_memberships(session, alpha, alpha.organization_id) == 9
         with pytest.raises(ResourceNotFound):
             list_users(session, alpha, beta.organization_id)
         with pytest.raises(ResourceNotFound):
@@ -226,4 +226,4 @@ def test_two_concurrent_writes_have_exactly_one_winner(
         assert stored.version == 2
         assert stored.safe_value in {"device_standard_b", "device_standard_c"}
         assert total_memories == 1
-        assert total_users == 16
+        assert total_users == 17

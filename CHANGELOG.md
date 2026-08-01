@@ -9,6 +9,26 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- W12 authenticated asynchronous production-run API with strict task/action
+  schemas, strong ETags, actor-scoped idempotency, persistent actor and
+  organization token buckets, bounded Retry-After, 64/32 queue admission, and
+  stable 429/503 failure responses.
+- W12 Control revision `20260801_0003` with organization-qualified run,
+  dispatch outbox, append-only lease history, scheduler partition, rate-bucket,
+  and idempotency tables; no Sandbox or Temporal schema change.
+- One private Workflow Worker with deterministic organization round robin,
+  four slots, 30/10/25-second lease/heartbeat/drain values, monotonic fencing,
+  deterministic Temporal workflow identity, W8 receipt convergence, and
+  `finished_ungraded` terminal preservation.
+- Atomic W11 grant-claim to W12 run/outbox handoff with post-commit vault
+  removal, current-active authorization rechecks at the effect boundary, and
+  eight frozen disjoint synthetic JML effect bindings.
+- Locust 2.46.1 locked load project with checksum-frozen 50-user/1,000-request
+  profile, intentional 50-request rate and backpressure probes, strict result
+  schema/hash, one-run guard, public-API observation collection, and cleanup-
+  after-measurement result sealing.
+- Hardened complete Compose topology with the private Worker, W12 acceptance
+  and load profiles, and one consolidated W4-W12 CI regression.
 - W11 closed trusted server-side 2/2/7/5/5 L0-L4 action catalog, strict
   action-specific parameter schemas, canonical bindings, database-fact risk
   promotion, automatic audited L0/L1, mandatory L2/L3 approval, and permanent
@@ -66,6 +86,16 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Security
 
+- Kept raw approval credential/nonce material inside the bounded Control API
+  vault while atomically creating a durable execution/run/outbox reference;
+  Workflow Worker and Temporal receive hashes and opaque references only.
+- Added exactly-one active lease winner and stale-write fencing, rechecked
+  organization/user/membership/authority bindings immediately before effect,
+  and prevented caller priority, IP headers, page/model data, or request fields
+  from selecting limiter, queue, Worker, risk, approval, or success.
+- Preserved per-organization tamper-evident audit append in the same transaction
+  as admission, lease, start, recovery, and terminal mutations; no tamper-proof,
+  blockchain, legal-compliance, or production-SLO claim is made.
 - Bound approval authority to active organization-qualified database rows,
   kept it separate from business RBAC and JWT claims, and rejected self,
   inactive, insufficient, duplicate, stale, cross-tenant, and L4 approval.

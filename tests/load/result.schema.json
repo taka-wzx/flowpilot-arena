@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://flowpilot.invalid/schemas/w12-load-result-1.0.json",
+  "title": "FlowPilot W12 deterministic load result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "profile_version",
+    "schema_sha256",
+    "result_hash",
+    "seed",
+    "validation_ordinal",
+    "validation_run",
+    "reporting_executed",
+    "tool",
+    "tool_version",
+    "users",
+    "organizations",
+    "protected_requests",
+    "rate_probe_requests",
+    "backpressure_probe_requests",
+    "api_latency_us",
+    "queue_wait_us",
+    "max_browser_concurrency",
+    "accepted",
+    "rate_limited",
+    "backpressured",
+    "expected_http",
+    "unexpected_http",
+    "unexpected_5xx",
+    "run_terminals",
+    "worker",
+    "workflow",
+    "receipts",
+    "security",
+    "audit",
+    "real_calls",
+    "cost_microusd",
+    "host",
+    "cleanup"
+  ],
+  "properties": {
+    "schema_version": {"const": "w12-load-result/1.0"},
+    "profile_version": {"const": "w12-validation-50x4/1.0"},
+    "schema_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "result_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "seed": {"const": 20260801},
+    "validation_ordinal": {"const": 3},
+    "validation_run": {"type": "boolean"},
+    "reporting_executed": {"const": false},
+    "tool": {"const": "locust"},
+    "tool_version": {"const": "2.46.1"},
+    "users": {"const": 50},
+    "organizations": {"const": 2},
+    "protected_requests": {"const": 1000},
+    "rate_probe_requests": {"const": 50},
+    "backpressure_probe_requests": {"const": 50},
+    "api_latency_us": {"$ref": "#/$defs/percentiles"},
+    "queue_wait_us": {"$ref": "#/$defs/percentiles"},
+    "max_browser_concurrency": {"type": "integer", "minimum": 0, "maximum": 4},
+    "accepted": {"type": "integer", "minimum": 0},
+    "rate_limited": {"type": "integer", "minimum": 0},
+    "backpressured": {"type": "integer", "minimum": 0},
+    "expected_http": {"$ref": "#/$defs/httpCounts"},
+    "unexpected_http": {"$ref": "#/$defs/httpCounts"},
+    "unexpected_5xx": {"type": "integer", "minimum": 0},
+    "run_terminals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["waiting_approval", "queued", "leased", "running", "recovering", "verifying", "finished_ungraded", "failed", "cancelled", "expired"],
+      "properties": {
+        "waiting_approval": {"type": "integer", "minimum": 0},
+        "queued": {"type": "integer", "minimum": 0},
+        "leased": {"type": "integer", "minimum": 0},
+        "running": {"type": "integer", "minimum": 0},
+        "recovering": {"type": "integer", "minimum": 0},
+        "verifying": {"type": "integer", "minimum": 0},
+        "finished_ungraded": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "cancelled": {"type": "integer", "minimum": 0},
+        "expired": {"type": "integer", "minimum": 0}
+      }
+    },
+    "worker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claims", "reclaims", "stale_fence_rejections", "stale_fence_write_successes", "database_lock_conflicts"],
+      "properties": {
+        "claims": {"type": "integer", "minimum": 0},
+        "reclaims": {"type": "integer", "minimum": 0},
+        "stale_fence_rejections": {"type": "integer", "minimum": 0},
+        "stale_fence_write_successes": {"type": "integer", "minimum": 0},
+        "database_lock_conflicts": {"type": "integer", "minimum": 0}
+      }
+    },
+    "workflow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duplicate_dispatches", "duplicate_starts", "deduplicated_starts"],
+      "properties": {
+        "duplicate_dispatches": {"type": "integer", "minimum": 0},
+        "duplicate_starts": {"type": "integer", "minimum": 0},
+        "deduplicated_starts": {"type": "integer", "minimum": 0}
+      }
+    },
+    "receipts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["created", "replayed", "mismatched"],
+      "properties": {
+        "created": {"type": "integer", "minimum": 0},
+        "replayed": {"type": "integer", "minimum": 0},
+        "mismatched": {"type": "integer", "minimum": 0}
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["accepted_run_loss", "duplicate_business_effects", "approval_bypass", "cross_tenant_leak", "browser_context_crossflow"],
+      "properties": {
+        "accepted_run_loss": {"type": "integer", "minimum": 0},
+        "duplicate_business_effects": {"type": "integer", "minimum": 0},
+        "approval_bypass": {"type": "integer", "minimum": 0},
+        "cross_tenant_leak": {"type": "integer", "minimum": 0},
+        "browser_context_crossflow": {"type": "integer", "minimum": 0}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_count", "head_sequence", "head_hash", "verification_failures", "duplicate_sequences", "forks", "broken_heads"],
+      "properties": {
+        "event_count": {"type": "integer", "minimum": 0},
+        "head_sequence": {"type": "integer", "minimum": 0},
+        "head_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "verification_failures": {"type": "integer", "minimum": 0},
+        "duplicate_sequences": {"type": "integer", "minimum": 0},
+        "forks": {"type": "integer", "minimum": 0},
+        "broken_heads": {"type": "integer", "minimum": 0}
+      }
+    },
+    "real_calls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idp", "account_data", "model", "provider", "ocr", "vlm", "embedding", "egress"],
+      "properties": {
+        "idp": {"type": "integer", "minimum": 0},
+        "account_data": {"type": "integer", "minimum": 0},
+        "model": {"type": "integer", "minimum": 0},
+        "provider": {"type": "integer", "minimum": 0},
+        "ocr": {"type": "integer", "minimum": 0},
+        "vlm": {"type": "integer", "minimum": 0},
+        "embedding": {"type": "integer", "minimum": 0},
+        "egress": {"type": "integer", "minimum": 0}
+      }
+    },
+    "cost_microusd": {"type": "integer", "minimum": 0},
+    "host": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logical_cpu_count", "memory_bucket_mib"],
+      "properties": {
+        "logical_cpu_count": {"type": "integer", "minimum": 1},
+        "memory_bucket_mib": {"type": "integer", "minimum": 256}
+      }
+    },
+    "cleanup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["containers", "networks", "volumes"],
+      "properties": {
+        "containers": {"type": "integer", "minimum": 0},
+        "networks": {"type": "integer", "minimum": 0},
+        "volumes": {"type": "integer", "minimum": 0}
+      }
+    }
+  },
+  "$defs": {
+    "percentiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p50", "p95", "p99"],
+      "properties": {
+        "p50": {"type": "integer", "minimum": 0},
+        "p95": {"type": "integer", "minimum": 0},
+        "p99": {"type": "integer", "minimum": 0}
+      }
+    },
+    "httpCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["200", "202", "404", "409", "412", "429", "503"],
+      "properties": {
+        "200": {"type": "integer", "minimum": 0},
+        "202": {"type": "integer", "minimum": 0},
+        "404": {"type": "integer", "minimum": 0},
+        "409": {"type": "integer", "minimum": 0},
+        "412": {"type": "integer", "minimum": 0},
+        "429": {"type": "integer", "minimum": 0},
+        "503": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

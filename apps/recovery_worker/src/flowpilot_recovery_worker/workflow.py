@@ -46,6 +46,26 @@ def _charge(usage: DurableUsage, result: ActivityResult, *, fault: bool = False)
     return usage.model_copy(update=update)
 
 
+def _charge_recoverable_activity_error(usage: DurableUsage, *, attempts: int) -> DurableUsage:
+    return usage.model_copy(
+        update={
+            "activity_attempts": usage.activity_attempts + attempts,
+            "retries": usage.retries + max(0, attempts - 1),
+            "faults": usage.faults + 1,
+        }
+    )
+
+
+def _activity_error_type(exc: ActivityError) -> str | None:
+    cause = getattr(exc, "cause", None)
+    value = getattr(cause, "type", None)
+    return value if isinstance(value, str) else None
+
+
+def _is_recoverable_step_activity_error(exc: ActivityError) -> bool:
+    return _activity_error_type(exc) == "ReadTimeout"
+
+
 @workflow.defn(name="FlowPilotDurableRecoveryWorkflow")
 class DurableRecoveryWorkflow:
     @workflow.run
@@ -138,7 +158,16 @@ class DurableRecoveryWorkflow:
                         request(step_id=step_id, checkpoint=latest),
                         retry=True,
                     )
-                except ActivityError:
+                except ActivityError as exc:
+                    if _is_recoverable_step_activity_error(exc):
+                        usage = _charge_recoverable_activity_error(
+                            usage,
+                            attempts=start.budget.max_activity_attempts,
+                        )
+                        if usage.faults > start.budget.max_faults:
+                            terminal_reason = "budget_exhausted"
+                            break
+                        continue
                     terminal_reason = "permanent_failure"
                     break
                 fault_used = result.activity_attempt > 1 or result.outcome in {

@@ -4,10 +4,68 @@ from dataclasses import dataclass, field
 from os import environ
 from urllib.parse import urlsplit
 
+from flowpilot_control_api.schemas import ProductionRouteClass
+
 DEFAULT_DATABASE_URL = (
     "postgresql+psycopg://flowpilot_control:flowpilot_control_local_only@"
     "control-postgres:5432/flowpilot_control"
 )
+
+
+@dataclass(frozen=True, slots=True)
+class TokenBucketPolicy:
+    actor_rate: int
+    actor_burst: int
+    organization_rate: int
+    organization_burst: int
+
+
+@dataclass(frozen=True, slots=True)
+class ProductionPolicy:
+    queue_total_capacity: int = 64
+    queue_organization_capacity: int = 32
+    queue_ttl_seconds: int = 300
+    lease_ttl_seconds: int = 30
+    heartbeat_seconds: int = 10
+    drain_seconds: int = 25
+    browser_slots: int = 4
+    maximum_lease_attempts: int = 3
+    retry_after_max_seconds: int = 30
+
+    def bucket(self, route_class: ProductionRouteClass) -> TokenBucketPolicy:
+        return {
+            ProductionRouteClass.SUBMIT: TokenBucketPolicy(5, 10, 50, 100),
+            ProductionRouteClass.READ: TokenBucketPolicy(10, 20, 200, 400),
+            ProductionRouteClass.MUTATE: TokenBucketPolicy(2, 4, 25, 50),
+        }[route_class]
+
+    def validate(self) -> None:
+        if (
+            self.queue_total_capacity,
+            self.queue_organization_capacity,
+            self.queue_ttl_seconds,
+            self.lease_ttl_seconds,
+            self.heartbeat_seconds,
+            self.drain_seconds,
+            self.browser_slots,
+            self.maximum_lease_attempts,
+            self.retry_after_max_seconds,
+        ) != (64, 32, 300, 30, 10, 25, 4, 3, 30):
+            raise ValueError("W12 production policy differs from the frozen contract")
+        expected = {
+            ProductionRouteClass.SUBMIT: (5, 10, 50, 100),
+            ProductionRouteClass.READ: (10, 20, 200, 400),
+            ProductionRouteClass.MUTATE: (2, 4, 25, 50),
+        }
+        for route_class, values in expected.items():
+            policy = self.bucket(route_class)
+            if (
+                policy.actor_rate,
+                policy.actor_burst,
+                policy.organization_rate,
+                policy.organization_burst,
+            ) != values:
+                raise ValueError("W12 token bucket differs from the frozen contract")
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,9 +123,11 @@ class Settings:
     allowed_origin: str = "http://127.0.0.1:5173"
     seed_synthetic_identities: bool = False
     oidc: OidcPolicy = field(default_factory=OidcPolicy)
+    production: ProductionPolicy = field(default_factory=ProductionPolicy)
 
     def validate(self) -> None:
         self.oidc.validate()
+        self.production.validate()
         origin = urlsplit(self.allowed_origin)
         if (
             origin.scheme != "http"

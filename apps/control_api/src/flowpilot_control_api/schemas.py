@@ -35,6 +35,14 @@ ExecutionId = Annotated[str, StringConstraints(pattern=r"^exe_[A-Za-z0-9_-]{8,64
 AuditEventId = Annotated[
     str, StringConstraints(pattern=r"^aud_[A-Za-z0-9_-]{8,64}$", max_length=68)
 ]
+ProductionRunId = Annotated[
+    str, StringConstraints(pattern=r"^run_[A-Za-z0-9_-]{8,64}$", max_length=68)
+]
+OutboxId = Annotated[str, StringConstraints(pattern=r"^out_[A-Za-z0-9_-]{8,64}$", max_length=68)]
+IdempotencyKey = Annotated[
+    str,
+    StringConstraints(pattern=r"^[A-Za-z0-9._:-]{16,80}$", min_length=16, max_length=80),
+]
 TaskReference = Annotated[
     str, StringConstraints(pattern=r"^[A-Za-z][A-Za-z0-9_-]{7,79}$", max_length=80)
 ]
@@ -78,6 +86,9 @@ class Permission(StrEnum):
     APPROVAL_GRANT_CLAIM = "approval.grant.claim"
     AUDIT_READ = "audit.read"
     AUDIT_VERIFY = "audit.verify"
+    PRODUCTION_RUN_READ = "production.run.read"
+    PRODUCTION_RUN_SUBMIT = "production.run.submit"
+    PRODUCTION_RUN_MUTATE = "production.run.mutate"
 
 
 class ApprovalRole(StrEnum):
@@ -158,6 +169,67 @@ class AuditEventType(StrEnum):
     RECOVERY_RESUMED = "recovery_resumed"
     AUTHORITY_DISABLED = "authority_disabled"
     AUDIT_VERIFIED = "audit_verified"
+    RUN_WAITING_APPROVAL = "run_waiting_approval"
+    RUN_QUEUED = "run_queued"
+    RUN_LEASED = "run_leased"
+    RUN_STARTED = "run_started"
+    RUN_RECOVERED = "run_recovered"
+    RUN_VERIFYING = "run_verifying"
+    RUN_FINISHED_UNGRADED = "run_finished_ungraded"
+    RUN_FAILED = "run_failed"
+    RUN_CANCELLED = "run_cancelled"
+    RUN_EXPIRED = "run_expired"
+    ADMISSION_REJECTED = "admission_rejected"
+    BACKPRESSURE_REJECTED = "backpressure_rejected"
+    RATE_LIMITED = "rate_limited"
+    LEASE_HEARTBEAT = "lease_heartbeat"
+    LEASE_RELEASED = "lease_released"
+    STALE_FENCE_REJECTED = "stale_fence_rejected"
+    WORKFLOW_DEDUPLICATED = "workflow_deduplicated"
+
+
+class ProductionRunStatus(StrEnum):
+    WAITING_APPROVAL = "waiting_approval"
+    QUEUED = "queued"
+    LEASED = "leased"
+    RUNNING = "running"
+    RECOVERING = "recovering"
+    VERIFYING = "verifying"
+    FINISHED_UNGRADED = "finished_ungraded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    EXPIRED = "expired"
+
+
+class ProductionTerminalReason(StrEnum):
+    AGENT_FINISHED = "agent_finished"
+    AGENT_FAILED = "agent_failed"
+    AUTHORIZATION_INVALID = "authorization_invalid"
+    QUEUE_EXPIRED = "queue_expired"
+    LEASE_EXHAUSTED = "lease_exhausted"
+    CANCELLED_BY_ACTOR = "cancelled_by_actor"
+    WORKFLOW_REJECTED = "workflow_rejected"
+    RECEIPT_INVALID = "receipt_invalid"
+    WORKER_DRAINED = "worker_drained"
+    DEPENDENCY_UNAVAILABLE = "dependency_unavailable"
+
+
+class ProductionProcess(StrEnum):
+    JOINER = "joiner"
+    MOVER = "mover"
+    LEAVER = "leaver"
+
+
+class ProductionCategory(StrEnum):
+    JOINER = "standard_joiner"
+    MOVER = "standard_mover"
+    LEAVER = "standard_leaver"
+
+
+class ProductionRouteClass(StrEnum):
+    SUBMIT = "production_submit"
+    READ = "production_read"
+    MUTATE = "production_mutate"
 
 
 class ActiveStatus(StrEnum):
@@ -184,6 +256,7 @@ class ResourceKind(StrEnum):
     MEMBERSHIP = "membership"
     MEMORY = "memory"
     MEMORY_COLLECTION = "memory-collection"
+    PRODUCTION_RUN = "production-run"
 
 
 class ErrorCode(StrEnum):
@@ -198,6 +271,8 @@ class ErrorCode(StrEnum):
     RISK_DENIED = "risk_denied"
     APPROVAL_REJECTED = "approval_rejected"
     GRANT_REJECTED = "grant_rejected"
+    RATE_LIMITED = "rate_limited"
+    BACKPRESSURE = "backpressure"
 
 
 def require_utc(value: object) -> datetime:
@@ -867,3 +942,160 @@ class AuditVerificationResult(StrictModel):
         "event_hash_mismatch",
         "head_mismatch",
     ]
+
+
+class ProductionRunCreate(StrictModel):
+    schema_version: Literal["w12-production-run-create/1.0"] = "w12-production-run-create/1.0"
+    task_id: Literal[
+        "w7-jml-joiner-001-v1",
+        "w7-jml-joiner-001-v2",
+        "w7-jml-joiner-002-v1",
+        "w7-jml-joiner-002-v2",
+        "w7-jml-mover-001-v1",
+        "w7-jml-mover-001-v2",
+        "w7-jml-leaver-001-v1",
+        "w7-jml-leaver-001-v2",
+    ]
+    process: ProductionProcess
+    category: ProductionCategory
+    action_type: ActionCandidate
+    parameters: dict[str, object]
+
+    @field_validator("process", mode="before")
+    @classmethod
+    def parse_process(cls, value: object) -> ProductionProcess:
+        if isinstance(value, ProductionProcess):
+            return value
+        if not isinstance(value, str):
+            raise ValueError("process must be a closed string")
+        return ProductionProcess(value)
+
+    @field_validator("category", mode="before")
+    @classmethod
+    def parse_category(cls, value: object) -> ProductionCategory:
+        if isinstance(value, ProductionCategory):
+            return value
+        if not isinstance(value, str):
+            raise ValueError("category must be a closed string")
+        return ProductionCategory(value)
+
+    @field_validator("parameters")
+    @classmethod
+    def bound_parameters(cls, value: dict[str, object]) -> dict[str, object]:
+        if len(value) > 12 or len(canonical_json_bytes(value)) > 4_096:
+            raise ValueError("production parameters exceed the W12 bound")
+        return value
+
+    @model_validator(mode="after")
+    def task_process_category_match(self) -> Self:
+        expected = {
+            "w7-jml-joiner-001-v1": (
+                ProductionProcess.JOINER,
+                ProductionCategory.JOINER,
+            ),
+            "w7-jml-joiner-001-v2": (
+                ProductionProcess.JOINER,
+                ProductionCategory.JOINER,
+            ),
+            "w7-jml-joiner-002-v1": (
+                ProductionProcess.JOINER,
+                ProductionCategory.JOINER,
+            ),
+            "w7-jml-joiner-002-v2": (
+                ProductionProcess.JOINER,
+                ProductionCategory.JOINER,
+            ),
+            "w7-jml-mover-001-v1": (
+                ProductionProcess.MOVER,
+                ProductionCategory.MOVER,
+            ),
+            "w7-jml-mover-001-v2": (
+                ProductionProcess.MOVER,
+                ProductionCategory.MOVER,
+            ),
+            "w7-jml-leaver-001-v1": (
+                ProductionProcess.LEAVER,
+                ProductionCategory.LEAVER,
+            ),
+            "w7-jml-leaver-001-v2": (
+                ProductionProcess.LEAVER,
+                ProductionCategory.LEAVER,
+            ),
+        }[self.task_id]
+        if (self.process, self.category) != expected:
+            raise ValueError("task, process, and category must match")
+        return self
+
+
+class ProductionRunClaim(StrictModel):
+    schema_version: Literal["w12-production-run-claim/1.0"] = "w12-production-run-claim/1.0"
+    action_type: ActionCandidate
+    parameters: dict[str, object]
+
+    @field_validator("parameters")
+    @classmethod
+    def bound_parameters(cls, value: dict[str, object]) -> dict[str, object]:
+        if len(value) > 12 or len(canonical_json_bytes(value)) > 4_096:
+            raise ValueError("production parameters exceed the W12 bound")
+        return value
+
+
+class ProductionRunRead(StrictModel):
+    schema_version: Literal["w12-production-run/1.0"] = "w12-production-run/1.0"
+    run_id: ProductionRunId
+    organization_id: OrganizationId
+    requester_user_id: UserId
+    executor_user_id: UserId
+    task_id: Literal[
+        "w7-jml-joiner-001-v1",
+        "w7-jml-joiner-001-v2",
+        "w7-jml-joiner-002-v1",
+        "w7-jml-joiner-002-v2",
+        "w7-jml-mover-001-v1",
+        "w7-jml-mover-001-v2",
+        "w7-jml-leaver-001-v1",
+        "w7-jml-leaver-001-v2",
+    ]
+    process: ProductionProcess
+    category: ProductionCategory
+    approval_request_id: ApprovalRequestId | None = None
+    grant_id: GrantId | None = None
+    execution_id: ExecutionId | None = None
+    action_type: ActionCandidate
+    parameter_hash: Sha256
+    authorization_hash: Sha256
+    approval_set_hash: Sha256 | None = None
+    payload_hash: Sha256
+    status: ProductionRunStatus
+    version: int = Field(ge=1)
+    workflow_hash: Sha256
+    fencing_token: int = Field(ge=0)
+    accepted_at: datetime
+    queued_at: datetime | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    terminal_reason: ProductionTerminalReason | None = None
+    receipt_reference: (
+        Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{8,80}$", max_length=80)] | None
+    ) = None
+    audit_sequence: int = Field(ge=1)
+
+    @field_validator("accepted_at", "queued_at", "started_at", "finished_at", mode="before")
+    @classmethod
+    def timestamps_are_utc(cls, value: object) -> datetime | None:
+        if value is None:
+            return None
+        if isinstance(value, datetime) and value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return require_utc(value)
+
+
+class ProductionRunList(StrictModel):
+    schema_version: Literal["w12-production-run-list/1.0"] = "w12-production-run-list/1.0"
+    items: tuple[ProductionRunRead, ...] = Field(max_length=100)
+    count: int = Field(ge=0, le=100)
+
+    @field_validator("items", mode="before")
+    @classmethod
+    def accept_json_array(cls, value: object) -> object:
+        return tuple(value) if isinstance(value, list) else value

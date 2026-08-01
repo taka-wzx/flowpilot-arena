@@ -7,7 +7,8 @@ import re
 from flowpilot_control_api.schemas import ResourceKind
 
 _ETAG_PATTERN = re.compile(
-    r'^"w10-(?P<kind>organization|user|membership|memory|memory-collection)-'
+    r'^"(?P<generation>w10|w12)-'
+    r"(?P<kind>organization|user|membership|memory|memory-collection|production-run)-"
     r'(?P<fingerprint>[0-9a-f]{24})-v(?P<version>[1-9][0-9]*)"$'
 )
 
@@ -33,7 +34,10 @@ def strong_etag(
 ) -> str:
     if version < 1:
         raise ValueError("resource version must be positive")
-    return f'"w10-{kind.value}-{_fingerprint(kind, organization_id, resource_id)}-v{version}"'
+    generation = "w12" if kind == ResourceKind.PRODUCTION_RUN else "w10"
+    return (
+        f'"{generation}-{kind.value}-{_fingerprint(kind, organization_id, resource_id)}-v{version}"'
+    )
 
 
 def expected_version(
@@ -48,7 +52,12 @@ def expected_version(
     if value.startswith("W/") or value == "*" or "," in value:
         raise PreconditionFailed("invalid_if_match")
     match = _ETAG_PATTERN.fullmatch(value)
-    if match is None or match.group("kind") != kind.value:
+    generation = "w12" if kind == ResourceKind.PRODUCTION_RUN else "w10"
+    if (
+        match is None
+        or match.group("generation") != generation
+        or match.group("kind") != kind.value
+    ):
         raise PreconditionFailed("invalid_if_match")
     expected_fingerprint = _fingerprint(kind, organization_id, resource_id)
     if not hmac.compare_digest(match.group("fingerprint"), expected_fingerprint):

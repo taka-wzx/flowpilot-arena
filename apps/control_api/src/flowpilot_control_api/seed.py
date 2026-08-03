@@ -40,6 +40,14 @@ SYNTHETIC_IDENTITIES: tuple[tuple[str, str, str, str, str, str], ...] = (
         "auditor",
     ),
     (
+        "org_syn_alpha_0001",
+        "usr_syn_alpha_revocation_auditor_0001",
+        "idn_syn_alpha_revocation_auditor_0001",
+        "mbr_syn_alpha_revocation_auditor_0001",
+        "10000000-0000-0000-0000-000000000009",
+        "auditor",
+    ),
+    (
         "org_syn_beta_0001",
         "usr_syn_beta_admin_0001",
         "idn_syn_beta_admin_0001",

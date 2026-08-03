@@ -1,4 +1,4 @@
-"""Empty-database W10 Control Plane migration round-trip."""
+"""Empty-database W12 Control Plane migration round-trip."""
 
 from pathlib import Path
 
@@ -16,7 +16,7 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
     command.upgrade(config, "head")
     engine = create_engine(database_url)
     with engine.connect() as connection:
-        assert MigrationContext.configure(connection).get_current_revision() == "20260729_0002"
+        assert MigrationContext.configure(connection).get_current_revision() == "20260801_0003"
         inspector = inspect(connection)
         tables = set(inspector.get_table_names())
         assert {
@@ -31,6 +31,12 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
             "w11_approval_grants",
             "w11_audit_chain_heads",
             "w11_audit_events",
+            "w12_production_runs",
+            "w12_dispatch_outbox",
+            "w12_worker_leases",
+            "w12_scheduler_partitions",
+            "w12_rate_limit_buckets",
+            "w12_idempotency_records",
         } <= tables
         memory_fks = inspector.get_foreign_keys("w10_organization_memories")
         assert any(
@@ -87,15 +93,57 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
             )
         }
         assert len(triggers) == 4
+        w12_triggers = {
+            row[0]
+            for row in connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'trg_w12_%'"
+            )
+        }
+        assert len(w12_triggers) == 4
+        run_fks = inspector.get_foreign_keys("w12_production_runs")
+        assert any(
+            item["constrained_columns"] == ["organization_id", "executor_user_id"]
+            for item in run_fks
+        )
+        outbox_indexes = {item["name"] for item in inspector.get_indexes("w12_dispatch_outbox")}
+        assert {
+            "ix_w12_outbox_org_status_available",
+            "ix_w12_outbox_status_lease_expiry",
+        } <= outbox_indexes
+        run_checks = {
+            item["name"]: item["sqltext"]
+            for item in inspector.get_check_constraints("w12_production_runs")
+        }
+        assert {"ck_w12_run_task", "ck_w12_run_task_binding"} <= set(run_checks)
+        task_check = str(run_checks["ck_w12_run_task"])
+        for task_id in (
+            "w7-jml-joiner-001-v1",
+            "w7-jml-joiner-001-v2",
+            "w7-jml-joiner-002-v1",
+            "w7-jml-joiner-002-v2",
+            "w7-jml-mover-001-v1",
+            "w7-jml-mover-001-v2",
+            "w7-jml-leaver-001-v1",
+            "w7-jml-leaver-001-v2",
+        ):
+            assert task_id in task_check
+        binding_check = str(run_checks["ck_w12_run_task_binding"])
+        assert "process = 'joiner'" in binding_check
+        assert "category = 'standard_joiner'" in binding_check
+        assert "process = 'mover'" in binding_check
+        assert "category = 'standard_mover'" in binding_check
+        assert "process = 'leaver'" in binding_check
+        assert "category = 'standard_leaver'" in binding_check
 
     command.check(config)
-    command.downgrade(config, "20260729_0001")
+    command.downgrade(config, "20260729_0002")
     with engine.connect() as connection:
         tables = set(inspect(connection).get_table_names())
         assert "w10_organizations" in tables
-        assert not {name for name in tables if name.startswith("w11_")}
+        assert "w11_audit_events" in tables
+        assert not {name for name in tables if name.startswith("w12_")}
     command.upgrade(config, "head")
     command.check(config)
     with engine.connect() as connection:
-        assert MigrationContext.configure(connection).get_current_revision() == "20260729_0002"
+        assert MigrationContext.configure(connection).get_current_revision() == "20260801_0003"
     engine.dispose()

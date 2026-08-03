@@ -13,6 +13,8 @@ from flowpilot_planning_agent.worker_schemas import (
     RecoverySessionCreated,
 )
 
+_RECOVERY_BROWSER_TIMEOUT = httpx.Timeout(25.0)
+
 
 class BrowserWorkerClient:
     def __init__(self, base_url: str, client: httpx.AsyncClient | None = None) -> None:
@@ -69,6 +71,7 @@ class BrowserWorkerClient:
                 "initial_path": "/hris",
                 "session_epoch": session_epoch,
             },
+            timeout=_RECOVERY_BROWSER_TIMEOUT,
         )
         response.raise_for_status()
         return RecoverySessionCreated.model_validate_json(response.text)
@@ -83,6 +86,7 @@ class BrowserWorkerClient:
                 "session_epoch": session_epoch,
                 "modality": "dom",
             },
+            timeout=_RECOVERY_BROWSER_TIMEOUT,
         )
         response.raise_for_status()
         return HybridDomObservation.model_validate_json(response.text)
@@ -95,13 +99,15 @@ class BrowserWorkerClient:
         response = await self._client.post(
             f"{self._base_url}/api/browser/recovery-sessions/{session_id}/actions",
             json=envelope.model_dump(mode="json"),
+            timeout=_RECOVERY_BROWSER_TIMEOUT,
         )
         response.raise_for_status()
         return RecoveryActionResult.model_validate_json(response.text)
 
     async def close_recovery_session(self, session_id: str) -> RecoverySessionClosed:
         response = await self._client.delete(
-            f"{self._base_url}/api/browser/recovery-sessions/{session_id}"
+            f"{self._base_url}/api/browser/recovery-sessions/{session_id}",
+            timeout=_RECOVERY_BROWSER_TIMEOUT,
         )
         response.raise_for_status()
         return RecoverySessionClosed.model_validate_json(response.text)

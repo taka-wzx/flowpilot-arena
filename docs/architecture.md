@@ -1,11 +1,13 @@
 # Architecture
 
-## W11 current-state architecture
+## W12 current-state architecture
 
-W11 keeps identity and approval only in the Control Plane. A pinned local Keycloak is the
-synthetic OIDC issuer, and a new Control PostgreSQL database owns organization,
-user, external identity, membership, durable organization-memory, approval,
-grant/execution-claim, and audit-chain state.
+W12 keeps identity, approval, admission, dispatch, limiting, and audit in the
+Control Plane. A pinned local Keycloak is the synthetic OIDC issuer, and Control
+PostgreSQL owns organization, user, external identity, membership, durable
+organization memory, approval, grant/execution claim, audit chain, production
+run, outbox, lease history, scheduler partition, token bucket, and idempotency
+state.
 Sandbox/Arena, Temporal, and Control persistence remain separate. Planning
 Agent still reaches only Browser Worker and receives neither tokens nor any
 database capability.
@@ -19,22 +21,27 @@ flowchart LR
     CA --> Risk["Closed risk policy\nstrict parameters + DB facts"]
     Risk --> Approval["L2/L3 approval gate"]
     Approval --> CA
-    CA --> CPDB["Control PostgreSQL\nidentity/memory/approval/audit"]
+    CA --> CPDB["Control PostgreSQL\nidentity/approval/audit/run/outbox"]
+    CPDB --> WW["Private Workflow Worker\nfour slots + fenced lease"]
+    WW --> Temporal["Temporal + separate PostgreSQL"]
     CA -->|"closed authorized projection"| Context["W9 Context boundary"]
     Recovery["W8 Recovery Worker"] --> Planning["W9 Planning Agent"]
     Planning --> Browser["Browser Worker"]
     Browser --> Web["Synthetic Sandbox pages"]
     Web --> SDB["Sandbox PostgreSQL"]
     Grader["Independent Grader"] --> SDB
-    Recovery --> Temporal["Temporal + separate PostgreSQL"]
+    Recovery --> Temporal
 ~~~
 
 Keycloak is published only on host loopback `127.0.0.1:8080` for browser
 redirects and is also connected to internal `identity` for Control API JWKS.
-Control Web/API use `control-backend`; only Control API joins
-`control-database`. Keycloak, Control Web, Planning, Browser, Sandbox, Recovery,
-and Temporal have no Control database route. Planning/Browser/Sandbox have no
-Keycloak administration capability or credential.
+Control Web/API use `control-backend`; only Control API and the private Workflow
+Worker join `control-database`. Workflow Worker also joins `temporal-control`
+and exposes no port. Keycloak, Control Web, Planning, Browser, Sandbox,
+Recovery, and Temporal have no Control database route. Workflow Worker has no
+identity or browser-facing network, Bearer token, raw grant, Docker socket, or
+public endpoint. Planning/Browser/Sandbox have no Keycloak administration
+capability or credential.
 
 ## Authentication and ActorContext
 
@@ -128,6 +135,55 @@ hashes/status/version. A claimed execution resumes through the durable claim
 and released W8 receipt contract, never by replaying raw credential material.
 Planning, Browser Worker, Recovery Worker, Temporal, Sandbox, and Grader receive
 no Control database credential or raw approval material.
+
+## Production admission and atomic handoff
+
+`POST /api/v1/organizations/{organization_id}/production-runs` authenticates
+first, reconstructs current ActorContext, validates one strict closed task and
+W11 action schema, applies risk, consumes persistent actor and organization
+route buckets, checks the locked 64/32 active queue capacity, and commits the
+run, idempotency row, scheduler state, executable outbox when authorized, and
+audit event together. It returns 202 and a strong run ETag; it never waits for
+Planning, Browser, Temporal, or grading.
+
+L2/L3 admission creates `waiting_approval` without outbox work. The final W11
+approval still issues a hash-only one-time grant. The trusted production claim
+route verifies the raw credential inside the Control API vault, atomically
+claims the grant, creates the durable execution reference, changes the existing
+run to `queued`, inserts outbox work, and appends audit. Vault removal occurs
+only after commit; a committed claim blocks replay even if removal is delayed.
+
+Run status is closed to `waiting_approval`, `queued`, `leased`, `running`,
+`recovering`, `verifying`, `finished_ungraded`, `failed`, `cancelled`, and
+`expired`. Terminal states never reactivate. L0/L1 may exercise asynchronous
+admission, but only eight exact task/action/parameter hashes authorize a JML
+effect. Any other admitted binding becomes `failed/workflow_rejected` before
+Temporal or Browser work.
+
+## Durable scheduling, limiter, and Worker
+
+The bounded outbox is partitioned by opaque organization ID. A locked cursor
+selects one non-empty organization, claims one item, and advances round robin;
+callers provide no priority. Global active pending capacity is 64, per-
+organization capacity is 32, and queue TTL is 300 seconds. A queue or limiter
+dependency failure is closed 503 with bounded Retry-After and zero partial
+admission.
+
+Persistent integer-microtoken buckets use only verified actor, current
+organization, and fixed route class. Submit/read/mutate actor rates are
+5/10/2 per second with bursts 10/20/4; organization rates are 50/200/25 with
+bursts 100/400/50. Refill uses integer UTC microseconds and floor; Retry-After
+is the ceiling of the larger deficit, clamped to 1-30 seconds. Forwarded/IP,
+body, query, page, and model fields never select a bucket.
+
+One Workflow Worker owns four asynchronous slots. Each claim creates immutable
+lease history, increments a per-item fence, and leases for 30 seconds with a
+10-second heartbeat. Every heartbeat, start, receipt, release, and terminal
+write includes organization, run, outbox, owner hash, lease version, and fence.
+Expired owners write zero; one later claimant reuses the same run and
+deterministic Temporal workflow identity. Delivery is durable at-least-once
+with exactly one active lease winner, not distributed exactly-once. The 25-
+second drain stops new claims and finishes or safely releases current work.
 
 ## Tamper-evident audit chain
 

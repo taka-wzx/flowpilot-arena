@@ -1,0 +1,41 @@
+[project]
+name = "flowpilot-w12-load"
+version = "0.1.0"
+description = "Frozen W12 Locust acceptance profile"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "jsonschema>=4.23,<5.0",
+  "locust==2.46.1",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.14,<2.0",
+  "pytest>=8.3,<10.0",
+  "ruff>=0.9,<1.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+exclude = [".venv", "uv.lock"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["profile.py", "locustfile.py", "run_profile.py"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["test_profile.py"]

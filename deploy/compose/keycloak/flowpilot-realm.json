@@ -163,6 +163,30 @@
       ]
     },
     {
+      "id": "10000000-0000-0000-0000-000000000009",
+      "username": "syn-alpha-revocation-auditor",
+      "firstName": "Synthetic",
+      "lastName": "AlphaRevocationAuditor",
+      "email": "syn-alpha-revocation-auditor@example.invalid",
+      "enabled": true,
+      "emailVerified": false,
+      "attributes": {
+        "flowpilot_role": [
+          "auditor"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "flowpilot-local-only",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "auditor"
+      ]
+    },
+    {
       "id": "10000000-0000-0000-0000-000000000004",
       "username": "syn-alpha-manager",
       "firstName": "Synthetic",

@@ -21,7 +21,7 @@ ALPHA = "org_syn_alpha_0001"
 BETA = "org_syn_beta_0001"
 BETA_ADMIN = "usr_syn_beta_admin_0001"
 BETA_ADMIN_MEMBERSHIP = "mbr_syn_beta_admin_0001"
-ALPHA_AUDITOR_MEMBERSHIP = "mbr_syn_alpha_auditor_0001"
+ALPHA_REVOCATION_AUDITOR_MEMBERSHIP = "mbr_syn_alpha_revocation_auditor_0001"
 
 
 def _validate_origins() -> None:
@@ -52,9 +52,7 @@ def _json_request(
     if body is not None:
         data = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
         request_headers["Content-Type"] = "application/json"
-    request = Request(
-        f"{CONTROL_API}{path}", data=data, headers=request_headers, method=method
-    )
+    request = Request(f"{CONTROL_API}{path}", data=data, headers=request_headers, method=method)
     try:
         with urlopen(request, timeout=10) as response:
             payload = json.loads(response.read())
@@ -107,9 +105,9 @@ def _token(username: str) -> str:
 
 
 def _etag(kind: str, organization_id: str, resource_id: str, version: int) -> str:
-    fingerprint = hashlib.sha256(
-        f"{kind}|{organization_id}|{resource_id}".encode()
-    ).hexdigest()[:24]
+    fingerprint = hashlib.sha256(f"{kind}|{organization_id}|{resource_id}".encode()).hexdigest()[
+        :24
+    ]
     return f'"w10-{kind}-{fingerprint}-v{version}"'
 
 
@@ -118,7 +116,7 @@ def main() -> None:
     tokens = {
         "admin": _token("syn-alpha-admin"),
         "operator": _token("syn-alpha-operator"),
-        "auditor": _token("syn-alpha-auditor"),
+        "auditor": _token("syn-alpha-revocation-auditor"),
         "beta_admin": _token("syn-beta-admin"),
     }
     roles = {
@@ -153,12 +151,8 @@ def main() -> None:
     beta_collection_etag = _etag("memory-collection", BETA, BETA, 1)
     cross_statuses = (
         _json_request("GET", f"/api/v1/organizations/{BETA}", token=tokens["admin"])[0],
-        _json_request(
-            "GET", f"/api/v1/organizations/{BETA}/users", token=tokens["admin"]
-        )[0],
-        _json_request(
-            "GET", f"/api/v1/organizations/{BETA}/users/count", token=tokens["admin"]
-        )[0],
+        _json_request("GET", f"/api/v1/organizations/{BETA}/users", token=tokens["admin"])[0],
+        _json_request("GET", f"/api/v1/organizations/{BETA}/users/count", token=tokens["admin"])[0],
         _json_request(
             "PATCH",
             f"/api/v1/organizations/{BETA}/users/{BETA_ADMIN}",
@@ -214,9 +208,7 @@ def main() -> None:
         )[0]
 
     with ThreadPoolExecutor(max_workers=2) as executor:
-        concurrent = tuple(
-            executor.map(write, ("synthetic_location_b", "synthetic_location_c"))
-        )
+        concurrent = tuple(executor.map(write, ("synthetic_location_b", "synthetic_location_c")))
     assert sorted(concurrent) == [200, 412]
 
     projection_status, _, projection = _json_request(
@@ -226,27 +218,22 @@ def main() -> None:
     )
     assert projection_status == 200 and len(projection["memory_items"]) == 1
     serialized_projection = json.dumps(projection, sort_keys=True)
-    assert (
-        "access_token" not in serialized_projection
-        and "10000000-" not in serialized_projection
-    )
+    assert "access_token" not in serialized_projection and "10000000-" not in serialized_projection
 
     membership_status, membership_headers, _ = _json_request(
         "GET",
-        f"/api/v1/organizations/{ALPHA}/memberships/{ALPHA_AUDITOR_MEMBERSHIP}",
+        f"/api/v1/organizations/{ALPHA}/memberships/{ALPHA_REVOCATION_AUDITOR_MEMBERSHIP}",
         token=tokens["admin"],
     )
     assert membership_status == 200
     disabled_status, _, disabled = _json_request(
         "DELETE",
-        f"/api/v1/organizations/{ALPHA}/memberships/{ALPHA_AUDITOR_MEMBERSHIP}",
+        f"/api/v1/organizations/{ALPHA}/memberships/{ALPHA_REVOCATION_AUDITOR_MEMBERSHIP}",
         token=tokens["admin"],
         headers={"If-Match": membership_headers["etag"]},
     )
     assert disabled_status == 200 and disabled["status"] == "disabled"
-    revoked_status, _, _ = _json_request(
-        "GET", "/api/v1/identity/me", token=tokens["auditor"]
-    )
+    revoked_status, _, _ = _json_request("GET", "/api/v1/identity/me", token=tokens["auditor"])
     assert revoked_status == 403
 
     summary = {

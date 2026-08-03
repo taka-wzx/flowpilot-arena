@@ -9,7 +9,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from flowpilot_control_api.models import AuditChainHead, AuditEvent
+from flowpilot_control_api.models import AuditChainHead, AuditEvent, Organization
 from flowpilot_control_api.schemas import (
     AuditEventRead,
     AuditEventType,
@@ -62,6 +62,19 @@ _ALLOWED_KEYS = frozenset(
         "receipt_reference",
         "authorization_hash",
         "valid",
+        "run_id",
+        "run_status",
+        "outbox_id",
+        "outbox_status",
+        "lease_id",
+        "lease_status",
+        "worker_reference",
+        "workflow_hash",
+        "fencing_token",
+        "attempt_count",
+        "retry_after",
+        "duration_bucket",
+        "latency_bucket",
     }
 )
 
@@ -139,6 +152,13 @@ def append_audit_event(
     if not 1 <= len(subject_reference) <= 68:
         raise AuditPayloadRejected("audit subject reference is outside the bound")
     closed_payload = _closed_payload(payload)
+    organization = session.scalar(
+        select(Organization.organization_id)
+        .where(Organization.organization_id == organization_id)
+        .with_for_update(read=True, key_share=True)
+    )
+    if organization is None:
+        raise AuditChainMissing("organization audit owner is unavailable")
     head = session.scalar(
         select(AuditChainHead)
         .where(AuditChainHead.organization_id == organization_id)

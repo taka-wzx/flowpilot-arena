@@ -3,6 +3,7 @@
 import hashlib
 import secrets
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import and_, select, update
@@ -18,6 +19,7 @@ from flowpilot_control_api.models import (
     ApprovalRequest,
     Membership,
     Organization,
+    ProductionRun,
     User,
 )
 from flowpilot_control_api.rbac import AuthorizationDenied
@@ -92,6 +94,10 @@ class TrustedGrantVault:
     def take(self, grant_id: str) -> str | None:
         with self._lock:
             return self._values.pop(grant_id, None)
+
+    def peek(self, grant_id: str) -> str | None:
+        with self._lock:
+            return self._values.get(grant_id)
 
     def discard(self, grant_id: str) -> None:
         with self._lock:
@@ -974,6 +980,7 @@ def claim_grant(
     *,
     now: datetime,
     vault: TrustedGrantVault,
+    on_claim: Callable[[ApprovalRequest, ApprovalGrant, ExecutionClaimRead], None] | None = None,
 ) -> ExecutionClaimRead:
     _require_actor_organization(actor, organization_id)
     now = _utc(now)
@@ -1016,8 +1023,34 @@ def claim_grant(
         )
         session.commit()
         raise GrantRejected("grant_rejected")
+    production_run = session.scalar(
+        select(ProductionRun.run_id).where(
+            ProductionRun.organization_id == organization_id,
+            ProductionRun.approval_request_id == request_id,
+        )
+    )
+    if production_run is not None and on_claim is None:
+        append_audit_event(
+            session,
+            organization_id=organization_id,
+            event_type=AuditEventType.GRANT_REJECTED,
+            actor_reference=actor.authorization_hash,
+            subject_reference=grant.grant_id,
+            payload={
+                "schema_version": "w11-audit-payload/1.0",
+                "request_id": request_id,
+                "grant_id": grant.grant_id,
+                "grant_status": grant.status,
+                "parameter_hash": grant.parameter_hash,
+                "reason": "grant_rejected",
+                "http_status": 409,
+            },
+            now=now,
+        )
+        session.commit()
+        raise GrantRejected("grant_rejected")
     try:
-        credential = vault.take(grant.grant_id)
+        credential = vault.peek(grant.grant_id)
         if credential is None:
             raise GrantRejected("grant_rejected")
         token_hash, nonce_hash = _parse_credential(credential)
@@ -1108,8 +1141,7 @@ def claim_grant(
             now=now,
         )
         request.audit_sequence = claimed_event.sequence
-        session.commit()
-        return ExecutionClaimRead(
+        claim_read = ExecutionClaimRead(
             execution_id=execution_id,
             grant_id=claimed.grant_id,
             request_id=request_id,
@@ -1123,8 +1155,14 @@ def claim_grant(
             grant_version=claimed.version,
             claimed_at=now,
         )
+        if on_claim is not None:
+            on_claim(request, claimed, claim_read)
+        session.commit()
+        vault.discard(claimed.grant_id)
+        return claim_read
     except (GrantRejected, RiskSchemaRejected):
         session.rollback()
+        vault.discard(grant.grant_id)
         try:
             append_audit_event(
                 session,

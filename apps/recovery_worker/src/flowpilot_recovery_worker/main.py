@@ -12,6 +12,8 @@ from flowpilot_recovery_worker.workflow import DurableRecoveryWorkflow
 
 TASK_QUEUE = "flowpilot-w8-recovery"
 NAMESPACE = "flowpilot-w8"
+MAX_CONCURRENT_ACTIVITIES = 2
+MAX_CONCURRENT_WORKFLOW_TASKS = 4
 
 
 async def run_worker() -> None:
@@ -43,8 +45,8 @@ async def run_worker() -> None:
                 activities.replan,
                 activities.cleanup,
             ],
-            max_concurrent_activities=4,
-            max_concurrent_workflow_tasks=4,
+            max_concurrent_activities=MAX_CONCURRENT_ACTIVITIES,
+            max_concurrent_workflow_tasks=MAX_CONCURRENT_WORKFLOW_TASKS,
         )
         await worker.run()
     finally:

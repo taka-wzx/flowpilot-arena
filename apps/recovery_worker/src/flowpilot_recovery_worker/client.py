@@ -19,7 +19,7 @@ class PlanningRecoveryClient:
         ):
             raise ValueError("PLANNING_AGENT_URL must be a credential-free local HTTP origin")
         self._base_url = base_url.rstrip("/")
-        self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(20.0))
+        self._client = client or httpx.AsyncClient(timeout=httpx.Timeout(28.0))
         self._owns_client = client is None
 
     async def invoke(

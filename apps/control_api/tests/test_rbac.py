@@ -26,6 +26,9 @@ EXPECTED = {
         Permission.APPROVAL_GRANT_CLAIM,
         Permission.AUDIT_READ,
         Permission.AUDIT_VERIFY,
+        Permission.PRODUCTION_RUN_READ,
+        Permission.PRODUCTION_RUN_SUBMIT,
+        Permission.PRODUCTION_RUN_MUTATE,
     },
     Role.OPERATOR: {
         Permission.ORGANIZATION_READ,
@@ -39,6 +42,9 @@ EXPECTED = {
         Permission.APPROVAL_REQUEST_DECIDE,
         Permission.APPROVAL_REQUEST_CANCEL,
         Permission.APPROVAL_GRANT_CLAIM,
+        Permission.PRODUCTION_RUN_READ,
+        Permission.PRODUCTION_RUN_SUBMIT,
+        Permission.PRODUCTION_RUN_MUTATE,
     },
     Role.AUDITOR: {
         Permission.ORGANIZATION_READ,
@@ -49,6 +55,7 @@ EXPECTED = {
         Permission.APPROVAL_REQUEST_READ,
         Permission.AUDIT_READ,
         Permission.AUDIT_VERIFY,
+        Permission.PRODUCTION_RUN_READ,
     },
 }
 

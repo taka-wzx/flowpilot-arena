@@ -25,14 +25,18 @@ from flowpilot_control_api.models import (
     SchedulerPartition,
     User,
 )
+from flowpilot_control_api.observability import append_observability_event
 from flowpilot_control_api.repository import ResourceNotFound
 from flowpilot_control_api.risk import RiskEvaluation, RiskFacts, evaluate_risk
 from flowpilot_control_api.schemas import (
     ActorContext,
     ApprovalRequestStatus,
     AuditEventType,
+    FailureCategory,
     GrantClaimRequest,
     GrantStatus,
+    ObservabilityPhase,
+    ObservabilityStatus,
     ProductionCategory,
     ProductionProcess,
     ProductionRouteClass,
@@ -43,6 +47,7 @@ from flowpilot_control_api.schemas import (
     ProductionTerminalReason,
     RiskLevel,
     Role,
+    TraceReason,
     stable_hash,
 )
 
@@ -676,6 +681,7 @@ def admit_production_run(
     )
     session.add(run)
     session.flush()
+    outbox: DispatchOutbox | None = None
     session.add(
         IdempotencyRecord(
             idempotency_id=_opaque_id("idm"),
@@ -689,18 +695,64 @@ def admit_production_run(
     )
     if status == ProductionRunStatus.QUEUED:
         assert partition is not None
-        session.add(
-            _new_outbox(
-                organization_id=organization_id,
-                run_id=run_id,
-                now=now,
-                policy=policy,
-            )
+        outbox = _new_outbox(
+            organization_id=organization_id,
+            run_id=run_id,
+            now=now,
+            policy=policy,
         )
+        session.add(outbox)
         partition.ready_count += 1
         partition.status = "ready"
         partition.cursor_version += 1
         partition.updated_at = now
+    session.flush()
+    append_observability_event(
+        session,
+        organization_id=organization_id,
+        run_id=run_id,
+        phase=ObservabilityPhase.ADMISSION,
+        status=(
+            ObservabilityStatus.WAITING
+            if status == ProductionRunStatus.WAITING_APPROVAL
+            else ObservabilityStatus.QUEUED
+        ),
+        reason=(
+            TraceReason.ADMITTED_WAITING_APPROVAL
+            if status == ProductionRunStatus.WAITING_APPROVAL
+            else TraceReason.ADMITTED_QUEUED
+        ),
+        attributes={
+            "run_status": status.value,
+            "approval_request_id": request_id,
+            "authorization_hash": actor.authorization_hash,
+            "workflow_hash": workflow_hash,
+            "audit_sequence": accepted_event.sequence,
+            "version": 1,
+            "sensitive_fields_present": False,
+        },
+        now=now,
+    )
+    if outbox is not None:
+        append_observability_event(
+            session,
+            organization_id=organization_id,
+            run_id=run_id,
+            phase=ObservabilityPhase.OUTBOX,
+            status=ObservabilityStatus.QUEUED,
+            reason=TraceReason.OUTBOX_READY,
+            attributes={
+                "run_status": status.value,
+                "outbox_id": outbox.outbox_id,
+                "outbox_status": outbox.status,
+                "fencing_token": outbox.fencing_token,
+                "lease_version": outbox.lease_version,
+                "audit_sequence": accepted_event.sequence,
+                "version": 1,
+                "sensitive_fields_present": False,
+            },
+            now=now,
+        )
     try:
         session.commit()
     except IntegrityError:
@@ -865,14 +917,13 @@ def claim_production_run(
         locked_run.version += 1
         locked_run.queued_at = now
         locked_run.updated_at = now
-        session.add(
-            _new_outbox(
-                organization_id=organization_id,
-                run_id=run_id,
-                now=now,
-                policy=policy,
-            )
+        outbox = _new_outbox(
+            organization_id=organization_id,
+            run_id=run_id,
+            now=now,
+            policy=policy,
         )
+        session.add(outbox)
         partition.ready_count += 1
         partition.status = "ready"
         partition.cursor_version += 1
@@ -896,6 +947,46 @@ def claim_production_run(
             now=now,
         )
         locked_run.audit_sequence = queued.sequence
+        session.flush()
+        append_observability_event(
+            session,
+            organization_id=organization_id,
+            run_id=run_id,
+            phase=ObservabilityPhase.APPROVAL,
+            status=ObservabilityStatus.QUEUED,
+            reason=TraceReason.APPROVAL_HANDOFF,
+            attributes={
+                "run_status": ProductionRunStatus.QUEUED.value,
+                "approval_request_id": request.request_id,
+                "grant_id": grant.grant_id,
+                "execution_id": claim.execution_id,
+                "authorization_hash": claim.authorization_hash,
+                "approval_set_hash": grant.approval_set_hash,
+                "audit_sequence": queued.sequence,
+                "version": locked_run.version,
+                "sensitive_fields_present": False,
+            },
+            now=now,
+        )
+        append_observability_event(
+            session,
+            organization_id=organization_id,
+            run_id=run_id,
+            phase=ObservabilityPhase.OUTBOX,
+            status=ObservabilityStatus.QUEUED,
+            reason=TraceReason.OUTBOX_READY,
+            attributes={
+                "run_status": ProductionRunStatus.QUEUED.value,
+                "outbox_id": outbox.outbox_id,
+                "outbox_status": outbox.status,
+                "fencing_token": outbox.fencing_token,
+                "lease_version": outbox.lease_version,
+                "audit_sequence": queued.sequence,
+                "version": locked_run.version,
+                "sensitive_fields_present": False,
+            },
+            now=now,
+        )
 
     claim_grant(
         session,
@@ -1105,6 +1196,27 @@ def cancel_production_run(
         now=now,
     )
     run.audit_sequence = event.sequence
+    session.flush()
+    append_observability_event(
+        session,
+        organization_id=organization_id,
+        run_id=run_id,
+        phase=ObservabilityPhase.TERMINAL,
+        status=ObservabilityStatus.CANCELLED,
+        reason=TraceReason.RUN_CANCELLED,
+        failure_category=FailureCategory.NONE,
+        attributes={
+            "run_status": ProductionRunStatus.CANCELLED.value,
+            "approval_request_id": run.approval_request_id,
+            "grant_id": run.grant_id,
+            "execution_id": run.execution_id,
+            "outbox_status": outbox.status if outbox is not None else None,
+            "audit_sequence": event.sequence,
+            "version": run.version,
+            "sensitive_fields_present": False,
+        },
+        now=now,
+    )
     session.commit()
     if grant_id is not None:
         vault.discard(grant_id)

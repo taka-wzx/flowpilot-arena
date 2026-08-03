@@ -16,7 +16,7 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
     command.upgrade(config, "head")
     engine = create_engine(database_url)
     with engine.connect() as connection:
-        assert MigrationContext.configure(connection).get_current_revision() == "20260801_0003"
+        assert MigrationContext.configure(connection).get_current_revision() == "20260803_0004"
         inspector = inspect(connection)
         tables = set(inspector.get_table_names())
         assert {
@@ -37,6 +37,7 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
             "w12_scheduler_partitions",
             "w12_rate_limit_buckets",
             "w12_idempotency_records",
+            "w13_observability_events",
         } <= tables
         memory_fks = inspector.get_foreign_keys("w10_organization_memories")
         assert any(
@@ -100,6 +101,13 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
             )
         }
         assert len(w12_triggers) == 4
+        w13_triggers = {
+            row[0]
+            for row in connection.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'trg_w13_%'"
+            )
+        }
+        assert len(w13_triggers) == 2
         run_fks = inspector.get_foreign_keys("w12_production_runs")
         assert any(
             item["constrained_columns"] == ["organization_id", "executor_user_id"]
@@ -134,16 +142,40 @@ def test_empty_upgrade_current_check_downgrade_upgrade(tmp_path: Path, monkeypat
         assert "category = 'standard_mover'" in binding_check
         assert "process = 'leaver'" in binding_check
         assert "category = 'standard_leaver'" in binding_check
+        w13_indexes = {item["name"] for item in inspector.get_indexes("w13_observability_events")}
+        assert {
+            "ix_w13_events_org_run_sequence",
+            "ix_w13_events_org_phase_status",
+        } <= w13_indexes
+        w13_checks = {
+            item["name"]: item["sqltext"]
+            for item in inspector.get_check_constraints("w13_observability_events")
+        }
+        assert {
+            "ck_w13_phase",
+            "ck_w13_status",
+            "ck_w13_failure_category",
+            "ck_w13_reason",
+            "ck_w13_attributes_size",
+        } <= set(w13_checks)
+        assert "browser_timeout" in str(w13_checks["ck_w13_failure_category"])
+        assert "fake_cost_accounted" in str(w13_checks["ck_w13_reason"])
 
     command.check(config)
+    command.downgrade(config, "20260801_0003")
+    with engine.connect() as connection:
+        tables = set(inspect(connection).get_table_names())
+        assert "w12_production_runs" in tables
+        assert "w13_observability_events" not in tables
     command.downgrade(config, "20260729_0002")
     with engine.connect() as connection:
         tables = set(inspect(connection).get_table_names())
         assert "w10_organizations" in tables
         assert "w11_audit_events" in tables
         assert not {name for name in tables if name.startswith("w12_")}
+        assert not {name for name in tables if name.startswith("w13_")}
     command.upgrade(config, "head")
     command.check(config)
     with engine.connect() as connection:
-        assert MigrationContext.configure(connection).get_current_revision() == "20260801_0003"
+        assert MigrationContext.configure(connection).get_current_revision() == "20260803_0004"
     engine.dispose()

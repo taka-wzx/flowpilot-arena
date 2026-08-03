@@ -35,10 +35,15 @@ ExecutionId = Annotated[str, StringConstraints(pattern=r"^exe_[A-Za-z0-9_-]{8,64
 AuditEventId = Annotated[
     str, StringConstraints(pattern=r"^aud_[A-Za-z0-9_-]{8,64}$", max_length=68)
 ]
+ObservabilityEventId = Annotated[
+    str, StringConstraints(pattern=r"^obs_[A-Za-z0-9_-]{8,64}$", max_length=68)
+]
 ProductionRunId = Annotated[
     str, StringConstraints(pattern=r"^run_[A-Za-z0-9_-]{8,64}$", max_length=68)
 ]
 OutboxId = Annotated[str, StringConstraints(pattern=r"^out_[A-Za-z0-9_-]{8,64}$", max_length=68)]
+TraceId = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{32}$")]
+SpanId = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{16}$")]
 IdempotencyKey = Annotated[
     str,
     StringConstraints(pattern=r"^[A-Za-z0-9._:-]{16,80}$", min_length=16, max_length=80),
@@ -89,6 +94,7 @@ class Permission(StrEnum):
     PRODUCTION_RUN_READ = "production.run.read"
     PRODUCTION_RUN_SUBMIT = "production.run.submit"
     PRODUCTION_RUN_MUTATE = "production.run.mutate"
+    OBSERVABILITY_TRACE_READ = "observability.trace.read"
 
 
 class ApprovalRole(StrEnum):
@@ -232,6 +238,91 @@ class ProductionRouteClass(StrEnum):
     MUTATE = "production_mutate"
 
 
+class ObservabilityPhase(StrEnum):
+    ADMISSION = "admission"
+    APPROVAL = "approval"
+    OUTBOX = "outbox"
+    LEASE = "lease"
+    DISPATCH = "dispatch"
+    WORKFLOW = "workflow"
+    RECOVERY = "recovery"
+    PLANNING = "planning"
+    BROWSER = "browser"
+    RECEIPT = "receipt"
+    GRADER = "grader"
+    AUDIT = "audit"
+    COST = "cost"
+    TERMINAL = "terminal"
+    REPLAY = "replay"
+    DASHBOARD = "dashboard"
+
+
+class ObservabilityStatus(StrEnum):
+    ACCEPTED = "accepted"
+    WAITING = "waiting"
+    QUEUED = "queued"
+    LEASED = "leased"
+    RUNNING = "running"
+    RECOVERED = "recovered"
+    RELEASED = "released"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+    PENDING = "pending"
+    EXPORTED = "exported"
+
+
+class FailureCategory(StrEnum):
+    NONE = "none"
+    AUTHN = "authn"
+    AUTHZ = "authz"
+    APPROVAL = "approval"
+    SCHEMA = "schema"
+    RATE_LIMIT = "rate_limit"
+    BACKPRESSURE = "backpressure"
+    QUEUE_EXPIRY = "queue_expiry"
+    LEASE_FENCE = "lease_fence"
+    WORKFLOW_REJECTED = "workflow_rejected"
+    DEPENDENCY_UNAVAILABLE = "dependency_unavailable"
+    BROWSER_TIMEOUT = "browser_timeout"
+    BROWSER_ERROR = "browser_error"
+    PLANNING_FAILURE = "planning_failure"
+    RECOVERY_FAILURE = "recovery_failure"
+    RECEIPT_INVALID = "receipt_invalid"
+    GRADER_VERIFICATION = "grader_verification"
+    AUDIT_VERIFICATION = "audit_verification"
+
+
+class TraceReason(StrEnum):
+    ADMITTED_QUEUED = "admitted_queued"
+    ADMITTED_WAITING_APPROVAL = "admitted_waiting_approval"
+    APPROVAL_HANDOFF = "approval_handoff"
+    OUTBOX_READY = "outbox_ready"
+    LEASE_CLAIMED = "lease_claimed"
+    LEASE_RECOVERED = "lease_recovered"
+    LEASE_HEARTBEAT = "lease_heartbeat"
+    LEASE_RELEASED = "lease_released"
+    STALE_FENCE_REJECTED = "stale_fence_rejected"
+    WORKER_DISPATCHED = "worker_dispatched"
+    TEMPORAL_REFERENCE = "temporal_reference"
+    TEMPORAL_DEDUPLICATED = "temporal_deduplicated"
+    RECOVERY_SUMMARY = "recovery_summary"
+    PLANNING_SUMMARY = "planning_summary"
+    BROWSER_STEP = "browser_step"
+    BROWSER_SUMMARY = "browser_summary"
+    RECEIPT_RECORDED = "receipt_recorded"
+    GRADER_PENDING = "grader_pending"
+    AUDIT_REFERENCE = "audit_reference"
+    FAKE_COST_ACCOUNTED = "fake_cost_accounted"
+    RUN_FINISHED_UNGRADED = "run_finished_ungraded"
+    RUN_FAILED = "run_failed"
+    RUN_CANCELLED = "run_cancelled"
+    RUN_EXPIRED = "run_expired"
+    REPLAY_EXPORTED = "replay_exported"
+    DASHBOARD_EXPORTED = "dashboard_exported"
+
+
 class ActiveStatus(StrEnum):
     ACTIVE = "active"
     DISABLED = "disabled"
@@ -257,6 +348,7 @@ class ResourceKind(StrEnum):
     MEMORY = "memory"
     MEMORY_COLLECTION = "memory-collection"
     PRODUCTION_RUN = "production-run"
+    OBSERVABILITY_TRACE = "observability-trace"
 
 
 class ErrorCode(StrEnum):
@@ -1099,3 +1191,178 @@ class ProductionRunList(StrictModel):
     @classmethod
     def accept_json_array(cls, value: object) -> object:
         return tuple(value) if isinstance(value, list) else value
+
+
+class TraceAttributes(StrictModel):
+    schema_version: Literal["w13-trace-attributes/1.0"] = "w13-trace-attributes/1.0"
+    run_status: ProductionRunStatus | None = None
+    approval_request_id: ApprovalRequestId | None = None
+    grant_id: GrantId | None = None
+    execution_id: ExecutionId | None = None
+    authorization_hash: Sha256 | None = None
+    approval_set_hash: Sha256 | None = None
+    outbox_id: OutboxId | None = None
+    outbox_status: (
+        Literal[
+            "ready",
+            "leased",
+            "dispatched",
+            "closed",
+            "cancelled",
+            "expired",
+            "failed",
+        ]
+        | None
+    ) = None
+    lease_status: Literal["active", "released", "expired", "completed", "failed"] | None = None
+    workflow_hash: Sha256 | None = None
+    worker_reference: Sha256 | None = None
+    receipt_reference: (
+        Annotated[str, StringConstraints(pattern=r"^[A-Za-z0-9_-]{8,80}$", max_length=80)] | None
+    ) = None
+    checkpoint_hash: Sha256 | None = None
+    audit_sequence: int | None = Field(default=None, ge=1)
+    version: int | None = Field(default=None, ge=1)
+    fencing_token: int | None = Field(default=None, ge=0)
+    lease_version: int | None = Field(default=None, ge=0)
+    attempt_count: int | None = Field(default=None, ge=0, le=3)
+    count: int | None = Field(default=None, ge=0, le=1_000_000)
+    event_count: int | None = Field(default=None, ge=0, le=1_000_000)
+    step_count: int | None = Field(default=None, ge=0, le=64)
+    checkpoint_count: int | None = Field(default=None, ge=0, le=64)
+    activity_attempts: int | None = Field(default=None, ge=0, le=64)
+    retries: int | None = Field(default=None, ge=0, le=64)
+    session_recoveries: int | None = Field(default=None, ge=0, le=8)
+    replans: int | None = Field(default=None, ge=0, le=8)
+    route_decisions: int | None = Field(default=None, ge=0, le=1_000_000)
+    dom_observations: int | None = Field(default=None, ge=0, le=1_000_000)
+    images: int | None = Field(default=None, ge=0, le=1_000_000)
+    duration_ms: int | None = Field(default=None, ge=0, le=3_600_000)
+    latency_ms: int | None = Field(default=None, ge=0, le=3_600_000)
+    model_calls: int | None = Field(default=None, ge=0, le=1_000_000)
+    input_tokens: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    output_tokens: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    fake_cost_microusd: int | None = Field(default=None, ge=0, le=1_000_000_000)
+    real_cost_microusd: Literal[0] | None = None
+    step_id: StepReference | None = None
+    completed_step_ids: tuple[StepReference, ...] = Field(default=(), max_length=16)
+    sensitive_fields_present: Literal[False] = False
+
+    @field_validator("run_status", mode="before")
+    @classmethod
+    def parse_run_status(cls, value: object) -> object:
+        if value is None or isinstance(value, ProductionRunStatus):
+            return value
+        if not isinstance(value, str):
+            raise ValueError("run status must be closed")
+        return ProductionRunStatus(value)
+
+    @field_validator("completed_step_ids", mode="before")
+    @classmethod
+    def accept_json_array(cls, value: object) -> object:
+        return tuple(value) if isinstance(value, list) else value
+
+
+class ObservabilityEventRead(StrictModel):
+    schema_version: Literal["w13-observability-event/1.0"] = "w13-observability-event/1.0"
+    event_id: ObservabilityEventId
+    organization_id: OrganizationId
+    run_id: ProductionRunId
+    event_sequence: int = Field(ge=1, le=256)
+    trace_id: TraceId
+    span_id: SpanId
+    parent_span_id: SpanId | None = None
+    phase: ObservabilityPhase
+    status: ObservabilityStatus
+    failure_category: FailureCategory
+    reason: TraceReason
+    attributes: TraceAttributes
+    attributes_hash: Sha256
+    event_hash: Sha256
+    observed_at: datetime
+
+    @field_validator("observed_at", mode="before")
+    @classmethod
+    def timestamp_is_utc(cls, value: object) -> datetime:
+        if isinstance(value, datetime) and value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return require_utc(value)
+
+
+class ReplayStep(StrictModel):
+    schema_version: Literal["w13-replay-step/1.0"] = "w13-replay-step/1.0"
+    ordinal: int = Field(ge=1, le=256)
+    phase: ObservabilityPhase
+    status: ObservabilityStatus
+    failure_category: FailureCategory
+    reason: TraceReason
+    reference_hash: Sha256
+    observed_at: datetime
+
+    @field_validator("observed_at", mode="before")
+    @classmethod
+    def timestamp_is_utc(cls, value: object) -> datetime:
+        if isinstance(value, datetime) and value.tzinfo is None:
+            value = value.replace(tzinfo=UTC)
+        return require_utc(value)
+
+
+class CostSummary(StrictModel):
+    schema_version: Literal["w13-cost-summary/1.0"] = "w13-cost-summary/1.0"
+    model_calls: int = Field(ge=0, le=1_000_000)
+    input_tokens: int = Field(ge=0, le=1_000_000_000)
+    output_tokens: int = Field(ge=0, le=1_000_000_000)
+    fake_cost_microusd: int = Field(ge=0, le=1_000_000_000)
+    real_cost_microusd: Literal[0] = 0
+
+
+class TraceDashboard(StrictModel):
+    schema_version: Literal["w13-trace-dashboard/1.0"] = "w13-trace-dashboard/1.0"
+    event_count: int = Field(ge=0, le=256)
+    replay_step_count: int = Field(ge=0, le=256)
+    terminal_status: ProductionRunStatus
+    failure_category: FailureCategory
+    model_calls: int = Field(ge=0, le=1_000_000)
+    fake_cost_microusd: int = Field(ge=0, le=1_000_000_000)
+    real_cost_microusd: Literal[0] = 0
+    sensitive_fields_present: Literal[False] = False
+    dashboard_hash: Sha256
+
+    @field_validator("terminal_status", mode="before")
+    @classmethod
+    def parse_terminal_status(cls, value: object) -> object:
+        if isinstance(value, ProductionRunStatus):
+            return value
+        if not isinstance(value, str):
+            raise ValueError("terminal status must be closed")
+        return ProductionRunStatus(value)
+
+    @model_validator(mode="after")
+    def validate_dashboard_hash(self) -> Self:
+        fields = self.model_dump(mode="json", exclude={"dashboard_hash"})
+        if self.dashboard_hash != stable_hash(fields):
+            raise ValueError("trace dashboard hash mismatch")
+        return self
+
+
+class RunTraceExport(StrictModel):
+    schema_version: Literal["w13-run-trace-export/1.0"] = "w13-run-trace-export/1.0"
+    run: ProductionRunRead
+    trace_id: TraceId
+    events: tuple[ObservabilityEventRead, ...] = Field(max_length=256)
+    replay_steps: tuple[ReplayStep, ...] = Field(max_length=256)
+    cost: CostSummary
+    dashboard: TraceDashboard
+    export_hash: Sha256
+
+    @field_validator("events", "replay_steps", mode="before")
+    @classmethod
+    def accept_json_arrays(cls, value: object) -> object:
+        return tuple(value) if isinstance(value, list) else value
+
+    @model_validator(mode="after")
+    def validate_export_hash(self) -> Self:
+        fields = self.model_dump(mode="json", exclude={"export_hash"})
+        if self.export_hash != stable_hash(fields):
+            raise ValueError("trace export hash mismatch")
+        return self

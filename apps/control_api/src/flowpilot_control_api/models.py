@@ -893,3 +893,87 @@ class IdempotencyRecord(Base):
     body_hash: Mapped[str] = mapped_column(String(64))
     run_id: Mapped[str] = mapped_column(String(68), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class ObservabilityEvent(Base):
+    __tablename__ = "w13_observability_events"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "run_id"],
+            ["w12_production_runs.organization_id", "w12_production_runs.run_id"],
+            ondelete="RESTRICT",
+            name="fk_w13_event_org_run",
+        ),
+        UniqueConstraint("organization_id", "event_id", name="uq_w13_event_owner"),
+        UniqueConstraint(
+            "organization_id",
+            "run_id",
+            "event_sequence",
+            name="uq_w13_event_run_sequence",
+        ),
+        CheckConstraint("event_sequence BETWEEN 1 AND 256", name="ck_w13_event_sequence"),
+        CheckConstraint("length(trace_id) = 32", name="ck_w13_trace_id"),
+        CheckConstraint("length(span_id) = 16", name="ck_w13_span_id"),
+        CheckConstraint(
+            "parent_span_id IS NULL OR length(parent_span_id) = 16",
+            name="ck_w13_parent_span_id",
+        ),
+        CheckConstraint(
+            "phase IN ('admission', 'approval', 'outbox', 'lease', 'dispatch', "
+            "'workflow', 'recovery', 'planning', 'browser', 'receipt', 'grader', "
+            "'audit', 'cost', 'terminal', 'replay', 'dashboard')",
+            name="ck_w13_phase",
+        ),
+        CheckConstraint(
+            "status IN ('accepted', 'waiting', 'queued', 'leased', 'running', "
+            "'recovered', 'released', 'succeeded', 'failed', 'rejected', "
+            "'cancelled', 'pending', 'exported')",
+            name="ck_w13_status",
+        ),
+        CheckConstraint(
+            "failure_category IN ('none', 'authn', 'authz', 'approval', 'schema', "
+            "'rate_limit', 'backpressure', 'queue_expiry', 'lease_fence', "
+            "'workflow_rejected', 'dependency_unavailable', 'browser_timeout', "
+            "'browser_error', 'planning_failure', 'recovery_failure', "
+            "'receipt_invalid', 'grader_verification', 'audit_verification')",
+            name="ck_w13_failure_category",
+        ),
+        CheckConstraint(
+            "reason IN ('admitted_queued', 'admitted_waiting_approval', "
+            "'approval_handoff', 'outbox_ready', 'lease_claimed', "
+            "'lease_recovered', 'lease_heartbeat', 'lease_released', "
+            "'stale_fence_rejected', 'worker_dispatched', 'temporal_reference', "
+            "'temporal_deduplicated', 'recovery_summary', 'planning_summary', "
+            "'browser_step', 'browser_summary', 'receipt_recorded', "
+            "'grader_pending', 'audit_reference', 'fake_cost_accounted', "
+            "'run_finished_ungraded', 'run_failed', 'run_cancelled', "
+            "'run_expired', 'replay_exported', 'dashboard_exported')",
+            name="ck_w13_reason",
+        ),
+        CheckConstraint("length(attributes_json) <= 2048", name="ck_w13_attributes_size"),
+        CheckConstraint("length(attributes_hash) = 64", name="ck_w13_attributes_hash"),
+        CheckConstraint("length(event_hash) = 64", name="ck_w13_event_hash"),
+        Index(
+            "ix_w13_events_org_run_sequence",
+            "organization_id",
+            "run_id",
+            "event_sequence",
+        ),
+        Index("ix_w13_events_org_phase_status", "organization_id", "phase", "status"),
+    )
+
+    event_id: Mapped[str] = mapped_column(String(68), primary_key=True)
+    organization_id: Mapped[str] = mapped_column(String(68), nullable=False)
+    run_id: Mapped[str] = mapped_column(String(68), nullable=False)
+    event_sequence: Mapped[int] = mapped_column(Integer)
+    trace_id: Mapped[str] = mapped_column(String(32))
+    span_id: Mapped[str] = mapped_column(String(16))
+    parent_span_id: Mapped[str | None] = mapped_column(String(16))
+    phase: Mapped[str] = mapped_column(String(24))
+    status: Mapped[str] = mapped_column(String(16))
+    failure_category: Mapped[str] = mapped_column(String(32))
+    reason: Mapped[str] = mapped_column(String(40))
+    attributes_json: Mapped[str] = mapped_column(Text)
+    attributes_hash: Mapped[str] = mapped_column(String(64))
+    event_hash: Mapped[str] = mapped_column(String(64))
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

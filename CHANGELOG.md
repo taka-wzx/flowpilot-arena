@@ -9,6 +9,12 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- W13 append-only Control observability events with deterministic OTel-shaped
+  trace/span IDs, closed failure taxonomy, strict redacted attributes, and
+  fake-cost counters with real cost fixed at zero.
+- W13 authenticated single-run trace export/replay endpoint and deterministic
+  JSON dashboard artifact for local/CI synthetic review from admission through
+  terminal `finished_ungraded` or failure.
 - W12 authenticated asynchronous production-run API with strict task/action
   schemas, strong ETags, actor-scoped idempotency, persistent actor and
   organization token buckets, bounded Retry-After, 64/32 queue admission, and

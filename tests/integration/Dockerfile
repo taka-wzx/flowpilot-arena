@@ -11,7 +11,7 @@ RUN pip install --no-cache-dir "uv==0.11.14"
 COPY pyproject.toml uv.lock ./
 RUN uv sync --locked --no-dev
 
-COPY w4_compose_smoke.py w4_real_model_acceptance.py w5_vision_compose_smoke.py w6_hybrid_compose_smoke.py w7_planning_compose_smoke.py w8_recovery_compose_smoke.py w8_restart_driver.py w9_context_compose_smoke.py w10_identity_compose_smoke.py w11_approval_compose_smoke.py w12_production_compose_smoke.py ./
+COPY w4_compose_smoke.py w4_real_model_acceptance.py w5_vision_compose_smoke.py w6_hybrid_compose_smoke.py w7_planning_compose_smoke.py w8_recovery_compose_smoke.py w8_restart_driver.py w9_context_compose_smoke.py w10_identity_compose_smoke.py w11_approval_compose_smoke.py w12_production_compose_smoke.py w13_observability_compose_smoke.py ./
 
 RUN groupadd --gid 10020 flowpilot-results \
     && useradd --create-home --uid 10005 --groups flowpilot-results flowpilot-acceptance \

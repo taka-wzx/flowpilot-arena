@@ -29,6 +29,7 @@ EXPECTED = {
         Permission.PRODUCTION_RUN_READ,
         Permission.PRODUCTION_RUN_SUBMIT,
         Permission.PRODUCTION_RUN_MUTATE,
+        Permission.OBSERVABILITY_TRACE_READ,
     },
     Role.OPERATOR: {
         Permission.ORGANIZATION_READ,
@@ -45,6 +46,7 @@ EXPECTED = {
         Permission.PRODUCTION_RUN_READ,
         Permission.PRODUCTION_RUN_SUBMIT,
         Permission.PRODUCTION_RUN_MUTATE,
+        Permission.OBSERVABILITY_TRACE_READ,
     },
     Role.AUDITOR: {
         Permission.ORGANIZATION_READ,
@@ -56,6 +58,7 @@ EXPECTED = {
         Permission.AUDIT_READ,
         Permission.AUDIT_VERIFY,
         Permission.PRODUCTION_RUN_READ,
+        Permission.OBSERVABILITY_TRACE_READ,
     },
 }
 

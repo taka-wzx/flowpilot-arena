@@ -35,6 +35,7 @@ _ROLE_PERMISSIONS = MappingProxyType(
                 Permission.PRODUCTION_RUN_READ,
                 Permission.PRODUCTION_RUN_SUBMIT,
                 Permission.PRODUCTION_RUN_MUTATE,
+                Permission.OBSERVABILITY_TRACE_READ,
             }
         ),
         Role.OPERATOR: frozenset(
@@ -53,6 +54,7 @@ _ROLE_PERMISSIONS = MappingProxyType(
                 Permission.PRODUCTION_RUN_READ,
                 Permission.PRODUCTION_RUN_SUBMIT,
                 Permission.PRODUCTION_RUN_MUTATE,
+                Permission.OBSERVABILITY_TRACE_READ,
             }
         ),
         Role.AUDITOR: frozenset(
@@ -66,6 +68,7 @@ _ROLE_PERMISSIONS = MappingProxyType(
                 Permission.AUDIT_READ,
                 Permission.AUDIT_VERIFY,
                 Permission.PRODUCTION_RUN_READ,
+                Permission.OBSERVABILITY_TRACE_READ,
             }
         ),
     }

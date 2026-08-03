@@ -25,6 +25,7 @@ from sqlalchemy.engine import Connection, Engine, RowMapping
 from flowpilot_workflow_worker.config import WorkerSettings
 from flowpilot_workflow_worker.schemas import (
     TemporalOutcome,
+    WorkflowResult,
     WorkItem,
     canonical_json_bytes,
     stable_hash,
@@ -200,6 +201,25 @@ OUTBOX = Table(
     Column("expires_at", DateTime(timezone=True), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=False),
 )
+OBSERVABILITY_EVENTS = Table(
+    "w13_observability_events",
+    METADATA,
+    Column("event_id", String(68), primary_key=True),
+    Column("organization_id", String(68), nullable=False),
+    Column("run_id", String(68), nullable=False),
+    Column("event_sequence", Integer, nullable=False),
+    Column("trace_id", String(32), nullable=False),
+    Column("span_id", String(16), nullable=False),
+    Column("parent_span_id", String(16)),
+    Column("phase", String(24), nullable=False),
+    Column("status", String(16), nullable=False),
+    Column("failure_category", String(32), nullable=False),
+    Column("reason", String(40), nullable=False),
+    Column("attributes_json", Text, nullable=False),
+    Column("attributes_hash", String(64), nullable=False),
+    Column("event_hash", String(64), nullable=False),
+    Column("observed_at", DateTime(timezone=True), nullable=False),
+)
 LEASES = Table(
     "w12_worker_leases",
     METADATA,
@@ -322,6 +342,449 @@ def _append_audit(
         )
     )
     return sequence
+
+
+_TRACE_ALLOWED_ATTRIBUTE_KEYS = frozenset(
+    {
+        "schema_version",
+        "run_status",
+        "approval_request_id",
+        "grant_id",
+        "execution_id",
+        "authorization_hash",
+        "approval_set_hash",
+        "outbox_id",
+        "outbox_status",
+        "lease_status",
+        "workflow_hash",
+        "worker_reference",
+        "receipt_reference",
+        "checkpoint_hash",
+        "audit_sequence",
+        "version",
+        "fencing_token",
+        "lease_version",
+        "attempt_count",
+        "count",
+        "event_count",
+        "step_count",
+        "checkpoint_count",
+        "activity_attempts",
+        "retries",
+        "session_recoveries",
+        "replans",
+        "route_decisions",
+        "dom_observations",
+        "images",
+        "duration_ms",
+        "latency_ms",
+        "model_calls",
+        "input_tokens",
+        "output_tokens",
+        "fake_cost_microusd",
+        "real_cost_microusd",
+        "step_id",
+        "completed_step_ids",
+        "sensitive_fields_present",
+    }
+)
+_TRACE_FORBIDDEN_TEXT = (
+    "bearer ",
+    "access_token",
+    "authorization_code",
+    "credential",
+    "nonce",
+    "cookie",
+    "password",
+    "private_key",
+    "@",
+    "postgresql://",
+    "sqlite+pysqlite://",
+    "%systemdrive%",
+    ":\\",
+)
+
+
+def _trace_id(organization_id: str, run_id: str) -> str:
+    return stable_hash(
+        {
+            "schema_version": "w13-trace-id/1.0",
+            "organization_id": organization_id,
+            "run_id": run_id,
+        }
+    )[:32]
+
+
+def _trace_span_id(
+    *,
+    organization_id: str,
+    run_id: str,
+    event_sequence: int,
+    phase: str,
+    reason: str,
+) -> str:
+    return stable_hash(
+        {
+            "schema_version": "w13-span-id/1.0",
+            "organization_id": organization_id,
+            "run_id": run_id,
+            "event_sequence": event_sequence,
+            "phase": phase,
+            "reason": reason,
+        }
+    )[:16]
+
+
+def _safe_trace_attributes(attributes: Mapping[str, object] | None) -> dict[str, object]:
+    safe: dict[str, object] = {
+        "schema_version": "w13-trace-attributes/1.0",
+        "sensitive_fields_present": False,
+    }
+    if attributes is not None:
+        for key, value in attributes.items():
+            if key not in _TRACE_ALLOWED_ATTRIBUTE_KEYS:
+                raise RuntimeError("trace attributes are outside the W13 schema")
+            if value is None:
+                continue
+            if isinstance(value, bool):
+                if key != "sensitive_fields_present" or value:
+                    raise RuntimeError("trace boolean attribute is outside the W13 schema")
+                safe[key] = value
+            elif isinstance(value, int) and value >= 0:
+                safe[key] = value
+            elif isinstance(value, str) and 1 <= len(value) <= 120:
+                lowered = value.lower()
+                if any(marker in lowered for marker in _TRACE_FORBIDDEN_TEXT):
+                    raise RuntimeError("trace string attribute contains forbidden material")
+                safe[key] = value
+            elif isinstance(value, (list, tuple)) and len(value) <= 16:
+                items: list[str] = []
+                for item in value:
+                    if not isinstance(item, str) or not 1 <= len(item) <= 40:
+                        raise RuntimeError("trace list attribute is outside the W13 schema")
+                    items.append(item)
+                safe[key] = items
+            else:
+                raise RuntimeError("trace attribute value is outside the W13 schema")
+    encoded = canonical_json_bytes(safe)
+    if len(encoded) > 2_048:
+        raise RuntimeError("trace attributes exceed the W13 byte bound")
+    return safe
+
+
+def _append_trace_event(
+    connection: Connection,
+    *,
+    organization_id: str,
+    run_id: str,
+    phase: str,
+    status: str,
+    reason: str,
+    now: datetime,
+    failure_category: str = "none",
+    attributes: Mapping[str, object] | None = None,
+) -> None:
+    run_exists = connection.scalar(
+        select(RUNS.c.run_id)
+        .where(RUNS.c.organization_id == organization_id, RUNS.c.run_id == run_id)
+        .with_for_update()
+    )
+    if run_exists is None:
+        return
+    event_sequence = (
+        int(
+            connection.scalar(
+                select(func.coalesce(func.max(OBSERVABILITY_EVENTS.c.event_sequence), 0)).where(
+                    OBSERVABILITY_EVENTS.c.organization_id == organization_id,
+                    OBSERVABILITY_EVENTS.c.run_id == run_id,
+                )
+            )
+            or 0
+        )
+        + 1
+    )
+    if event_sequence > 256:
+        raise RuntimeError("trace event sequence exceeds the W13 bound")
+    trace_id = _trace_id(organization_id, run_id)
+    span_id = _trace_span_id(
+        organization_id=organization_id,
+        run_id=run_id,
+        event_sequence=event_sequence,
+        phase=phase,
+        reason=reason,
+    )
+    parent_span_id = (
+        connection.scalar(
+            select(OBSERVABILITY_EVENTS.c.span_id).where(
+                OBSERVABILITY_EVENTS.c.organization_id == organization_id,
+                OBSERVABILITY_EVENTS.c.run_id == run_id,
+                OBSERVABILITY_EVENTS.c.event_sequence == 1,
+            )
+        )
+        if event_sequence > 1
+        else None
+    )
+    event_id = _opaque_id("obs")
+    safe_attributes = _safe_trace_attributes(attributes)
+    attributes_hash = stable_hash(safe_attributes)
+    event_fields: dict[str, object] = {
+        "schema_version": "w13-observability-event/1.0",
+        "event_id": event_id,
+        "organization_id": organization_id,
+        "run_id": run_id,
+        "event_sequence": event_sequence,
+        "trace_id": trace_id,
+        "span_id": span_id,
+        "parent_span_id": parent_span_id,
+        "phase": phase,
+        "status": status,
+        "failure_category": failure_category,
+        "reason": reason,
+        "attributes": safe_attributes,
+        "attributes_hash": attributes_hash,
+        "observed_at": now,
+    }
+    connection.execute(
+        insert(OBSERVABILITY_EVENTS).values(
+            event_id=event_id,
+            organization_id=organization_id,
+            run_id=run_id,
+            event_sequence=event_sequence,
+            trace_id=trace_id,
+            span_id=span_id,
+            parent_span_id=parent_span_id,
+            phase=phase,
+            status=status,
+            failure_category=failure_category,
+            reason=reason,
+            attributes_json=canonical_json_bytes(safe_attributes).decode("utf-8"),
+            attributes_hash=attributes_hash,
+            event_hash=stable_hash(event_fields),
+            observed_at=now,
+        )
+    )
+
+
+def _metric(values: Mapping[str, object], key: str) -> int:
+    value = values.get(key)
+    return value if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else 0
+
+
+def _planning_usage(result: WorkflowResult) -> Mapping[str, object]:
+    usage = result.usage
+    planning = usage.get("planning_usage") if isinstance(usage, Mapping) else None
+    return planning if isinstance(planning, Mapping) else {}
+
+
+def _terminal_failure_category(reason: str) -> str:
+    return {
+        "authorization_invalid": "authz",
+        "queue_expired": "queue_expiry",
+        "lease_exhausted": "lease_fence",
+        "workflow_rejected": "workflow_rejected",
+        "receipt_invalid": "receipt_invalid",
+        "worker_drained": "lease_fence",
+        "dependency_unavailable": "dependency_unavailable",
+        "agent_failed": "recovery_failure",
+    }.get(reason, "none")
+
+
+def _outcome_failure_category(result: WorkflowResult) -> str:
+    if result.status == "finished_ungraded":
+        return "none"
+    return {
+        "idempotency_mismatch": "receipt_invalid",
+        "checkpoint_invalid": "recovery_failure",
+        "replan_disallowed": "planning_failure",
+        "recovery_exhausted": "recovery_failure",
+        "permanent_failure": "browser_error",
+        "budget_exhausted": "recovery_failure",
+        "cancelled": "none",
+        "completed": "none",
+    }.get(result.terminal_reason, "recovery_failure")
+
+
+def _append_outcome_trace(
+    connection: Connection,
+    *,
+    item: WorkItem,
+    outcome: TemporalOutcome,
+    terminal_status: str,
+    receipt_reference: str,
+    audit_sequence: int,
+    terminal_version: int,
+    now: datetime,
+) -> None:
+    result = outcome.result
+    usage = result.usage if isinstance(result.usage, Mapping) else {}
+    planning = _planning_usage(result)
+    trace_status = "succeeded" if terminal_status == "finished_ungraded" else "failed"
+    failure_category = _outcome_failure_category(result)
+    common: dict[str, object] = {
+        "run_status": terminal_status,
+        "workflow_hash": item.workflow_hash,
+        "worker_reference": item.worker_owner_hash,
+        "fencing_token": item.fencing_token,
+        "attempt_count": item.attempt_count,
+        "version": terminal_version,
+        "sensitive_fields_present": False,
+    }
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="recovery",
+        status=trace_status,
+        reason="recovery_summary",
+        failure_category=failure_category,
+        attributes={
+            **common,
+            "activity_attempts": _metric(usage, "activity_attempts"),
+            "retries": _metric(usage, "retries"),
+            "session_recoveries": _metric(usage, "session_recoveries"),
+            "replans": _metric(usage, "replans"),
+            "checkpoint_count": result.checkpoint_count,
+            "checkpoint_hash": result.latest_checkpoint_hash,
+            "completed_step_ids": result.completed_step_ids,
+            "step_count": len(result.completed_step_ids),
+        },
+        now=now,
+    )
+    fake_cost = (
+        _metric(planning, "cost_microusd")
+        + _metric(planning, "planning_cost_microusd")
+        + _metric(planning, "verifier_cost_microusd")
+    )
+    model_calls = _metric(planning, "model_calls")
+    input_tokens = _metric(planning, "input_tokens")
+    output_tokens = _metric(planning, "output_tokens")
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="planning",
+        status=trace_status,
+        reason="planning_summary",
+        failure_category=failure_category if failure_category == "planning_failure" else "none",
+        attributes={
+            **common,
+            "model_calls": model_calls,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "route_decisions": _metric(planning, "route_decisions"),
+            "duration_ms": _metric(planning, "elapsed_ms"),
+            "fake_cost_microusd": fake_cost,
+            "real_cost_microusd": 0,
+        },
+        now=now,
+    )
+    for index, step_id in enumerate(result.completed_step_ids, start=1):
+        _append_trace_event(
+            connection,
+            organization_id=item.organization_id,
+            run_id=item.run_id,
+            phase="browser",
+            status="succeeded",
+            reason="browser_step",
+            attributes={
+                **common,
+                "step_id": step_id,
+                "count": index,
+            },
+            now=now,
+        )
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="browser",
+        status=trace_status,
+        reason="browser_summary",
+        failure_category=failure_category if failure_category.startswith("browser_") else "none",
+        attributes={
+            **common,
+            "step_count": len(result.completed_step_ids),
+            "dom_observations": _metric(planning, "dom_observations"),
+            "images": _metric(planning, "images"),
+            "latency_ms": _metric(planning, "capture_ms"),
+        },
+        now=now,
+    )
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="receipt",
+        status=trace_status,
+        reason="receipt_recorded",
+        failure_category=failure_category if failure_category == "receipt_invalid" else "none",
+        attributes={
+            **common,
+            "receipt_reference": receipt_reference,
+            "checkpoint_hash": result.latest_checkpoint_hash,
+        },
+        now=now,
+    )
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="cost",
+        status="succeeded",
+        reason="fake_cost_accounted",
+        attributes={
+            **common,
+            "model_calls": model_calls,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "fake_cost_microusd": fake_cost,
+            "real_cost_microusd": 0,
+        },
+        now=now,
+    )
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="grader",
+        status="pending" if terminal_status == "finished_ungraded" else "failed",
+        reason="grader_pending",
+        failure_category="none" if terminal_status == "finished_ungraded" else failure_category,
+        attributes={
+            **common,
+            "receipt_reference": receipt_reference,
+        },
+        now=now,
+    )
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="audit",
+        status="succeeded",
+        reason="audit_reference",
+        attributes={
+            **common,
+            "audit_sequence": audit_sequence,
+        },
+        now=now,
+    )
+    _append_trace_event(
+        connection,
+        organization_id=item.organization_id,
+        run_id=item.run_id,
+        phase="terminal",
+        status=trace_status,
+        reason="run_finished_ungraded" if terminal_status == "finished_ungraded" else "run_failed",
+        failure_category=failure_category,
+        attributes={
+            **common,
+            "receipt_reference": receipt_reference,
+            "checkpoint_hash": result.latest_checkpoint_hash,
+            "audit_sequence": audit_sequence,
+        },
+        now=now,
+    )
 
 
 def _authorization_hash(
@@ -660,6 +1123,23 @@ class WorkflowRepository:
             },
             now=now,
         )
+        _append_trace_event(
+            connection,
+            organization_id=item.organization_id,
+            run_id=str(current["run_id"]),
+            phase="lease",
+            status="rejected",
+            reason="stale_fence_rejected",
+            failure_category="lease_fence",
+            attributes={
+                "outbox_id": str(current["outbox_id"]),
+                "outbox_status": str(current["status"]),
+                "fencing_token": int(current["fencing_token"]),
+                "worker_reference": item.worker_owner_hash,
+                "sensitive_fields_present": False,
+            },
+            now=now,
+        )
 
     def claim_next(self, *, now: datetime) -> WorkItem | None:
         now = _utc(now)
@@ -783,6 +1263,24 @@ class WorkflowRepository:
                     )
                     .values(audit_sequence=sequence)
                 )
+                _append_trace_event(
+                    connection,
+                    organization_id=organization_id,
+                    run_id=str(run["run_id"]),
+                    phase="terminal",
+                    status="failed",
+                    reason="run_expired",
+                    failure_category="queue_expiry",
+                    attributes={
+                        "run_status": "expired",
+                        "outbox_id": str(outbox["outbox_id"]),
+                        "outbox_status": "expired",
+                        "audit_sequence": sequence,
+                        "version": int(run["version"]) + 1,
+                        "sensitive_fields_present": False,
+                    },
+                    now=now,
+                )
                 return None
             if int(outbox["attempt_count"]) >= self._settings.maximum_attempts:
                 self._fail_locked(
@@ -880,6 +1378,28 @@ class WorkflowRepository:
                     RUNS.c.fencing_token == fence,
                 )
                 .values(audit_sequence=sequence)
+            )
+            _append_trace_event(
+                connection,
+                organization_id=organization_id,
+                run_id=str(run["run_id"]),
+                phase="lease",
+                status="recovered" if reclaimed else "leased",
+                reason="lease_recovered" if reclaimed else "lease_claimed",
+                attributes={
+                    "run_status": next_status,
+                    "outbox_id": str(outbox["outbox_id"]),
+                    "outbox_status": "leased",
+                    "workflow_hash": str(run["workflow_hash"]),
+                    "worker_reference": self.owner_hash,
+                    "fencing_token": fence,
+                    "lease_version": lease_version,
+                    "attempt_count": attempt,
+                    "audit_sequence": sequence,
+                    "version": int(run["version"]) + 1,
+                    "sensitive_fields_present": False,
+                },
+                now=now,
             )
             claimed_outbox = dict(outbox)
             claimed_outbox.update(
@@ -1004,6 +1524,43 @@ class WorkflowRepository:
                 )
                 .values(audit_sequence=sequence)
             )
+            _append_trace_event(
+                connection,
+                organization_id=item.organization_id,
+                run_id=item.run_id,
+                phase="dispatch",
+                status="running",
+                reason="worker_dispatched",
+                attributes={
+                    "run_status": "running",
+                    "outbox_id": item.outbox_id,
+                    "outbox_status": "dispatched",
+                    "workflow_hash": item.workflow_hash,
+                    "worker_reference": item.worker_owner_hash,
+                    "fencing_token": item.fencing_token,
+                    "lease_version": item.lease_version,
+                    "audit_sequence": sequence,
+                    "version": int(run["version"]) + 1,
+                    "sensitive_fields_present": False,
+                },
+                now=now,
+            )
+            _append_trace_event(
+                connection,
+                organization_id=item.organization_id,
+                run_id=item.run_id,
+                phase="workflow",
+                status="running",
+                reason="temporal_reference",
+                attributes={
+                    "run_status": "running",
+                    "workflow_hash": item.workflow_hash,
+                    "worker_reference": item.worker_owner_hash,
+                    "fencing_token": item.fencing_token,
+                    "sensitive_fields_present": False,
+                },
+                now=now,
+            )
             return True
 
     def heartbeat(self, item: WorkItem, *, now: datetime) -> bool:
@@ -1050,6 +1607,25 @@ class WorkflowRepository:
                 },
                 now=now,
             )
+            _append_trace_event(
+                connection,
+                organization_id=item.organization_id,
+                run_id=item.run_id,
+                phase="lease",
+                status="leased",
+                reason="lease_heartbeat",
+                attributes={
+                    "run_status": "running",
+                    "outbox_id": item.outbox_id,
+                    "outbox_status": "dispatched",
+                    "workflow_hash": item.workflow_hash,
+                    "worker_reference": item.worker_owner_hash,
+                    "fencing_token": item.fencing_token,
+                    "lease_version": item.lease_version,
+                    "sensitive_fields_present": False,
+                },
+                now=now,
+            )
             return True
 
     def record_deduplicated(self, item: WorkItem, *, now: datetime) -> bool:
@@ -1078,6 +1654,22 @@ class WorkflowRepository:
                     "run_id": item.run_id,
                     "workflow_hash": item.workflow_hash,
                     "fencing_token": item.fencing_token,
+                },
+                now=_utc(now),
+            )
+            _append_trace_event(
+                connection,
+                organization_id=item.organization_id,
+                run_id=item.run_id,
+                phase="workflow",
+                status="running",
+                reason="temporal_deduplicated",
+                attributes={
+                    "run_status": "running",
+                    "workflow_hash": item.workflow_hash,
+                    "worker_reference": item.worker_owner_hash,
+                    "fencing_token": item.fencing_token,
+                    "sensitive_fields_present": False,
                 },
                 now=_utc(now),
             )
@@ -1147,6 +1739,28 @@ class WorkflowRepository:
                 RUNS.c.run_id == run["run_id"],
             )
             .values(audit_sequence=sequence)
+        )
+        _append_trace_event(
+            connection,
+            organization_id=str(run["organization_id"]),
+            run_id=str(run["run_id"]),
+            phase="terminal",
+            status="failed",
+            reason="run_failed",
+            failure_category=_terminal_failure_category(reason),
+            attributes={
+                "run_status": "failed",
+                "outbox_id": str(outbox["outbox_id"]),
+                "outbox_status": "failed",
+                "workflow_hash": str(run["workflow_hash"]),
+                "worker_reference": self.owner_hash,
+                "fencing_token": int(outbox["fencing_token"]),
+                "attempt_count": int(outbox["attempt_count"]),
+                "audit_sequence": sequence,
+                "version": int(run["version"]) + 1,
+                "sensitive_fields_present": False,
+            },
+            now=now,
         )
         request_id = run["approval_request_id"]
         grant_id = run["grant_id"]
@@ -1418,6 +2032,16 @@ class WorkflowRepository:
                 )
                 .values(audit_sequence=sequence)
             )
+            _append_outcome_trace(
+                connection,
+                item=item,
+                outcome=outcome,
+                terminal_status=terminal_status,
+                receipt_reference=receipt_reference,
+                audit_sequence=sequence,
+                terminal_version=terminal_version,
+                now=now,
+            )
             if item.grant_id is not None and item.approval_request_id is not None:
                 grant_status = "consumed" if successful else "failed"
                 request_status = "consumed" if successful else "failed"
@@ -1550,6 +2174,25 @@ class WorkflowRepository:
                     "run_status": "queued",
                     "fencing_token": item.fencing_token,
                     "reason": "worker_drained",
+                },
+                now=now,
+            )
+            _append_trace_event(
+                connection,
+                organization_id=item.organization_id,
+                run_id=item.run_id,
+                phase="lease",
+                status="released",
+                reason="lease_released",
+                attributes={
+                    "run_status": "queued",
+                    "outbox_id": item.outbox_id,
+                    "outbox_status": "ready",
+                    "workflow_hash": item.workflow_hash,
+                    "worker_reference": item.worker_owner_hash,
+                    "fencing_token": item.fencing_token,
+                    "lease_version": item.lease_version,
+                    "sensitive_fields_present": False,
                 },
                 now=now,
             )

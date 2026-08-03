@@ -1,6 +1,7 @@
 """Organization fairness, fencing, terminal mapping, and four-slot tests."""
 
 import asyncio
+import json
 from datetime import datetime, timedelta
 
 import pytest
@@ -18,6 +19,7 @@ from flowpilot_workflow_worker.repository import (
     GRANTS,
     LEASES,
     MEMBERSHIPS,
+    OBSERVABILITY_EVENTS,
     OUTBOX,
     PARTITIONS,
     REQUESTS,
@@ -33,7 +35,12 @@ from flowpilot_workflow_worker.schemas import (
 )
 
 
-def _outcome(item: WorkItem) -> TemporalOutcome:
+def _outcome(
+    item: WorkItem,
+    *,
+    completed_step_ids: tuple[str, ...] = (),
+    usage: dict[str, object] | None = None,
+) -> TemporalOutcome:
     return TemporalOutcome(
         result=WorkflowResult(
             workflow_id=item.workflow_id,
@@ -44,10 +51,10 @@ def _outcome(item: WorkItem) -> TemporalOutcome:
             plan_hash=None,
             revision=1,
             session_epoch=1,
-            completed_step_ids=(),
+            completed_step_ids=completed_step_ids,
             checkpoint_count=0,
             latest_checkpoint_hash=None,
-            usage={},
+            usage=usage or {},
         ),
         deduplicated_start=False,
     )
@@ -183,6 +190,95 @@ def test_lease_expiry_reclaim_stale_fence_and_finished_ungraded(
             )
             == terminal_version
         )
+
+
+def test_w13_trace_events_cover_worker_outcome_without_sensitive_material(
+    repository: WorkflowRepository,
+    seeder: Seeder,
+    engine: Engine,
+) -> None:
+    seeder.organization("trace")
+    seeded = seeder.run("trace")
+    item = repository.claim_next(now=NOW)
+    assert item is not None
+    assert repository.mark_started(item, now=NOW + timedelta(seconds=1))
+    assert repository.complete(
+        item,
+        _outcome(
+            item,
+            completed_step_ids=("inspect_task", "create_ticket"),
+            usage={
+                "activity_attempts": 3,
+                "retries": 1,
+                "session_recoveries": 1,
+                "replans": 1,
+                "planning_usage": {
+                    "model_calls": 2,
+                    "input_tokens": 111,
+                    "output_tokens": 22,
+                    "route_decisions": 3,
+                    "dom_observations": 4,
+                    "images": 0,
+                    "capture_ms": 15,
+                    "elapsed_ms": 250,
+                    "cost_microusd": 333,
+                },
+            },
+        ),
+        now=NOW + timedelta(seconds=2),
+    )
+
+    with engine.connect() as connection:
+        events = list(
+            connection.execute(
+                select(OBSERVABILITY_EVENTS)
+                .where(
+                    OBSERVABILITY_EVENTS.c.organization_id == seeded.organization_id,
+                    OBSERVABILITY_EVENTS.c.run_id == seeded.run_id,
+                )
+                .order_by(OBSERVABILITY_EVENTS.c.event_sequence)
+            ).mappings()
+        )
+    reasons = [str(event["reason"]) for event in events]
+    assert reasons[:3] == ["lease_claimed", "worker_dispatched", "temporal_reference"]
+    assert {
+        "recovery_summary",
+        "planning_summary",
+        "browser_step",
+        "browser_summary",
+        "receipt_recorded",
+        "fake_cost_accounted",
+        "grader_pending",
+        "audit_reference",
+        "run_finished_ungraded",
+    } <= set(reasons)
+    assert [int(event["event_sequence"]) for event in events] == list(range(1, len(events) + 1))
+    assert events[0]["parent_span_id"] is None
+    assert all(event["trace_id"] == events[0]["trace_id"] for event in events)
+    assert all(event["parent_span_id"] == events[0]["span_id"] for event in events[1:])
+    cost_event = next(event for event in events if event["reason"] == "fake_cost_accounted")
+    cost_attributes = json.loads(str(cost_event["attributes_json"]))
+    assert cost_attributes["fake_cost_microusd"] == 333
+    assert cost_attributes["real_cost_microusd"] == 0
+    assert cost_attributes["sensitive_fields_present"] is False
+    serialized = json.dumps(
+        [dict(event) for event in events],
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    ).lower()
+    assert not any(
+        forbidden in serialized
+        for forbidden in (
+            "bearer ",
+            "access_token",
+            "credential",
+            "nonce",
+            "cookie",
+            "password",
+            "private_key",
+        )
+    )
 
 
 def test_effect_boundary_rechecks_current_authorization(

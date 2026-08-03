@@ -56,6 +56,10 @@ from flowpilot_control_api.etag import (
     strong_etag,
 )
 from flowpilot_control_api.models import Membership, Organization, OrganizationMemory, User
+from flowpilot_control_api.observability import (
+    ObservabilityPayloadRejected,
+    build_run_trace_export,
+)
 from flowpilot_control_api.production import (
     BackpressureExceeded,
     IdempotencyConflict,
@@ -150,6 +154,7 @@ from flowpilot_control_api.schemas import (
     RequestClose,
     ResourceKind,
     Role,
+    RunTraceExport,
     UserCreate,
     UserId,
     UserList,
@@ -369,6 +374,10 @@ def create_app(
     @application.exception_handler(AuditChainMissing)
     async def audit_missing(_: Request, __: AuditChainMissing) -> JSONResponse:
         return _error(ErrorCode.RESOURCE_NOT_FOUND, status.HTTP_404_NOT_FOUND)
+
+    @application.exception_handler(ObservabilityPayloadRejected)
+    async def observability_rejected(_: Request, __: ObservabilityPayloadRejected) -> JSONResponse:
+        return _error(ErrorCode.SCHEMA_REJECTED, status.HTTP_422_UNPROCESSABLE_CONTENT)
 
     @application.get("/healthz", response_model=HealthResponse, tags=["health"])
     def healthz() -> HealthResponse:
@@ -1333,6 +1342,27 @@ def create_app(
             record.version,
         )
         return run_read(record)
+
+    @application.get(
+        "/api/v1/organizations/{organization_id}/production-runs/{run_id}/trace",
+        response_model=RunTraceExport,
+    )
+    def read_production_run_trace(
+        organization_id: OrganizationId,
+        run_id: ProductionRunId,
+        session: SessionDependency,
+        actor: ActorDependency,
+    ) -> RunTraceExport:
+        authorize(actor, Permission.OBSERVABILITY_TRACE_READ)
+        record = get_production_run(
+            session,
+            actor,
+            organization_id,
+            run_id,
+            current_settings.production,
+            now=datetime.now(UTC),
+        )
+        return build_run_trace_export(session, run=run_read(record))
 
     @application.post(
         "/api/v1/organizations/{organization_id}/production-runs/{run_id}/claim",

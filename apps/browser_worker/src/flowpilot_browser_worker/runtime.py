@@ -9,6 +9,7 @@ from typing import Literal, cast
 from playwright.async_api import (
     Browser,
     BrowserContext,
+    Download,
     Page,
     Playwright,
     Route,
@@ -89,6 +90,7 @@ from flowpilot_browser_worker.schemas import (
     VisionWaitAction,
     WaitAction,
 )
+from flowpilot_browser_worker.security import SecurityViolation, redact_sensitive
 from flowpilot_browser_worker.vision import (
     VisionCaptureError,
     VisionObservationBuild,
@@ -276,6 +278,17 @@ class BrowserRuntime:
                 message = await self._dispatch(session, action, target)
                 self.policy.assert_final_navigation(session.page.url)
                 return await self._success_observation(session, action, message)
+            except SecurityViolation as exc:
+                await self._close_session(session)
+                return ActionResult(
+                    session_id=session_id,
+                    action_id=action.action_id,
+                    action_type=action.type,
+                    success=False,
+                    terminal=True,
+                    error_category="action_not_allowed",
+                    message=self._sanitize(str(exc)),
+                )
             except PolicyViolation as exc:
                 category: ErrorCategory = (
                     "invalid_url" if isinstance(action, NavigateAction) else "input_rejected"
@@ -336,6 +349,17 @@ class BrowserRuntime:
                 message = await self._dispatch_vision(session, action, target)
                 self.policy.assert_final_navigation(session.page.url)
                 return await self._vision_success_observation(session, action, message)
+            except SecurityViolation as exc:
+                await self._close_session(session)
+                return VisionActionResult(
+                    session_id=session_id,
+                    action_id=action.action_id,
+                    action_type=action.type,
+                    success=False,
+                    terminal=True,
+                    error_category="action_not_allowed",
+                    message=self._sanitize(str(exc)),
+                )
             except PolicyViolation as exc:
                 category: VisionErrorCategory = (
                     "invalid_url" if isinstance(action, VisionNavigateAction) else "input_rejected"
@@ -461,6 +485,18 @@ class BrowserRuntime:
             except asyncio.CancelledError:
                 await self._close_session(session)
                 raise
+            except SecurityViolation as exc:
+                await self._close_session(session)
+                return HybridActionResult(
+                    session_id=session_id,
+                    action_id=action.action_id,
+                    modality=envelope.modality,
+                    action_type=action.type,
+                    success=False,
+                    terminal=True,
+                    error_category="action_not_allowed",
+                    message=self._sanitize(str(exc)),
+                )
             except PolicyViolation as exc:
                 return await self._hybrid_failure_observation(
                     session,
@@ -591,6 +627,18 @@ class BrowserRuntime:
             except asyncio.CancelledError:
                 await self._close_session(session)
                 raise
+            except SecurityViolation as exc:
+                await self._close_session(session)
+                return RecoveryActionResult(
+                    session_id=session_id,
+                    session_epoch=envelope.session_epoch,
+                    action_id=action.action_id,
+                    action_type=action.type,
+                    success=False,
+                    terminal=True,
+                    error_category="action_not_allowed",
+                    message=self._sanitize(str(exc)),
+                )
             except (PolicyViolation, ValueError) as exc:
                 return await self._recovery_observation_result(
                     session, envelope, False, "input_rejected", message=self._sanitize(str(exc))
@@ -685,6 +733,16 @@ class BrowserRuntime:
             page = await context.new_page()
             page.set_default_timeout(self.config.limits.browser_action_timeout_ms)
             page.set_default_navigation_timeout(self.config.limits.browser_action_timeout_ms)
+
+            async def reject_popup(popup: Page) -> None:
+                await popup.close()
+
+            async def reject_download(download: Download) -> None:
+                await download.cancel()
+
+            if callable(getattr(page, "on", None)):
+                page.on("popup", reject_popup)
+                page.on("download", reject_download)
             opened_session: BrowserSession | None = None
 
             async def guard_request(route: Route) -> None:
@@ -1474,6 +1532,10 @@ class BrowserRuntime:
         page_error: str | None = None,
     ) -> VisionObservationBuild:
         self.policy.assert_final_navigation(session.page.url)
+        # The security preflight is DOM-backed even for Vision-only execution. Its
+        # bounded result is discarded; only a closed safe-stop decision can escape.
+        if callable(getattr(session.page, "locator", None)):
+            await self._builder.build(session.page, session.session_id)
         session.vision_references.clear()
         session.vision_screenshot_ref = None
         if session.vision_screenshot_count >= self.config.limits.max_vision_screenshots:
@@ -1549,4 +1611,4 @@ class BrowserRuntime:
 
     @staticmethod
     def _sanitize(value: str) -> str:
-        return " ".join(value.split())[:300]
+        return " ".join(redact_sensitive(value).split())[:300]

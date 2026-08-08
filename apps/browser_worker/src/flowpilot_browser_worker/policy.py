@@ -3,8 +3,11 @@ from dataclasses import dataclass
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from flowpilot_browser_worker.config import WorkerLimits
+from flowpilot_browser_worker.security import SECURITY_GUARD, SecuritySource
 
-ALLOWED_BUSINESS_PATHS = frozenset({"/hris", "/itsm", "/iam", "/assets", "/mail"})
+ALLOWED_BUSINESS_PATHS = frozenset(
+    {"/hris", "/itsm", "/iam", "/assets", "/mail", "/w14-malicious.html"}
+)
 _CONTROL_CHARACTERS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 _CARD_LIKE_NUMBER = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
 _SENSITIVE_WORDS = re.compile(r"(?i)\b(password|passwd|secret|api[_ -]?key|bearer|token)\b")
@@ -77,3 +80,4 @@ def validate_fill_text(text: str, input_type: str, limits: WorkerLimits) -> None
         raise PolicyViolation("Credential-like input is forbidden")
     if "@" in text and not text.lower().endswith(".invalid"):
         raise PolicyViolation("Email input must use a non-deliverable .invalid domain")
+    SECURITY_GUARD.require_safe(SecuritySource.MODEL_OUTPUT, text)

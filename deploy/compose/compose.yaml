@@ -1029,6 +1029,51 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  security-acceptance-smoke:
+    profiles:
+      - security-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w14_security_compose_smoke.py"]
+    environment:
+      CONTROL_API_URL: http://control-api:8000
+      SANDBOX_API_URL: http://sandbox-api:8001
+      BROWSER_WORKER_URL: http://browser-worker:8002
+      SANDBOX_WEB_URL: http://sandbox-web
+      KEYCLOAK_TOKEN_URL: http://keycloak:8080/realms/flowpilot/protocol/openid-connect/token
+      W14_SYNTHETIC_PASSWORD: flowpilot-local-only
+    depends_on:
+      control-api:
+        condition: service_healthy
+      workflow-worker:
+        condition: service_healthy
+      recovery-worker:
+        condition: service_healthy
+      sandbox-api:
+        condition: service_healthy
+      sandbox-web:
+        condition: service_healthy
+      browser-worker:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - control-backend
+      - identity
+      - sandbox-backend
+      - browser-sandbox
+    volumes:
+      - w12-results:/results
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
   production-load:
     profiles:
       - production-load

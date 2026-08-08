@@ -1,167 +1,156 @@
-# W13 agent contract - observability and replay
+# W14 agent contract - security suite and threat model
 
-## Authority, baseline, and stop condition
+## Authority, immutable baselines, and stop condition
 
-This contract translates the W13 roadmap row and the user-authorized W13 brief
-into the sole implementation authority for `week/13-observability`.
+This contract translates the W14 roadmap row and the user-authorized W14 brief
+into the sole implementation authority for `week/14-security`.
 
-W12 is the immutable published baseline:
+W12 and W13 are immutable published baselines:
 
-- PR: https://github.com/taka-wzx/flowpilot-arena/pull/35
-- merge commit: `2c642a67341d0cd1c9c62b6bf883ad8df2853f40`
-- feature/head commit: `b00dff77b1626a3f347abfba485ac5a197b627a7`
-- tag: `w12-production`
-- Release: `v0.3.0 - Production Control Plane`
+- W12: PR 35, merge `2c642a67341d0cd1c9c62b6bf883ad8df2853f40`,
+  feature/head `b00dff77b1626a3f347abfba485ac5a197b627a7`, tag
+  `w12-production`, Release `v0.3.0 - Production Control Plane`.
+- W13: PR 36, merge `cedc5f26d41262c955b60854cc69ed4f28baded6`,
+  feature/head `902e4078e1ece0f401f1c5c3010e56a7ae62acf5`, tag
+  `w13-observability`, Release `v0.4.0 - Observability and Replay`.
 
-W13 has one local outcome: preserve every W1-W12 frozen boundary while adding a
-deterministic, closed, tenant-qualified observability and replay layer that lets
-one production run be traced and reviewed from admission through terminal
-`finished_ungraded` or failure. The later expected week tag is
-`w13-observability`. This authorization stops after one local feature commit
-`feat: add W13 observability and replay`. It does not authorize push, PR, merge,
-tag, Release, workflow_dispatch, CI rerun, W12 formal Validation rerun, W12
-ordinal 4, W15 Reporting, or real provider/IdP/model/OCR/VLM/embedding/billing/
-egress calls.
+W14 has one local outcome: preserve every W1-W13 frozen boundary while adding a
+deterministic closed security decision layer, fixed harmless malicious-page
+fixtures, secret redaction, browser-boundary verification, a threat model, and
+local/CI evidence. The later expected tag is `w14-security`.
+
+Authorization stops after one local commit
+`feat: add W14 security suite and threat model`. It does not authorize push,
+PR, merge, tag, Release, remote workflow dispatch/rerun, W12 formal Validation
+ordinal 3, ordinal 4, W15 Reporting, external benchmark, or any real provider,
+IdP, model, OCR, VLM, embedding, billing, account, personal-data, or egress
+call.
 
 The literal `%SystemDrive%/` path is outside every read, enumeration, scan,
 diff, status, staging, and modification operation. No `code_review_agent`
 repository may be accessed.
 
-## Preserved W1-W12 boundary
+## Preserved W1-W13 authority boundary
 
-All W1-W12 public APIs, route semantics, strict schemas, deterministic fake
-results, released Sandbox migrations, W3 ten tasks/checksum/6-2-2 split, W7 30
-templates/90 instances, W8 Temporal workflow, checkpoint, receipt,
-idempotency, recovery, cap, and `finished_ungraded` contract, W9 context and
-ablation contract, W10 fixed OIDC, tenant isolation, database-derived
-ActorContext, closed RBAC, and strong ETags, W11 risk/approval/grant/audit
-contract, W12 asynchronous admission, durable outbox, organization-fair
-scheduling, bounded rate limiter, queue/backpressure, lease/fence, private
-Workflow Worker, four-slot cap, isolated Browser sessions, load schema/profile,
-and formal ordinal 3 evidence remain frozen.
+All W1-W13 public API success semantics, strict schemas, deterministic fake
+results, released migrations, W3/W7 catalogs/checksums/splits, W8 workflow,
+checkpoint, receipt, idempotency, recovery and `finished_ungraded`, W9 context
+and ablation, W10 fixed OIDC/tenant/RBAC/database-derived ActorContext/ETag,
+W11 risk/approval/grant/audit, W12 admission/outbox/rate/backpressure/queue/
+lease/fence/four-slot cap, and W13 trace/replay/dashboard/cost/failure taxonomy
+remain frozen.
 
-Trace, dashboard, replay, and cost records are observation data only. They never
-authorize a task, select a tenant, bypass approval, change rate/queue/lease
-policy, mutate Sandbox business state, create a W8 receipt, decide success, or
-replace the independent Grader. W13 may classify an observed failure, but the
-existing W8/W11/W12 terminal state remains the business source of truth.
+Security decisions, events, fixtures, smoke results, trace, replay, and
+dashboard data never authorize a task, select an organization, issue or consume
+approval, change action/risk/rate/queue/lease policy, create a receipt, mutate
+Sandbox business state, decide business success, or replace the independent
+Grader. A security refusal may only prevent an untrusted action or close an
+isolated browser session. Normal frozen tasks retain their existing behavior.
 
-## W13 design choice
+## W14 design choice
 
-W13 implements a Control-database append-only observability model plus a
-Control API single-run trace export. It does not add Prometheus, Tempo, Grafana,
-OpenTelemetry Collector, a public ingestion endpoint, frontend dashboard code,
-or a new service. Dashboard output is a deterministic local/CI JSON report and
-the dashboard section embedded in the trace export.
+W14 adds one dependency-free Browser Worker module containing fixed closed
+rules, strict/frozen security decision models, canonical compact JSON, stable
+SHA-256 fixture/content references, and bounded redaction. It integrates at the
+existing Browser observation/action boundary and reuses the existing same-origin
+request guard and one-context-per-session isolation.
 
-The trace is OTel-shaped without adding a dependency: every event stores a
-stable W3C-compatible 32-hex `trace_id`, a deterministic 16-hex `span_id`, and
-an optional 16-hex parent span. IDs are derived only from canonical
-organization-qualified run/event references and contain no caller-supplied or
-secret material.
+One static harmless page under the existing Sandbox Web service is the only
+malicious-page fixture used by Compose. There is no new service, database table,
+migration, network, public ingestion endpoint, dynamic policy, ABAC/DSL,
+generic scanner, or caller-selected rule. Fixture text is untrusted input only;
+the server-owned rule table is authoritative.
 
-## Closed observability data model
+No W13 schema is extended. W13 compatibility is proved by exporting the
+unchanged `w13-run-trace-export/1.0` after a normal frozen production run and by
+checking that malicious-page/security content is absent. An optional security
+reference remains opaque and is never a W13 business fact.
 
-Control migration `20260803_0004` adds only `w13_observability_events`.
-Rows are append-only and organization/run qualified. No W13 observability row is
-physically deleted. Each row stores:
+## Closed security taxonomy and decision
 
-- schema version `w13-observability-event/1.0`;
-- opaque event/run/organization references;
-- per-run `event_sequence`, OTel-shaped trace/span IDs, and optional parent
-  span;
-- closed phase, status, failure category, and reason enums;
-- compact canonical `attributes_json`, `attributes_hash`, `event_hash`; and
-- UTC `observed_at`.
+The closed taxonomy contains:
 
-Allowed phases are `admission`, `approval`, `outbox`, `lease`, `dispatch`,
-`workflow`, `recovery`, `planning`, `browser`, `receipt`, `grader`, `audit`,
-`cost`, `terminal`, `replay`, and `dashboard`.
+- `none`;
+- `prompt_injection`;
+- `untrusted_instruction`;
+- `privilege_escalation`;
+- `cross_tenant_attempt`;
+- `approval_bypass`;
+- `secret_exposure_redaction`;
+- `forbidden_navigation`;
+- `sandbox_violation`;
+- `browser_isolation_failure`; and
+- `controlled_safe_stop`.
 
-Allowed failure categories are `none`, `authn`, `authz`, `approval`, `schema`,
-`rate_limit`, `backpressure`, `queue_expiry`, `lease_fence`,
-`workflow_rejected`, `dependency_unavailable`, `browser_timeout`,
-`browser_error`, `planning_failure`, `recovery_failure`, `receipt_invalid`,
-`grader_verification`, and `audit_verification`.
+Closed outcomes are `allow`, `reject`, and `safe_stop`. Rejections expose only
+schema version, source class, content/fixture SHA-256, category, reason code,
+opaque security reference, `business_side_effects=0`, and
+`sensitive_fields_present=false`. Raw page/DOM/model/tool text is processed only
+in bounded memory and is never logged, persisted, traced, replayed, exported,
+placed in a URL, or written to evidence.
 
-Trace attributes are strict and bounded. They may contain only schema version,
-opaque IDs/hashes, closed statuses/reasons, versions/fences, sequence/count
-integers, latency/duration integers, receipt/checkpoint/audit references,
-completed safe step IDs, deterministic fake-provider token/model counters,
-`fake_cost_microusd`, `real_cost_microusd=0`, and the boolean
-`sensitive_fields_present=false`. They must not contain Bearer tokens, OIDC raw
-claims, authorization codes, approval credentials/nonces, Cookies, passwords,
-private keys, names, emails, usernames, raw task/parameter/page/DOM/image/OCR/
-model content, DSNs, secrets, or machine paths.
+Rules are case-normalized fixed regular expressions for explicit instruction
+override, page/tool/system-instruction impersonation, privilege escalation,
+cross-organization access, approval bypass, credential/canary exposure,
+dangerous navigation, arbitrary execution, download, and new-window signals.
+The first rule in a frozen priority order wins, making decisions deterministic.
+No page or model content can add, remove, reorder, or override a rule.
 
-## Trace coverage
+## Redaction and canary contract
 
-W13 must record closed events for:
+Redaction is bounded and deterministic across Browser observation text,
+action/error messages, test serialization, W13 export assertions, evidence, and
+URLs. It removes credential-bearing Authorization/Cookie/password/key/DSN
+forms, URL userinfo/query/fragment, email-like personal data, private-key
+markers, and Windows/POSIX machine-path forms. Low-risk canaries are synthetic
+and assembled from short low-entropy fragments in tests/smoke where a complete
+marker is required.
 
-- Control API admission to `waiting_approval` or `queued`;
-- W11 approval handoff into W12 production claim/outbox;
-- outbox readiness, lease, recovery reclaim, heartbeat/release, and fence
-  rejection references;
-- Workflow Worker dispatch and deterministic Temporal workflow reference;
-- W8 Recovery/Planning/Browser summaries derived from the strict W8 result;
-- receipt/checkpoint reference;
-- `finished_ungraded`, failed, cancelled, or expired terminal transition;
-- audit sequence/head reference; and
-- deterministic fake cost accounting with real cost fixed to zero.
+Bearer tokens and W11 approval credentials/nonces remain confined to their
+existing authorities. They never enter the fixture, Browser Worker, trace,
+replay, dashboard, audit helper fields, report, or URL.
 
-If a run is terminal before a downstream phase exists, replay exports the
-observed prefix and the closed terminal category. Missing future events do not
-invent success.
+## Browser sandbox contract
 
-## API and replay contract
+Every Browser session continues to own a distinct Playwright context. The
+existing Browser Worker has no public host port and reaches only the fixed local
+`sandbox-web` origin through an internal Compose network. W14 keeps credentials,
+query strings, fragments, dangerous schemes, other hosts, redirect escapes, and
+direct Sandbox API requests blocked. Downloads and service workers stay
+disabled; extra-page/new-window attempts and arbitrary selector/coordinate/
+JavaScript inputs remain rejected by closed schemas and tests.
 
-W13 adds one authenticated read-only route:
+The W14 fixture path is a single exact same-origin local path. Its observation
+is classified before a subsequent business action; the session closes in a
+controlled terminal rejection and returns only a safe reference. Injection
+text submitted as a model-derived fill is rejected before locator execution.
+Normal W4-W13 paths and actions are unchanged.
 
-~~~text
-GET /api/v1/organizations/{organization_id}/production-runs/{run_id}/trace
-~~~
+## Threat and test mapping
 
-The route requires the new closed permission `observability.trace.read`, charges
-the existing W12 `production_read` rate bucket, and returns schema
-`w13-run-trace-export/1.0`. It uses the same organization-qualified lookup and
-stable 404 behavior as production-run reads.
+The ADR is authoritative for assets, actors, trust boundaries, attacker
+capabilities, attack paths, mitigations, tests, and residual risk. At minimum,
+tests cover taxonomy closure/strictness/hash stability, every malicious fixture
+decision, secret redaction, URL/browser boundaries, same-run context isolation,
+page/tool/model injection, tenant and RBAC spoofing, approval bypass, zero
+business side effects, controlled terminal state, unchanged normal task
+behavior, W13 export compatibility, and real-call-zero.
 
-The export contains the run read model, ordered trace events, ordered replay
-steps, fake/real cost summary, deterministic JSON dashboard summary, and a
-stable SHA-256 export hash over canonical sorted-key compact JSON excluding the
-hash field. The replay is a reconstruction of observed closed events; it is not
-an executable workflow, a success source, or a source of raw business data.
-
-## Tests and evidence
-
-W13 must add locally runnable tests for:
-
-- trace schema strictness, hash stability, and closed failure taxonomy;
-- redaction rejection and absence of forbidden fields in exports;
-- event ordering and single-run replay reconstruction;
-- tenant isolation and uniform cross-organization/missing responses;
-- Workflow Worker trace writes for lease/dispatch/workflow/recovery/planning/
-  browser/receipt/cost/terminal events;
-- Control migration upgrade/current/check/downgrade/upgrade with the W13 table;
-  and
-- a deterministic Compose W13 observability smoke proving one production run can
-  be traced and replayed.
-
-Evidence must state that W13 trace/dashboard data is deterministic local/CI
-synthetic observability only. It is not a production SLO, certification, legal
-compliance statement, security attestation, or ROI claim. Formal W12 ordinal 3
-must not be rerun and ordinal 4 must not be created.
+W14 is deterministic local/CI synthetic security testing only. It is not a
+production security certification, penetration test, legal/compliance
+statement, vulnerability assessment of third parties, or bounty conclusion.
 
 ## Explicit non-goals
 
-W13 adds no public telemetry ingestion service; no Prometheus, Tempo, Grafana,
-OpenTelemetry Collector, SaaS telemetry, billing/provider integration, real
-cost import, egress, external benchmark, Reporting execution, malicious-page
-suite, Helm/cloud deployment, UI redesign, dynamic policy, arbitrary execution,
-physical deletion, global tracing across tenants, trace-derived success, or
-generic future framework.
+No new service, database, migration, dependency, real page/account/secret/
+approver/data, provider/model/OCR/VLM/embedding/billing/egress, malicious
+payload execution, public scanner, external benchmark, Reporting, Helm/cloud,
+physical deletion, impersonation/delegation/break-glass/global administrator,
+L4 override, dynamic policy/ABAC/DSL, arbitrary Shell/SQL/JavaScript/code/URL/
+API capability, production certification, penetration-test claim, or generic
+future framework is in W14.
 
-## Exact W13 file allowlist
+## Exact W14 file allowlist
 
 Only the following exact paths may be created or modified. There are no
 directory wildcards. A new path must first be added here; any scope expansion
@@ -169,43 +158,48 @@ listed in the non-goals requires new user direction.
 
 ~~~text
 AGENTS.md
-CHANGELOG.md
 .github/workflows/ci.yml
 
 docs/agent-contract.md
-docs/adr/0013-w13-observability.md
-docs/plans/week-13-observability.md
-docs/evidence/week-13-report.md
+docs/adr/0014-w14-security.md
+docs/plans/week-14-security.md
+docs/evidence/week-14-report.md
 
-apps/control_api/migrations/versions/20260803_0004_w13_observability.py
-apps/control_api/src/flowpilot_control_api/main.py
-apps/control_api/src/flowpilot_control_api/models.py
-apps/control_api/src/flowpilot_control_api/observability.py
-apps/control_api/src/flowpilot_control_api/production.py
-apps/control_api/src/flowpilot_control_api/rbac.py
-apps/control_api/src/flowpilot_control_api/schemas.py
-apps/control_api/tests/test_migrations.py
-apps/control_api/tests/test_observability.py
-apps/control_api/tests/test_rbac.py
+apps/browser_worker/src/flowpilot_browser_worker/security.py
+apps/browser_worker/src/flowpilot_browser_worker/policy.py
+apps/browser_worker/src/flowpilot_browser_worker/observation.py
+apps/browser_worker/src/flowpilot_browser_worker/runtime.py
+apps/browser_worker/tests/test_security.py
+apps/browser_worker/tests/test_policy.py
+apps/browser_worker/tests/test_observation.py
+apps/browser_worker/tests/test_runtime.py
 
-apps/workflow_worker/src/flowpilot_workflow_worker/repository.py
-apps/workflow_worker/tests/conftest.py
-apps/workflow_worker/tests/test_repository.py
+apps/control_api/tests/test_w14_security.py
+apps/sandbox_web/public/w14-malicious.html
 
 deploy/compose/compose.yaml
 tests/integration/Dockerfile
-tests/integration/w13_observability_compose_smoke.py
+tests/integration/w14_security_compose_smoke.py
 ~~~
 
-The allowlist contains 23 exact paths. Existing Control, Browser, Planning,
-Recovery, Sandbox, frontend, load, realm, and released migration files not
-listed above remain unchanged.
+The allowlist contains 19 exact paths. Existing migrations, lockfiles, Control
+implementation, Workflow Worker, Planning, Recovery, Grader, released fixtures,
+frontends other than the one static file, load files, realm, and W1-W13 evidence
+remain unchanged.
 
 ## Required local completion
 
-After all locally available gates pass and evidence matches observations,
-explicitly stage only paths above; never use broad staging. Create one local
-commit `feat: add W13 observability and replay` and stop. Do not push, create a
-PR, merge, tag, create a Release, rerun/dispatch CI, call a real provider, rerun
-W12 formal Validation ordinal 3, create ordinal 4, execute W15 Reporting, or
-begin W14.
+Run every locally available quality gate named by `AGENTS.md`, including the
+changed Browser Worker and Control API Python gates, Sandbox Web frontend gates,
+workflow/YAML policy checks, Compose config/build/up/health, relevant migration
+verification, W4-W13 regression, W13 observability smoke, W14 deterministic
+security smoke, real-call-zero and sensitive-field proofs, exact allowlist and
+diff review, private-key/gitleaks checks, and Compose cleanup. Record unavailable
+tools factually without claiming success.
+
+After gates and evidence reconciliation, explicitly stage only the 19 paths
+above; never use broad staging. Create one local commit
+`feat: add W14 security suite and threat model` and stop. Do not push, create a
+PR, merge, tag, Release, dispatch/rerun CI, call a real provider, rerun W12
+formal Validation ordinal 3, create ordinal 4, execute W15 Reporting, or begin
+W15 implementation.

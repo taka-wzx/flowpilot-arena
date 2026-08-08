@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "W12 fenced durable dispatch worker for FlowPilot Arena"
 requires-python = ">=3.13,<3.14"
 dependencies = [
-  "cryptography==49.0.0",
+  "cryptography==50.0.0",
   "psycopg[binary]>=3.2,<4.0",
   "pydantic>=2.10,<3.0",
   "sqlalchemy>=2.0,<3.0",

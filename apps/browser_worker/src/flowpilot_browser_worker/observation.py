@@ -15,6 +15,12 @@ from flowpilot_browser_worker.schemas import (
     Observation,
     SemanticNode,
 )
+from flowpilot_browser_worker.security import (
+    SECURITY_GUARD,
+    SecurityGuard,
+    SecuritySource,
+    redact_sensitive,
+)
 
 SEMANTIC_SELECTOR = "h1,h2,h3,h4,p,label,button,a,strong,span,em,article,li,td,th"
 INTERACTIVE_SELECTOR = (
@@ -75,7 +81,7 @@ _WHITESPACE = re.compile(r"\s+")
 
 
 def normalize_text(value: str, limit: int) -> str:
-    return _WHITESPACE.sub(" ", value).strip()[:limit]
+    return _WHITESPACE.sub(" ", redact_sensitive(value)).strip()[:limit]
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,7 +120,10 @@ def allowed_actions(metadata: dict[str, object]) -> tuple[AllowedElementAction, 
 
 
 async def extract_interactive_elements(
-    page: Page, nonce: str, limits: WorkerLimits
+    page: Page,
+    nonce: str,
+    limits: WorkerLimits,
+    security_guard: SecurityGuard = SECURITY_GUARD,
 ) -> tuple[list[InteractiveElement], dict[str, ElementTarget], bool]:
     locator = page.locator(INTERACTIVE_SELECTOR)
     count = await locator.count()
@@ -129,6 +138,10 @@ async def extract_interactive_elements(
             metadata = await item.evaluate(_ELEMENT_METADATA_SCRIPT)
         except PlaywrightError:
             continue
+        security_guard.require_safe(SecuritySource.DOM, str(metadata["name"]))
+        security_guard.require_safe(SecuritySource.DOM, str(metadata["text"]))
+        for option in metadata["options"]:
+            security_guard.require_safe(SecuritySource.DOM, str(option["label"]))
         actions = allowed_actions(metadata)
         if not actions:
             continue
@@ -172,9 +185,11 @@ class ObservationBuilder:
         self,
         limits: WorkerLimits,
         nonce_factory: Callable[[], str] | None = None,
+        security_guard: SecurityGuard = SECURITY_GUARD,
     ) -> None:
         self._limits = limits
         self._nonce_factory = nonce_factory or (lambda: secrets.token_urlsafe(9))
+        self._security_guard = security_guard
 
     async def build(
         self,
@@ -187,9 +202,13 @@ class ObservationBuilder:
         observation_id = f"obs_{nonce}"
         semantic_nodes, semantic_truncated = await self._semantic_nodes(page)
         interactive, references, interactive_truncated = await extract_interactive_elements(
-            page, nonce, self._limits
+            page, nonce, self._limits, self._security_guard
         )
-        title = normalize_text(await page.title(), self._limits.max_page_title_chars)
+        raw_title = await page.title()
+        self._security_guard.require_safe(SecuritySource.PAGE, raw_title)
+        if page_error:
+            self._security_guard.require_safe(SecuritySource.TOOL_OUTPUT, page_error)
+        title = normalize_text(raw_title, self._limits.max_page_title_chars)
         error = normalize_text(page_error, 300) if page_error else None
         truncated = semantic_truncated or interactive_truncated
 
@@ -218,6 +237,8 @@ class ObservationBuilder:
                 if not await item.is_visible():
                     continue
                 metadata = await item.evaluate(_ELEMENT_METADATA_SCRIPT)
+                self._security_guard.require_safe(SecuritySource.DOM, str(metadata["text"]))
+                self._security_guard.require_safe(SecuritySource.DOM, str(metadata["name"]))
                 text = normalize_text(str(metadata["text"]), self._limits.max_node_text_chars)
                 name = normalize_text(str(metadata["name"]), self._limits.max_node_text_chars)
                 if not text and not name:

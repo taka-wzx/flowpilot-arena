@@ -1,205 +1,251 @@
-# W14 agent contract - security suite and threat model
+# W15 agent contract - deterministic evaluation and reporting
 
-## Authority, immutable baselines, and stop condition
+## Authority, baselines, and stop condition
 
-This contract translates the W14 roadmap row and the user-authorized W14 brief
-into the sole implementation authority for `week/14-security`.
+This contract is the sole implementation authority for W15 on
+`week/15-evaluation`. It translates the roadmap and the user-authorized W15
+brief while preserving every W1-W14 boundary.
 
-W12 and W13 are immutable published baselines:
+W12, W13, and W14 are immutable published baselines:
 
-- W12: PR 35, merge `2c642a67341d0cd1c9c62b6bf883ad8df2853f40`,
-  feature/head `b00dff77b1626a3f347abfba485ac5a197b627a7`, tag
-  `w12-production`, Release `v0.3.0 - Production Control Plane`.
-- W13: PR 36, merge `cedc5f26d41262c955b60854cc69ed4f28baded6`,
-  feature/head `902e4078e1ece0f401f1c5c3010e56a7ae62acf5`, tag
-  `w13-observability`, Release `v0.4.0 - Observability and Replay`.
+- W12: PR 35; merge `2c642a67341d0cd1c9c62b6bf883ad8df2853f40`;
+  feature/head `b00dff77b1626a3f347abfba485ac5a197b627a7`; tag
+  `w12-production`; Release `v0.3.0 - Production Control Plane`.
+- W13: PR 36; merge `cedc5f26d41262c955b60854cc69ed4f28baded6`;
+  feature/head `902e4078e1ece0f401f1c5c3010e56a7ae62acf5`; tag
+  `w13-observability`; Release `v0.4.0 - Observability and Replay`.
+- W14: PR 41; merge `6bd960a031069f262fe60fbbb8bf2c65a09e409b`;
+  feature/head `2874cfb6c02d8dfcf18baac069157e0a073ddd02`; tag
+  `w14-security`; Release `v0.5.0 - Security Suite and Threat Model`.
 
-W14 has one local outcome: preserve every W1-W13 frozen boundary while adding a
-deterministic closed security decision layer, fixed harmless malicious-page
-fixtures, secret redaction, browser-boundary verification, a threat model, and
-local/CI evidence. The later expected tag is `w14-security`.
-
-Authorization stops after one local commit
-`feat: add W14 security suite and threat model`. It does not authorize push,
-PR, merge, tag, Release, remote workflow dispatch/rerun, W12 formal Validation
-ordinal 3, ordinal 4, W15 Reporting, external benchmark, or any real provider,
-IdP, model, OCR, VLM, embedding, billing, account, personal-data, or egress
-call.
+Authorization ends after one local commit
+`feat: add W15 evaluation and reporting`. No push, PR, merge, tag, Release,
+workflow dispatch/rerun, W12 Validation, W16 work, Benchmark download, or real
+provider/IdP/model/OCR/VLM/embedding/billing/account/data/egress call is
+authorized.
 
 The literal `%SystemDrive%/` path is outside every read, enumeration, scan,
 diff, status, staging, and modification operation. No `code_review_agent`
-repository may be accessed.
+repository may be accessed. Existing unrelated `.tmp/` content is preserved.
 
-## Preserved W1-W13 authority boundary
+## Preserved W1-W14 authority
 
-All W1-W13 public API success semantics, strict schemas, deterministic fake
-results, released migrations, W3/W7 catalogs/checksums/splits, W8 workflow,
-checkpoint, receipt, idempotency, recovery and `finished_ungraded`, W9 context
-and ablation, W10 fixed OIDC/tenant/RBAC/database-derived ActorContext/ETag,
-W11 risk/approval/grant/audit, W12 admission/outbox/rate/backpressure/queue/
-lease/fence/four-slot cap, and W13 trace/replay/dashboard/cost/failure taxonomy
-remain frozen.
+W3/W7 Task Specs, templates, instances, split/checksum discipline and database-
+fact Graders; W4-W9 Agent/action/budget/recovery/context semantics; W10 identity,
+tenant, RBAC, and locking; W11 approval/grant/audit; W12 admission/outbox/rate/
+queue/lease/fence/four-slot/receipt/idempotency and formal ordinal-3 evidence;
+W13 append-only trace/replay/dashboard; and W14 security decisions, redaction,
+and browser isolation are frozen.
 
-Security decisions, events, fixtures, smoke results, trace, replay, and
-dashboard data never authorize a task, select an organization, issue or consume
-approval, change action/risk/rate/queue/lease policy, create a receipt, mutate
-Sandbox business state, decide business success, or replace the independent
-Grader. A security refusal may only prevent an untrusted action or close an
-isolated browser session. Normal frozen tasks retain their existing behavior.
+Agent terminal state remains `finished_ungraded`. Only the independent Sandbox
+database-fact Grader decides task success. Reporting consumes safe observations
+only. It cannot authorize a task, select identity or organization, change risk
+or approval, start Temporal/Browser work, create a receipt, mutate product
+state, write run/approval/audit/trace/security/Grader rows, or become a success
+source.
 
-## W14 design choice
+## Design choice
 
-W14 adds one dependency-free Browser Worker module containing fixed closed
-rules, strict/frozen security decision models, canonical compact JSON, stable
-SHA-256 fixture/content references, and bounded redaction. It integrates at the
-existing Browser observation/action boundary and reuses the existing same-origin
-request guard and one-context-per-session isolation.
+Add a dependency-free W15 module to the existing Python 3.13
+`tests/integration` project, which already locks Pydantic. It is an offline,
+closed, deterministic evaluation/report generator and a Compose profile-only
+smoke. There is no new service, persistent database, migration, dependency,
+lockfile, public endpoint, product import, provider route, external egress, or
+generic adapter framework.
 
-One static harmless page under the existing Sandbox Web service is the only
-malicious-page fixture used by Compose. There is no new service, database table,
-migration, network, public ingestion endpoint, dynamic policy, ABAC/DSL,
-generic scanner, or caller-selected rule. Fixture text is untrusted input only;
-the server-owned rule table is authoritative.
+The runner first validates the packaged W15 protocol and exact W3/W7 freeze
+values. It then emits attempts in pre-registered configuration/task/seed order.
+The shipped executor is `w15-deterministic-synthetic-runner/1.0`: a transparent
+fake used to validate evaluation wiring and report determinism without a real
+model or provider. Its observations are not evidence of real model quality,
+external generalization, production SLOs, ROI, or statistical significance.
 
-No W13 schema is extended. W13 compatibility is proved by exporting the
-unchanged `w13-run-trace-export/1.0` after a normal frozen production run and by
-checking that malicious-page/security content is absent. An optional security
-reference remains opaque and is never a W13 business fact.
+## Reporting split freeze
 
-## Closed security taxonomy and decision
+The primary Reporting set is the already frozen W7 JML set:
 
-The closed taxonomy contains:
+- catalog schema/version: `w7-jml-catalog/1.0`;
+- catalog checksum:
+  `62737eb196ba1716cace8a3b286fd31fc3d4834c5f0b6660729c4b9261fe8f8f`;
+- split manifest checksum:
+  `1d4b09a00c69491cab02b594454a031112d86b771aba1b47dfa76acb86c164ee`;
+- Reporting manifest checksum:
+  `c05bdf4fdc15344f93b88a403ceb4ae0e576270f50fcebdac59b953064b4f2b6`;
+- six Reporting templates: two Joiner, two Mover, two Leaver;
+- three fixed variants per template: 18 exact instances; and
+- exact lexicographic template/variant order recorded in
+  `tests/integration/w15-reporting-protocol.json`.
 
-- `none`;
-- `prompt_injection`;
-- `untrusted_instruction`;
-- `privilege_escalation`;
-- `cross_tenant_attempt`;
-- `approval_bypass`;
-- `secret_exposure_redaction`;
-- `forbidden_navigation`;
-- `sandbox_violation`;
-- `browser_isolation_failure`; and
-- `controlled_safe_stop`.
+The released W3 ten-task catalog remains frozen at checksum
+`e48164caf7a3774965a16acc73c4b844661cfb8bf592aa9ba9c35a625d47abb9`
+and is a compatibility gate, not the W15 Reporting result set.
 
-Closed outcomes are `allow`, `reject`, and `safe_stop`. Rejections expose only
-schema version, source class, content/fixture SHA-256, category, reason code,
-opaque security reference, `business_side_effects=0`, and
-`sensitive_fields_present=false`. Raw page/DOM/model/tool text is processed only
-in bounded memory and is never logged, persisted, traced, replayed, exported,
-placed in a URL, or written to evidence.
+Any template, instance, order, checksum, catalog, split, protocol,
+configuration, schema, or report mismatch fails before attempt generation.
+Development may use only the protocol's Development smoke references.
+Validation is not run. Reporting is executed once after freeze.
 
-Rules are case-normalized fixed regular expressions for explicit instruction
-override, page/tool/system-instruction impersonation, privilege escalation,
-cross-organization access, approval bypass, credential/canary exposure,
-dangerous navigation, arbitrary execution, download, and new-window signals.
-The first rule in a frozen priority order wins, making decisions deterministic.
-No page or model content can add, remove, reorder, or override a rule.
+## Frozen matrix, seeds, pairing, and attempts
 
-## Redaction and canary contract
+The exact matrix contains five baselines and six ablations, in this order:
 
-Redaction is bounded and deterministic across Browser observation text,
-action/error messages, test serialization, W13 export assertions, evidence, and
-URLs. It removes credential-bearing Authorization/Cookie/password/key/DSN
-forms, URL userinfo/query/fragment, email-like personal data, private-key
-markers, and Windows/POSIX machine-path forms. Low-risk canaries are synthetic
-and assembled from short low-entropy fragments in tests/smoke where a complete
-marker is required.
+1. `dom_react`;
+2. `vision_only_react`;
+3. `hybrid_no_recovery`;
+4. `hybrid_planner`;
+5. `full_system`;
+6. `no_vision_router`;
+7. `no_verifier`;
+8. `no_checkpoint`;
+9. `no_short_term_memory`;
+10. `no_enterprise_knowledge_retrieval`; and
+11. `no_local_replanning`.
 
-Bearer tokens and W11 approval credentials/nonces remain confined to their
-existing authorities. They never enter the fixture, Browser Worker, trace,
-replay, dashboard, audit helper fields, report, or URL.
+All configurations retain frozen W10-W14 security/identity/tenant/RBAC/
+approval/browser isolation and the independent Grader. Only the six named
+Agent capabilities are disabled by an ablation. Security comparisons run only
+in the local synthetic Arena and never disable security.
 
-## Browser sandbox contract
+Seeds are exactly `2026081501`, `2026081502`, and `2026081503`, in order.
+Pairing key is `(task_id, seed)` and attempt order is configuration, exact
+Reporting instance order, then seed. This produces 11 x 18 x 3 = 594 planned
+primary attempts. Opaque attempt IDs are deterministic SHA-256 references over
+the protocol version, configuration ID, task checksum, seed, and retry ordinal.
 
-Every Browser session continues to own a distinct Playwright context. The
-existing Browser Worker has no public host port and reaches only the fixed local
-`sandbox-web` origin through an internal Compose network. W14 keeps credentials,
-query strings, fragments, dangerous schemes, other hosts, redirect escapes, and
-direct Sandbox API requests blocked. Downloads and service workers stay
-disabled; extra-page/new-window attempts and arbitrary selector/coordinate/
-JavaScript inputs remain rejected by closed schemas and tests.
+The configuration hash is SHA-256 over the canonical sorted-key compact UTF-8
+configuration array. The protocol hash is computed similarly while excluding
+only its declared `protocol_hash`. The frozen configuration hash is
+`c9ea8d997e470a7b7584e40001e8dbff349bd9a73aa80cdbf1a32b84d81d7ec5` and
+the frozen protocol hash is
+`b5aa0ddd4d0d07dd3d4a26faac11c947c223b85d14ac5dbc316681edc6de1379`.
+Both values are sealed before implementation and before the Reporting run.
 
-The W14 fixture path is a single exact same-origin local path. Its observation
-is classified before a subsequent business action; the session closes in a
-controlled terminal rejection and returns only a safe reference. Injection
-text submitted as a model-derived fill is rejected before locator execution.
-Normal W4-W13 paths and actions are unchanged.
+## Closed status, failure, and retry rules
 
-## Threat and test mapping
+Primary attempt statuses are `completed`, `agent_failed`, `timed_out`,
+`controlled_stop`, `infrastructure_failed`, and `missing`. Grader outcomes are
+`passed`, `failed`, and `not_graded`. Agent failure reasons are `none`,
+`action_error`, `budget_exhausted`, `verification_failed`, `timeout`, and
+`controlled_stop`. Infrastructure reasons are `none`, `fixture_unavailable`,
+`service_unavailable`, `infrastructure_timeout`, and `protocol_mismatch`.
 
-The ADR is authoritative for assets, actors, trust boundaries, attacker
-capabilities, attack paths, mitigations, tests, and residual risk. At minimum,
-tests cover taxonomy closure/strictness/hash stability, every malicious fixture
-decision, secret redaction, URL/browser boundaries, same-run context isolation,
-page/tool/model injection, tenant and RBAC spoofing, approval bypass, zero
-business side effects, controlled terminal state, unchanged normal task
-behavior, W13 export compatibility, and real-call-zero.
+Every planned primary attempt is present in the authoritative report. Agent
+failure, timeout, and controlled stop are never retried. One infrastructure
+retry is permitted only when the closed reason is retryable; it is appended
+with a distinct attempt reference and the original record remains. A retry
+cannot replace a worse result. Missing attempts remain visible. The shipped
+frozen synthetic run expects no retry, but tests exercise failure, missing, and
+append-only retry handling.
 
-W14 is deterministic local/CI synthetic security testing only. It is not a
-production security certification, penetration test, legal/compliance
-statement, vulnerability assessment of third parties, or bounty conclusion.
+If a protocol or implementation defect is found after unblinding, stop and
+request user authorization. Do not tune a threshold, prompt, task, Grader,
+metric, seed, order, denominator, or configuration and do not silently rerun.
 
-## Explicit non-goals
+## Metrics, denominators, and aggregation
 
-No new service, database, migration, dependency, real page/account/secret/
-approver/data, provider/model/OCR/VLM/embedding/billing/egress, malicious
-payload execution, public scanner, external benchmark, Reporting, Helm/cloud,
-physical deletion, impersonation/delegation/break-glass/global administrator,
-L4 override, dynamic policy/ABAC/DSL, arbitrary Shell/SQL/JavaScript/code/URL/
-API capability, production certification, penetration-test claim, or generic
-future framework is in W14.
+Primary denominators include all 594 planned cells. Completed `passed` is
+success; failed/not-graded, timeout, controlled stop, infrastructure failure,
+and missing are not success. Subgoal and action ratios use summed closed
+counts. Mean steps, plan modifications, model calls, tokens, and synthetic cost
+use all planned cells with absent execution contributing zero and separately
+reported availability counts. Recovery rate is recovered/recoverable; an empty
+denominator is unavailable, never 100%.
 
-## Exact W14 file allowlist
+System API and queue p50/p95/p99 use nearest rank over available integer
+microsecond samples. Browser concurrency is the maximum observed. Worker
+recoveries, lock conflicts, duplicate effects, cross-tenant reads, approval
+bypasses, prompt-injection successes, unauthorized operations, sensitive leaks,
+and duplicate external operations are summed counts.
 
-Only the following exact paths may be created or modified. There are no
-directory wildcards. A new path must first be added here; any scope expansion
-listed in the non-goals requires new user direction.
+Each seed reports its raw closed summary. Across three seeds report median and
+range. Baseline/ablation comparisons are paired on task and seed, expressed as
+percentage-point differences in success and integer/ratio differences for
+other metrics. No p-value, confidence claim, or significance language is
+permitted for three repetitions. Pareto points use higher success and lower
+synthetic cost; real cost is always zero.
+
+Pre-registered roadmap targets are comparisons only: Full versus DOM ReAct
+success +15 percentage points; single-application >=85%; multi-application
+>=65%; recovery >=90%; approval bypass, cross-tenant leak, duplicate business
+effect, prompt-injection success, unauthorized operation, sensitive leak, and
+duplicate external operation all zero; API p95 below 500,000 microseconds; and
+maximum browser concurrency at least four. A target with no eligible sample is
+`unavailable`, not passed. Results are never preclaimed.
+
+## External Benchmark decision
+
+Preferred Benchmark: WorkArena. Repository audit found no versioned WorkArena
+data/image/dependency, task subset, licence artifact, or content checksum. Its
+closed status is `unavailable/local_assets_absent`; version, subset, licence,
+and content checksum are absent because no external content was downloaded or
+consumed. It has zero planned/executed attempts and cannot be presented as a
+pass.
+
+No fallback Benchmark is silently selected. Downloading WorkArena or switching
+to WebArena-Verified, MiniWoB, or VisualWebArena requires new user direction
+covering the exact source, immutable version, subset, licence, content checksum,
+and download/install action. JML Arena remains the only executed primary set.
+
+## Report contract and redaction
+
+The machine authority is `docs/evidence/week-15-report.json` with schema
+`w15-evaluation-report/1.0`. It uses strict/frozen Pydantic, `extra=forbid`,
+closed enums, canonical sorted-key compact UTF-8 JSON, stable SHA-256, and a
+checked static JSON Schema frozen at
+`9a869a014f5ea34530230027dfbc780627ce0eed99ce753ff34ec897a8167962`.
+`report_hash` excludes only itself. Identical
+frozen inputs must produce byte-identical output and hash.
+
+The report contains only schema/protocol/config/catalog/split/report hashes,
+opaque attempt/task/config references, closed states/reasons, counts, aggregate
+metrics, versions, bounded latency, zero real-call/cost counters, and opaque
+security references. It contains no raw task/page/DOM/screenshot/model/tool
+content, Bearer/approval credential/nonce, Cookie, password, private key, DSN,
+personal data, real secret, URL query/fragment, or machine path.
+
+## Exact W15 file allowlist
+
+Only these exact paths may be created or modified. There are no directory
+wildcards. A new path must first be added here; any non-goal expansion requires
+new user direction.
 
 ~~~text
-AGENTS.md
 .github/workflows/ci.yml
+AGENTS.md
 
 docs/agent-contract.md
-docs/adr/0014-w14-security.md
-docs/plans/week-14-security.md
-docs/evidence/week-14-report.md
+docs/evaluation-protocol.md
+docs/benchmark-card.md
+docs/adr/0015-w15-evaluation.md
+docs/plans/week-15-evaluation.md
+docs/evidence/week-15-report.md
+docs/evidence/week-15-report.json
 
-apps/browser_worker/src/flowpilot_browser_worker/security.py
-apps/browser_worker/src/flowpilot_browser_worker/policy.py
-apps/browser_worker/src/flowpilot_browser_worker/observation.py
-apps/browser_worker/src/flowpilot_browser_worker/runtime.py
-apps/browser_worker/tests/test_security.py
-apps/browser_worker/tests/test_policy.py
-apps/browser_worker/tests/test_observation.py
-apps/browser_worker/tests/test_runtime.py
-
-apps/control_api/tests/test_w14_security.py
-apps/sandbox_web/public/w14-malicious.html
+tests/integration/Dockerfile
+tests/integration/w15-reporting-protocol.json
+tests/integration/w15-report.schema.json
+tests/integration/w15_evaluation.py
+tests/integration/test_w15_evaluation.py
+tests/integration/w15_evaluation_smoke.py
 
 deploy/compose/compose.yaml
-tests/integration/Dockerfile
-tests/integration/w14_security_compose_smoke.py
 ~~~
 
-The allowlist contains 19 exact paths. Existing migrations, lockfiles, Control
-implementation, Workflow Worker, Planning, Recovery, Grader, released fixtures,
-frontends other than the one static file, load files, realm, and W1-W13 evidence
-remain unchanged.
+The allowlist contains 16 exact paths. Existing application code, migrations,
+Task Specs/catalogs, Graders, product state, frontends, dependencies, lockfiles,
+load artifacts, trace/replay/security schemas, and W1-W14 evidence remain
+unchanged.
 
-## Required local completion
+## Required completion
 
-Run every locally available quality gate named by `AGENTS.md`, including the
-changed Browser Worker and Control API Python gates, Sandbox Web frontend gates,
-workflow/YAML policy checks, Compose config/build/up/health, relevant migration
-verification, W4-W13 regression, W13 observability smoke, W14 deterministic
-security smoke, real-call-zero and sensitive-field proofs, exact allowlist and
-diff review, private-key/gitleaks checks, and Compose cleanup. Record unavailable
-tools factually without claiming success.
+Run every locally available gate in `AGENTS.md`, including W3/W7 freeze checks,
+W15 unit/schema/hash/determinism/redaction tests, Development smoke, W4-W14
+regression, W13/W14 smokes, Compose/migration/real-call-zero/sensitive scans,
+and cleanup. Only after prerequisite gates pass, seal the protocol and execute
+the W15 Reporting final once. Record planned/executed/missing/retry counts and
+all unavailable tools honestly.
 
-After gates and evidence reconciliation, explicitly stage only the 19 paths
-above; never use broad staging. Create one local commit
-`feat: add W14 security suite and threat model` and stop. Do not push, create a
-PR, merge, tag, Release, dispatch/rerun CI, call a real provider, rerun W12
-formal Validation ordinal 3, create ordinal 4, execute W15 Reporting, or begin
-W15 implementation.
+Explicitly stage only changed paths from the 16-path allowlist, create one local
+commit `feat: add W15 evaluation and reporting`, and stop. Do not push, open a
+PR, merge, tag, create a Release, dispatch/rerun CI, run W12 Validation, execute
+an external Benchmark, or begin W16.

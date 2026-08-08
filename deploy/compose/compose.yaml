@@ -1074,6 +1074,23 @@ services:
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=16m
 
+  evaluation-acceptance-smoke:
+    profiles:
+      - evaluation-acceptance
+    build:
+      context: ../../tests/integration
+      dockerfile: Dockerfile
+    command: ["python", "w15_evaluation_smoke.py"]
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 32
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+
   production-load:
     profiles:
       - production-load

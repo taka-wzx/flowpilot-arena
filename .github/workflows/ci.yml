@@ -91,6 +91,13 @@ jobs:
           uv run python -c "from flowpilot_sandbox_api.arena.jml.catalog import get_catalog;
           catalog=get_catalog(); assert len(catalog.templates) == 30;
           assert len(catalog.instances) == 90; print(catalog.summary().model_dump_json())"
+      - name: Verify frozen W15 evaluation protocol and report pipeline
+        run: |
+          uv run ruff check ../../tests/integration/w15_evaluation.py ../../tests/integration/test_w15_evaluation.py ../../tests/integration/w15_evaluation_smoke.py
+          uv run ruff format --check ../../tests/integration/w15_evaluation.py ../../tests/integration/test_w15_evaluation.py ../../tests/integration/w15_evaluation_smoke.py
+          uv run mypy --strict ../../tests/integration/w15_evaluation.py ../../tests/integration/w15_evaluation_smoke.py
+          uv run pytest ../../tests/integration/test_w15_evaluation.py
+          uv run python ../../tests/integration/w15_evaluation.py --mode development
 
   sandbox-frontend-quality:
     name: Sandbox frontend lint, type-check, unit test, and build
@@ -307,7 +314,7 @@ jobs:
       - run: docker compose -f deploy/compose/compose.yaml config
 
   compose-regression:
-    name: W4-W14 deterministic Compose regression
+    name: W4-W15 deterministic Compose regression
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'pull_request' && github.actor != 'dependabot[bot]')
@@ -373,6 +380,10 @@ jobs:
         run: >-
           docker compose -f deploy/compose/compose.yaml --profile security-acceptance
           run --build --rm security-acceptance-smoke
+      - name: Run W15 Development-only deterministic evaluation smoke
+        run: >-
+          docker compose -f deploy/compose/compose.yaml --profile evaluation-acceptance
+          run --build --rm evaluation-acceptance-smoke
       - name: Dump W12 Production diagnostics on failure
         if: failure()
         run: |

@@ -1,0 +1,72 @@
+{
+  "schema_version": "w15-evaluation-protocol/1.0",
+  "runner_version": "w15-deterministic-synthetic-runner/1.0",
+  "report_schema_version": "w15-evaluation-report/1.0",
+  "configuration_hash": "c9ea8d997e470a7b7584e40001e8dbff349bd9a73aa80cdbf1a32b84d81d7ec5",
+  "protocol_hash": "b5aa0ddd4d0d07dd3d4a26faac11c947c223b85d14ac5dbc316681edc6de1379",
+  "w3_catalog_checksum": "e48164caf7a3774965a16acc73c4b844661cfb8bf592aa9ba9c35a625d47abb9",
+  "w7_catalog_checksum": "62737eb196ba1716cace8a3b286fd31fc3d4834c5f0b6660729c4b9261fe8f8f",
+  "w7_split_manifest_checksum": "1d4b09a00c69491cab02b594454a031112d86b771aba1b47dfa76acb86c164ee",
+  "w7_reporting_manifest_checksum": "c05bdf4fdc15344f93b88a403ceb4ae0e576270f50fcebdac59b953064b4f2b6",
+  "development_smoke_instances": [
+    {"task_id":"w7-jml-joiner-001-v1","template_id":"w7-jml-joiner-001","process":"joiner","variant":"v1","canonical_checksum":"47fbb29507e69a984d57ab9a73266d9e112572f37f72642d6014dd5f7712071a"},
+    {"task_id":"w7-jml-mover-001-v1","template_id":"w7-jml-mover-001","process":"mover","variant":"v1","canonical_checksum":"6402ff690adb72af7045643a206822687f901ee477d54920fec9850b26af1449"},
+    {"task_id":"w7-jml-leaver-001-v1","template_id":"w7-jml-leaver-001","process":"leaver","variant":"v1","canonical_checksum":"a90b27cc7f2ee81e99f9aa83c11b9a01092008a852a2c063ef7750e91da6325d"}
+  ],
+  "reporting_instances": [
+    {"task_id":"w7-jml-joiner-011-v1","template_id":"w7-jml-joiner-011","process":"joiner","variant":"v1","canonical_checksum":"20d34773db47e9bb6b8ee4f750a278956b3fa99ac7617fbc7a14c7dc800ce75a"},
+    {"task_id":"w7-jml-joiner-011-v2","template_id":"w7-jml-joiner-011","process":"joiner","variant":"v2","canonical_checksum":"581d5e158cabb04aa610633f3c952ae369f3d61e2678dea59216c17b7fb71e8c"},
+    {"task_id":"w7-jml-joiner-011-v3","template_id":"w7-jml-joiner-011","process":"joiner","variant":"v3","canonical_checksum":"e04a5f646562bac9ed36a3b9d34dc1d10486a4dc484f45ab11eb2a3048d8b920"},
+    {"task_id":"w7-jml-joiner-012-v1","template_id":"w7-jml-joiner-012","process":"joiner","variant":"v1","canonical_checksum":"2282b75cd40fd64b8fe294c670c1538f35cc8c84251df02fb7cb5c8455d346e8"},
+    {"task_id":"w7-jml-joiner-012-v2","template_id":"w7-jml-joiner-012","process":"joiner","variant":"v2","canonical_checksum":"f19c06f6d9fd3ce1152796a39965191ac1492d96c48d44fd67b3bff90d3757f0"},
+    {"task_id":"w7-jml-joiner-012-v3","template_id":"w7-jml-joiner-012","process":"joiner","variant":"v3","canonical_checksum":"f597dab7761f6928e26cacd14b525870a0dc2cb0d90fbd174775a677bc1bcc89"},
+    {"task_id":"w7-jml-leaver-009-v1","template_id":"w7-jml-leaver-009","process":"leaver","variant":"v1","canonical_checksum":"055442cf2f42279cdbd9dcab5f32a291f42f94e5e1955d5cdc8bac55dab10755"},
+    {"task_id":"w7-jml-leaver-009-v2","template_id":"w7-jml-leaver-009","process":"leaver","variant":"v2","canonical_checksum":"3c89ad5224e3f7cb3677ce462ab4a6944ccfa6580b34076ff372ce725604a94a"},
+    {"task_id":"w7-jml-leaver-009-v3","template_id":"w7-jml-leaver-009","process":"leaver","variant":"v3","canonical_checksum":"0aeeb290881b0ffa4385b99840528ca63b2575ce1a322fb9a4f56f22813fe9a8"},
+    {"task_id":"w7-jml-leaver-010-v1","template_id":"w7-jml-leaver-010","process":"leaver","variant":"v1","canonical_checksum":"bf71ffa4587944a58266710424e5701a6582eecc06524e60a4acb7f3be391408"},
+    {"task_id":"w7-jml-leaver-010-v2","template_id":"w7-jml-leaver-010","process":"leaver","variant":"v2","canonical_checksum":"c9c9bc2abf6dab7a571995ee4f88cc22e776f6602e6f45ef1386657359a2b831"},
+    {"task_id":"w7-jml-leaver-010-v3","template_id":"w7-jml-leaver-010","process":"leaver","variant":"v3","canonical_checksum":"4222788e30b01ceaf7de90cf8de3c9dea779e7a3d809ace2428448db73d42a7b"},
+    {"task_id":"w7-jml-mover-007-v1","template_id":"w7-jml-mover-007","process":"mover","variant":"v1","canonical_checksum":"19dc1cd7c9510c6b39080afdfd9a51cd93fbdce543409d9b52d348d735c471bd"},
+    {"task_id":"w7-jml-mover-007-v2","template_id":"w7-jml-mover-007","process":"mover","variant":"v2","canonical_checksum":"da988d6e6a5b667144817cfd8c156be49a1fa0be0a1719c7bd47c44611fa35ac"},
+    {"task_id":"w7-jml-mover-007-v3","template_id":"w7-jml-mover-007","process":"mover","variant":"v3","canonical_checksum":"e3966c7c0f0183fe6972d5538f99183c0adcc4f7673c89594b942b5191489991"},
+    {"task_id":"w7-jml-mover-008-v1","template_id":"w7-jml-mover-008","process":"mover","variant":"v1","canonical_checksum":"61bc1750fc5a8ee452b1ae6b82dc3162d039242198ffbdcf8b2cc2c39da98b1b"},
+    {"task_id":"w7-jml-mover-008-v2","template_id":"w7-jml-mover-008","process":"mover","variant":"v2","canonical_checksum":"3ea22fa0e4d89e859d3274ec09e34c75638531f90adda3f56b734a43422f95b6"},
+    {"task_id":"w7-jml-mover-008-v3","template_id":"w7-jml-mover-008","process":"mover","variant":"v3","canonical_checksum":"9c1a4ecdffdfd89c93fdfb0ee630f937c2c2231be357f01e72373a5f421a570d"}
+  ],
+  "configurations": [
+    {"config_id":"dom_react","family":"baseline","vision_mode":"dom","planner":false,"recovery":false,"vision_router":false,"verifier":false,"checkpoint":false,"short_term_memory":false,"enterprise_knowledge_retrieval":false,"local_replanning":false,"success_threshold_basis_points":4300,"model_calls_per_attempt":12,"vlm_ratio_basis_points":0},
+    {"config_id":"vision_only_react","family":"baseline","vision_mode":"vision","planner":false,"recovery":false,"vision_router":false,"verifier":false,"checkpoint":false,"short_term_memory":false,"enterprise_knowledge_retrieval":false,"local_replanning":false,"success_threshold_basis_points":4800,"model_calls_per_attempt":15,"vlm_ratio_basis_points":10000},
+    {"config_id":"hybrid_no_recovery","family":"baseline","vision_mode":"hybrid","planner":false,"recovery":false,"vision_router":true,"verifier":false,"checkpoint":false,"short_term_memory":false,"enterprise_knowledge_retrieval":false,"local_replanning":false,"success_threshold_basis_points":5600,"model_calls_per_attempt":13,"vlm_ratio_basis_points":3500},
+    {"config_id":"hybrid_planner","family":"baseline","vision_mode":"hybrid","planner":true,"recovery":false,"vision_router":true,"verifier":true,"checkpoint":false,"short_term_memory":false,"enterprise_knowledge_retrieval":false,"local_replanning":false,"success_threshold_basis_points":6500,"model_calls_per_attempt":14,"vlm_ratio_basis_points":3000},
+    {"config_id":"full_system","family":"baseline","vision_mode":"hybrid","planner":true,"recovery":true,"vision_router":true,"verifier":true,"checkpoint":true,"short_term_memory":true,"enterprise_knowledge_retrieval":true,"local_replanning":true,"success_threshold_basis_points":8200,"model_calls_per_attempt":16,"vlm_ratio_basis_points":2800},
+    {"config_id":"no_vision_router","family":"ablation","vision_mode":"dom","planner":true,"recovery":true,"vision_router":false,"verifier":true,"checkpoint":true,"short_term_memory":true,"enterprise_knowledge_retrieval":true,"local_replanning":true,"success_threshold_basis_points":7000,"model_calls_per_attempt":15,"vlm_ratio_basis_points":0},
+    {"config_id":"no_verifier","family":"ablation","vision_mode":"hybrid","planner":true,"recovery":true,"vision_router":true,"verifier":false,"checkpoint":true,"short_term_memory":true,"enterprise_knowledge_retrieval":true,"local_replanning":true,"success_threshold_basis_points":6800,"model_calls_per_attempt":14,"vlm_ratio_basis_points":3000},
+    {"config_id":"no_checkpoint","family":"ablation","vision_mode":"hybrid","planner":true,"recovery":true,"vision_router":true,"verifier":true,"checkpoint":false,"short_term_memory":true,"enterprise_knowledge_retrieval":true,"local_replanning":true,"success_threshold_basis_points":6900,"model_calls_per_attempt":15,"vlm_ratio_basis_points":3000},
+    {"config_id":"no_short_term_memory","family":"ablation","vision_mode":"hybrid","planner":true,"recovery":true,"vision_router":true,"verifier":true,"checkpoint":true,"short_term_memory":false,"enterprise_knowledge_retrieval":true,"local_replanning":true,"success_threshold_basis_points":7300,"model_calls_per_attempt":15,"vlm_ratio_basis_points":2800},
+    {"config_id":"no_enterprise_knowledge_retrieval","family":"ablation","vision_mode":"hybrid","planner":true,"recovery":true,"vision_router":true,"verifier":true,"checkpoint":true,"short_term_memory":true,"enterprise_knowledge_retrieval":false,"local_replanning":true,"success_threshold_basis_points":7200,"model_calls_per_attempt":15,"vlm_ratio_basis_points":2800},
+    {"config_id":"no_local_replanning","family":"ablation","vision_mode":"hybrid","planner":true,"recovery":true,"vision_router":true,"verifier":true,"checkpoint":true,"short_term_memory":true,"enterprise_knowledge_retrieval":true,"local_replanning":false,"success_threshold_basis_points":7100,"model_calls_per_attempt":15,"vlm_ratio_basis_points":2800}
+  ],
+  "seeds": [2026081501, 2026081502, 2026081503],
+  "attempt_order": "configuration_task_seed",
+  "pairing_rule": "task_id_seed",
+  "maximum_infrastructure_retries": 1,
+  "external_benchmark": {
+    "benchmark_id": "workarena",
+    "availability": "unavailable",
+    "reason": "local_assets_absent",
+    "planned_attempts": 0,
+    "executed_attempts": 0
+  },
+  "targets": {
+    "full_vs_dom_percentage_points": 15,
+    "single_application_success_basis_points": 8500,
+    "multi_application_success_basis_points": 6500,
+    "recovery_rate_basis_points": 9000,
+    "api_p95_limit_microseconds": 500000,
+    "minimum_browser_concurrency": 4,
+    "maximum_security_failures": 0,
+    "maximum_duplicate_business_effects": 0,
+    "maximum_real_calls": 0,
+    "maximum_real_cost_microusd": 0
+  }
+}

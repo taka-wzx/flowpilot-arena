@@ -252,3 +252,59 @@ production availability, real load capacity, SLOs, or ROI.
 Calls to a real identity provider/account/data source and real model/provider/
 OCR/VLM/embedding services remain not run at 0 calls and 0 cost. W13 telemetry
 and every later phase remain outside W12.
+
+## W15 frozen evaluation and Reporting addendum
+
+W15 consumes the released W7 Reporting manifest without changing W3/W7 Task
+Specs, Reset/Seed, the database-fact Grader, or any W8-W14 product authority.
+Agent completion remains `finished_ungraded`; only the independent Sandbox
+Grader supplies the success observation. Reporting is read-only aggregation and
+never writes run, approval, audit, trace, replay, security, receipt, or Grader
+state.
+
+The W7 catalog, split, and Reporting checksums remain respectively
+`62737eb196ba1716cace8a3b286fd31fc3d4834c5f0b6660729c4b9261fe8f8f`,
+`1d4b09a00c69491cab02b594454a031112d86b771aba1b47dfa76acb86c164ee`,
+and `c05bdf4fdc15344f93b88a403ceb4ae0e576270f50fcebdac59b953064b4f2b6`.
+The exact 18-instance order is frozen in
+`tests/integration/w15-reporting-protocol.json`.
+
+The matrix has five baselines (`dom_react`, `vision_only_react`,
+`hybrid_no_recovery`, `hybrid_planner`, `full_system`) and six ablations
+(`no_vision_router`, `no_verifier`, `no_checkpoint`,
+`no_short_term_memory`, `no_enterprise_knowledge_retrieval`,
+`no_local_replanning`). Security, identity, tenant isolation, RBAC, approval,
+browser isolation, and the Grader remain enabled for all rows.
+
+Seeds are exactly `2026081501`, `2026081502`, and `2026081503`. Configuration,
+task, then seed order produces 594 planned primary attempts. Pairing is by
+task ID and seed. Every primary attempt remains in the report; Agent failures,
+timeouts, stops, infrastructure failures, and missing attempts are not dropped.
+Only a closed infrastructure failure permits one append-only retry; the
+original remains. There is no best-seed selection or replacement run.
+
+The configuration hash is
+`c9ea8d997e470a7b7584e40001e8dbff349bd9a73aa80cdbf1a32b84d81d7ec5`.
+The protocol hash, excluding only its own field, is
+`b5aa0ddd4d0d07dd3d4a26faac11c947c223b85d14ac5dbc316681edc6de1379`.
+A mismatch in configuration, protocol, task, order, catalog, split, schema, or
+report hash stops before results are generated.
+
+Primary success denominators include every planned cell. Only a completed
+independent `passed` grade is success. Ratios use summed closed counts; p50/
+p95/p99 use nearest rank over available integer microseconds. Three seed
+summaries use median and range, and comparisons use paired percentage-point
+differences. No significance or confidence claim is made from three repeats.
+An empty metric denominator is `unavailable`, never a pass.
+
+The authoritative artifact is canonical sorted-key compact UTF-8 JSON with
+schema `w15-evaluation-report/1.0`, strict/frozen Pydantic validation, closed
+enums, and SHA-256 excluding only `report_hash`. It contains safe hashes,
+opaque references, closed codes, counts, aggregate metrics, versions, bounded
+latencies, and zero real-call/cost counters only. The frozen static schema hash
+is `9a869a014f5ea34530230027dfbc780627ce0eed99ce753ff34ec897a8167962`.
+
+The preferred WorkArena Benchmark is `unavailable/local_assets_absent`: no
+versioned data/image, frozen subset, licence artifact, or content checksum is
+local or authorized. External planned/executed attempts are 0/0, no fallback is
+substituted, and no unavailable result is reported as passed.

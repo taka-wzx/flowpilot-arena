@@ -2,16 +2,16 @@
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 public-release
-evidence closure on `codex/w16-public-release-closure`. The branch starts at
-the verified W16 scoped DNS egress PR 50 merge on `origin/main`,
-`5f37b49a3eb30b63c7aed7fe91676708a28721ac`, which contains
+This contract also governs the separately authorized W16 public README
+alignment on `codex/w16-public-readme-closure`. The branch starts at the
+verified W16 public-release evidence PR 51 merge on `origin/main`,
+`bc5da48060b999e85553d9d2db6d03b16303d5c9`, which contains
 the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
 W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. This follow-up authorizes one public-release evidence closure
+immutable. This follow-up authorizes one public README alignment
 commit, push, PR, normal CI, and squash merge. It also authorizes repository
 and package visibility change, anonymous public verification, the annotated
 `v1.0.0` tag, and GitHub Release `v1.0.0 - FlowPilot Arena`.
@@ -93,22 +93,22 @@ or package hashes. If a container digest or generator is unavailable, the
 machine-readable status and evidence say so; no hand-written component list is
 called a passed SBOM.
 
-## Exact public-release-closure allowlist
+## Exact public-README-alignment allowlist
 
 Only these exact paths may be created or modified. There are no directory
 wildcards:
 
 ~~~text
 AGENTS.md
+README.md
+README.zh-CN.md
 docs/agent-contract.md
 docs/evidence/week-16-release.md
-docs/release-notes-v1.0.0.md
-docs/sbom-status.md
 ~~~
 
 ## Verification and stop condition
 
-Run the locally available public-release-closure gates listed in `AGENTS.md`:
+Run the locally available public-README-alignment gates listed in `AGENTS.md`:
 YAML parsing, W15 hash immutability, detect-private-key, gitleaks, diff check,
 exact staged review, and README/link/command checks. Normal PR and main CI
 provide the full repository regression suite. The final Private workflow
@@ -117,9 +117,9 @@ gates. Never run W15 frozen Reporting final, W12 formal Validation, external
 Benchmarks, or cloud deployment.
 
 After evidence reconciliation, explicitly stage only changed paths in this
-allowlist and create exactly one public-release evidence closure commit:
+allowlist and create exactly one public README alignment commit:
 
-    docs: close W16 public release evidence
+    docs: align public W16 README
 
 Push, PR, normal CI, squash merge, repository/package visibility change,
 anonymous public clone, annotated `v1.0.0` tag, and Release

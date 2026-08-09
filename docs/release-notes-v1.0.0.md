@@ -1,12 +1,13 @@
 # Release notes draft — v1.0.0 - FlowPilot Arena
 
-This remains a pre-release W16 draft. W16 PR 45 is merged, and the authorized
+This remains a W16 release draft pending the authorized publication commands.
+W16 PR 45 is merged, and the authorized
 closure adds a manual Private-candidate GHCR workflow with digest evidence,
 SBOM, Trivy, Buildx maximum provenance, and kind/Helm lifecycle validation.
 GitHub native Artifact Attestations are `unavailable/private-plan`; they are
-not a release-readiness claim or a waiver. No v1.0.0 tag, GitHub Release,
-package/repository visibility change, or cloud deployment is authorized in
-this phase.
+not a release-readiness claim or a waiver. Repository/package visibility,
+anonymous verification, the `v1.0.0` tag, and GitHub Release are authorized
+after this evidence closure; cloud deployment remains out of scope.
 
 ## Included
 
@@ -45,14 +46,17 @@ publications and the registry SBOM/Trivy gate, but timed out during kind install
 because the chart's default-deny egress prevented sandbox-web from querying
 cluster DNS for the already-created `sandbox-api` Service. The authorized
 minimal follow-up adds only TCP/UDP 53 egress to CoreDNS-selected pods in
-`kube-system`; arbitrary egress remains denied. One new post-merge Private
-workflow must confirm install, rollout, HTTP, upgrade, rollback, and uninstall.
-Public visibility, `v1.0.0`, and a GitHub Release remain blocked pending that
-result and separate publication authorization.
+`kube-system`; arbitrary egress remains denied. The final Private run
+31316287397 passed all four image publications, zero HIGH/CRITICAL and zero
+secret findings, registry SBOM/Trivy evidence, kind DNS/Web lifecycle,
+namespace-scoped rollback, and the verification gate. The user has authorized
+repository/package visibility change, anonymous verification, the annotated
+`v1.0.0` tag, and GitHub Release. Package license fields with `NOASSERTION` and
+native Artifact Attestations (`unavailable/private-plan`) remain explicitly
+disclosed; cloud deployment is not part of this release.
 
 ## Deferred authorization
 
-Repository/package visibility change, public-readiness final approval, cloud
-provider/account/region/cluster/domain/DNS/TLS/budget/egress/secret/lifecycle
-details, annotated tag, and GitHub Release require a separate user-authorized
-step after all blocking gates pass.
+Cloud provider/account/region/cluster/domain/DNS/TLS/budget/egress/secret/
+lifecycle details remain a separate authorization. No cloud deployment is
+claimed by this release.

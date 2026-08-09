@@ -22,6 +22,10 @@ this phase.
   sandbox-web; no `latest` tag and no implicit promotion to `v1.0.0`.
 - kind-validated NetworkPolicy syntax and Web-only memory-backed Nginx runtime
   paths while preserving non-root and read-only-root enforcement.
+- Checksum-pinned Python 3.13.14, Node 24, and Nginx 1.30.4 linux/amd64 Docker
+  Official Image bases, plus container-only uv 0.12.3.
+- A Web-only kind DNS stub for the Sandbox API upstream and failure-first
+  Kubernetes diagnostics before unconditional cluster cleanup.
 
 ## Preserved
 
@@ -32,10 +36,14 @@ tags/releases are unchanged.
 
 ## Current release blocker
 
-Local Trivy 0.73.0 scans found no image secret findings, but every candidate
-contains HIGH/CRITICAL vulnerability occurrences. Public visibility,
-`v1.0.0`, and a GitHub Release are blocked until separately authorized image
-remediation clears the same registry-digest gate. No waiver is implied.
+Registry run 31308404308 produced four Private digests but found 120
+HIGH/CRITICAL occurrences and zero secret findings; its kind lifecycle also
+timed out because the Web-only test omitted the `sandbox-api` DNS dependency.
+The authorized local remediation now passes hardened runtime health, a full
+kind/Helm lifecycle, and Trivy with zero HIGH/CRITICAL and zero secret findings
+without a waiver. Public visibility, `v1.0.0`, and a GitHub Release remain
+blocked until a new post-merge registry-digest workflow reproduces those local
+results and receives separate publication authorization.
 
 ## Deferred authorization
 

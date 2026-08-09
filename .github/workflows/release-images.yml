@@ -269,7 +269,20 @@ jobs:
         run: |
           set -euo pipefail
           cleanup() {
+            exit_code=$?
+            trap - EXIT
+            set +e
+            if (( exit_code != 0 )); then
+              kubectl --namespace flowpilot-w16 get pods -o wide
+              kubectl --namespace flowpilot-w16 get events \
+                --sort-by=.lastTimestamp
+              kubectl --namespace flowpilot-w16 describe pods
+              kubectl --namespace flowpilot-w16 logs \
+                --selector app.kubernetes.io/component=sandbox-web \
+                --all-containers --prefix --tail=-1
+            fi
             kind delete cluster --name flowpilot-w16
+            exit "$exit_code"
           }
           trap cleanup EXIT
           kind create cluster --name flowpilot-w16 --wait 180s \
@@ -280,6 +293,8 @@ jobs:
             --docker-username="$GITHUB_ACTOR" \
             --docker-password="$GHCR_TOKEN"
           kubectl --namespace flowpilot-w16 create secret generic flowpilot-runtime
+          kubectl --namespace flowpilot-w16 create service clusterip sandbox-api \
+            --tcp=8001:8001
           control_web_image="$(sed -n 's/^image=//p' "$RUNNER_TEMP/digests/control-web.digest")"
           control_web_digest="$(sed -n 's/^digest=//p' "$RUNNER_TEMP/digests/control-web.digest")"
           sandbox_web_image="$(sed -n 's/^image=//p' "$RUNNER_TEMP/digests/sandbox-web.digest")"
@@ -332,8 +347,25 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$BUILD_RESULT" == "success" ]]
-          [[ "$EVIDENCE_RESULT" == "success" ]]
-          [[ "$KIND_HELM_RESULT" == "success" ]]
-          [[ "$BLOCKING_VULNERABILITIES" == "0" ]]
-          [[ "$SECRET_FINDINGS" == "0" ]]
+          failed=0
+          [[ "$BUILD_RESULT" == "success" ]] || {
+            echo "::error::image build/push result: $BUILD_RESULT"
+            failed=1
+          }
+          [[ "$EVIDENCE_RESULT" == "success" ]] || {
+            echo "::error::registry evidence result: $EVIDENCE_RESULT"
+            failed=1
+          }
+          [[ "$KIND_HELM_RESULT" == "success" ]] || {
+            echo "::error::kind/Helm lifecycle result: $KIND_HELM_RESULT"
+            failed=1
+          }
+          [[ "$BLOCKING_VULNERABILITIES" == "0" ]] || {
+            echo "::error::HIGH/CRITICAL findings: $BLOCKING_VULNERABILITIES"
+            failed=1
+          }
+          [[ "$SECRET_FINDINGS" == "0" ]] || {
+            echo "::error::secret findings: $SECRET_FINDINGS"
+            failed=1
+          }
+          exit "$failed"

@@ -5,13 +5,13 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: flowpilot-sbom-generator/1.0",
-      "comment": "input_sha256=9861849311af5acc0374ce7ca12ee73d68d223397ae837a5f6df695a570134f3"
+      "comment": "input_sha256=da66f1357672d3607409ac0f9c555f732ca19b818e186f89cf7490c6d025cec0"
     },
     {
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: flowpilot-sbom-generator/1.0",
-      "comment": "container_image_digest_coverage=unavailable; dockerfile_from=nginx:1.27-alpine,node:24-alpine,python:3.13-slim,python:3.13.5-slim-bookworm; tags are never promoted to image checksums"
+      "comment": "container_image_digest_coverage=unavailable; dockerfile_from=nginx:1.30.4-alpine3.24@sha256:8a4f4b94275ff59d809477799cbbaf1a7ab65ed1871403d05e31fd66bdb8db82,node:24-alpine3.24@sha256:2a49bdf71e9fd965a58c1703fd9ddd205b34e5782b692a72dd1d248abb0beb43,python:3.13.14-alpine3.24@sha256:c25cd44f45df1279a2cba589e67dfcd9db04647ea483b117a7de8b1a99bdfb23,python:3.13.5-slim-bookworm; tags are never promoted to image checksums"
     },
     {
       "annotationDate": "1970-01-01T00:00:00Z",
@@ -5217,7 +5217,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "ff0e5f40faca00bc1ba6806fadafd990d24cab1e50d5c49bde0d565745b8ad77"
+          "checksumValue": "205f625db1ff3a22479ec50bf0f022466809e39868b46720742b3ab849a06a98"
         }
       ],
       "downloadLocation": "NOASSERTION",
@@ -5241,7 +5241,7 @@
       "checksums": [
         {
           "algorithm": "SHA256",
-          "checksumValue": "9ecdf274bf154d491ea53a013c0d2c928c18c6146b09665dcfbe08ccf85ddcec"
+          "checksumValue": "97f601981bd7274cf3a8157200b982593c8ec478f6cc0f3d6e42df9981a1064a"
         }
       ],
       "downloadLocation": "NOASSERTION",

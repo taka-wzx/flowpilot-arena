@@ -1,11 +1,16 @@
 # W16 evidence — Release and Reproducibility
 
-Status: W16 implementation merged; the separately authorized release closure
-has completed its local pre-publication checks. Helm/kind validation now passes,
-but the local image vulnerability gate fails. At closure-commit time no GHCR
-candidate, visibility change, cloud deployment, tag, Release, or Demo media has
-been published. Post-merge Private-candidate digests and attestations are
-recorded by the manual workflow rather than predicted in this file.
+Status: W16 implementation and its first release closure are merged. The first
+authorized Private workflow dispatch, run 31305954309, ended in
+`startup_failure` with zero jobs/check runs and created no image or artifact.
+The workflow requested GitHub native Artifact Attestations, which are
+`unavailable/private-plan` for this Private repository. This compatibility fix
+removes only that native action and its permissions; Buildx
+`provenance: mode=max` and `sbom: true` remain enabled. Helm/kind validation
+passes, but the local image vulnerability gate fails. No visibility change,
+cloud deployment, tag, Release, or Demo media has been published. A single new
+post-merge Private-candidate dispatch will record digests, Buildx provenance,
+SBOM, Trivy, and kind/Helm evidence in its workflow artifacts.
 
 ## Baseline and immutable evidence
 
@@ -14,6 +19,12 @@ recorded by the manual workflow rather than predicted in this file.
 - W16 PR 45 merge/origin main:
   d1b03993fc912179d3cdbef00b9f26f524ca9c52
 - Closure branch: codex/w16-release-closure
+- Closure commit: 77322b132f99518d7423d4a1ddeda5c627ed3e6e
+- Closure PR 46 merge/origin main:
+  aab7efed479ad208ced4786ff43f8e72e4f1c458
+- Plan-compatibility branch: codex/w16-release-closure-attestation-fix
+- Plan-compatibility starting origin/main:
+  aab7efed479ad208ced4786ff43f8e72e4f1c458
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -109,6 +120,16 @@ docs/sbom-status.md
 docs/sbom.spdx.json
 ~~~
 
+The plan-compatibility fix changes only these exact paths:
+
+~~~text
+.github/workflows/release-images.yml
+AGENTS.md
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/release-notes-v1.0.0.md
+~~~
+
 ## Helm and Kubernetes
 
 - Chart, values, and JSON schema parsed locally.
@@ -144,6 +165,10 @@ docs/sbom.spdx.json
 - Registry-digest web workload health is intentionally deferred to the
   post-merge Private-candidate workflow because no publication digest exists
   before that workflow runs.
+- GitHub native Artifact Attestations are `unavailable/private-plan`. Buildx
+  maximum provenance and SBOM attestations remain enabled and registry-bound;
+  the digest files and downloaded Syft/Trivy artifacts remain the independent
+  workflow evidence surfaces.
 - Cloud deployment is not executed and is not passed.
 
 ## Demo and documentation
@@ -246,17 +271,20 @@ reported their own frozen independent grades.
   the partial SBOM, so final public-readiness is not claimed passed.
 - Anonymous clone/public README verification is not executed because the
   repository remains Private and visibility change is not authorized.
-- Prior tags/releases are unchanged. At closure-commit time no Private image
-  dispatch, tag, Release, or visibility change occurred.
+- Prior tags/releases are unchanged. The first Private image dispatch was a
+  platform-level `startup_failure`; it ran zero jobs and published no image.
+  No tag, Release, or visibility change occurred.
 
 ## Unavailable and next authorization
 
-Unavailable or blocked: registry-digest completion before the post-merge
-Private workflow, complete licence assertions, Demo GIF/video, real cloud
-deployment, anonymous public clone, and final public-readiness approval.
+Unavailable or blocked: GitHub native Artifact Attestations
+(`unavailable/private-plan`), registry-digest completion before the new
+post-merge Private workflow, complete licence assertions, Demo GIF/video, real
+cloud deployment, anonymous public clone, and final public-readiness approval.
 
-The current authorization covers closure push/PR/normal CI/squash merge and
-one Private candidate workflow dispatch. A later authorization and a passing
-image vulnerability gate are still required for repository/package visibility
-change, anonymous verification, annotated v1.0.0 tag, and GitHub Release
-v1.0.0 - FlowPilot Arena. Cloud parameters remain a separate scope.
+The current authorization covers compatibility-fix push/PR/normal CI/squash
+merge and exactly one new Private candidate workflow dispatch. A later
+authorization and a passing image vulnerability gate are still required for
+repository/package visibility change, anonymous verification, annotated
+v1.0.0 tag, and GitHub Release v1.0.0 - FlowPilot Arena. Cloud parameters
+remain a separate scope.

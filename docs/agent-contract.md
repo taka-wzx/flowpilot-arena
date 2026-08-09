@@ -2,15 +2,18 @@
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 release closure on
-`codex/w16-release-closure`. The closure branch starts at the verified W16 PR
-45 merge on `origin/main`,
-`d1b03993fc912179d3cdbef00b9f26f524ca9c52`, which contains the original W16
-commit `23f546daa8298bfaed20a2574fa9378055d26090`. W12 (`w12-production`), W13
+This contract also governs the separately authorized W16 Private-workflow
+plan-compatibility fix on
+`codex/w16-release-closure-attestation-fix`. The fix branch starts at the
+verified W16 closure PR 46 merge on `origin/main`,
+`aab7efed479ad208ced4786ff43f8e72e4f1c458`, which contains the original W16
+commit `23f546daa8298bfaed20a2574fa9378055d26090` and W16 PR 45 merge
+`d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. The closure authorizes one closure commit, push, PR, normal CI,
-squash merge, and one post-merge Private candidate-image workflow dispatch.
+immutable. This follow-up authorizes one compatibility-fix commit, push, PR,
+normal CI, squash merge, and exactly one new post-merge Private
+candidate-image workflow dispatch.
 It does not authorize history rewrite, rollback, retag, rerelease, repository
 or package visibility change, cloud action, or a `v1.0.0` tag/Release.
 
@@ -58,10 +61,13 @@ model/OCR/VLM/embedding/billing call, arbitrary URL/API/Shell/SQL/JavaScript,
 external Benchmark, cloud resource, DNS/TLS, or real account/data may be
 introduced. The only authorized new container artifacts are the four Private
 `linux/amd64` GHCR candidates named in `AGENTS.md`, tagged only with the exact
-closure merge commit. Missing authorized Helm, kind, Syft, Trivy, or VHS
-verification is recorded as `unavailable`, never as passed. Media is supplied
-only when produced by a real deterministic run; otherwise the static fallback
-and unavailable record are required.
+fix merge commit. Buildx-generated maximum provenance and SBOM attestations
+remain required. GitHub native Artifact Attestations are
+`unavailable/private-plan`; the Private workflow must not request their
+permissions or invoke `actions/attest`. Missing authorized Helm, kind, Syft,
+Trivy, or VHS verification is recorded as `unavailable`, never as passed.
+Media is supplied only when produced by a real deterministic run; otherwise
+the static fallback and unavailable record are required.
 
 ## Reproducible demo contract
 
@@ -86,7 +92,7 @@ or package hashes. If a container digest or generator is unavailable, the
 machine-readable status and evidence say so; no hand-written component list is
 called a passed SBOM.
 
-## Exact implementation allowlist
+## Exact plan-compatibility-fix allowlist
 
 Only these exact paths may be created or modified. There are no directory
 wildcards:
@@ -94,57 +100,27 @@ wildcards:
 ~~~text
 AGENTS.md
 .github/workflows/release-images.yml
-README.md
-README.zh-CN.md
-CONTRIBUTING.md
-SECURITY.md
 docs/agent-contract.md
-docs/architecture.md
-docs/benchmark-card.md
-docs/demo.md
-docs/model-card.md
 docs/release-notes-v1.0.0.md
-docs/sbom.spdx.json
-docs/sbom-status.md
-docs/adr/0016-w16-release.md
-docs/plans/week-16-release.md
 docs/evidence/week-16-release.md
-deploy/helm/flowpilot-arena/Chart.yaml
-deploy/helm/flowpilot-arena/values.yaml
-deploy/helm/flowpilot-arena/values.schema.json
-deploy/helm/flowpilot-arena/templates/_helpers.tpl
-deploy/helm/flowpilot-arena/templates/configmap.yaml
-deploy/helm/flowpilot-arena/templates/deployment.yaml
-deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
-deploy/helm/flowpilot-arena/templates/NOTES.txt
-deploy/helm/flowpilot-arena/templates/service.yaml
-deploy/helm/flowpilot-arena/templates/serviceaccount.yaml
-deploy/helm/flowpilot-arena/templates/tests/test-connection.yaml
-scripts/generate_sbom.py
-tests/integration/w16_demo.py
-tests/integration/test_w16_demo.py
-tests/integration/w16_demo_smoke.py
 ~~~
 
 ## Verification and stop condition
 
-Run all locally available gates listed in `AGENTS.md`: locked dependency sync,
-Ruff/format/strict mypy/pytest, both frontend npm checks, YAML/workflow policy,
-Helm lint/schema/deterministic render and Kubernetes security scans, Compose
-config/build/up/health and cleanup, migration empty upgrade/current/check/
-downgrade/upgrade, W4-W15 regression plus W13/W14 smokes, W15 Development-only
-smoke, W16 demo smoke, W15 hash immutability, real-call/cost-zero and
-sensitive-field scans, SBOM validation, bilingual README/link/command checks,
-demo redaction/source checks, detect-private-key, gitleaks, diff check, and
-exact staged review. Never run W15 frozen Reporting final, W12 formal
-Validation, external Benchmarks, or cloud deployment.
+Run all locally available compatibility-fix gates listed in `AGENTS.md`: YAML
+parsing, actionlint, workflow policy, W15 hash immutability,
+detect-private-key, gitleaks, diff check, and exact staged review. Normal PR
+and main CI provide the full repository regression suite. Never run W15 frozen
+Reporting final, W12 formal Validation, external Benchmarks, or cloud
+deployment.
 
 After evidence reconciliation, explicitly stage only changed paths in this
-allowlist and create exactly one closure commit:
+allowlist and create exactly one compatibility-fix commit:
 
-    chore: close W16 release verification
+    fix: make private image workflow plan-compatible
 
-Push, PR, normal CI, squash merge, and one post-merge Private candidate-image
-workflow dispatch are authorized. Then stop. Repository or package visibility
-change, anonymous public clone, cloud deployment, annotated `v1.0.0` tag, and
-Release `v1.0.0 - FlowPilot Arena` require later, separate user authorization.
+Push, PR, normal CI, squash merge, and exactly one new post-merge Private
+candidate-image workflow dispatch are authorized. Then stop. Repository or
+package visibility change, anonymous public clone, cloud deployment, annotated
+`v1.0.0` tag, and Release `v1.0.0 - FlowPilot Arena` require later, separate
+user authorization.

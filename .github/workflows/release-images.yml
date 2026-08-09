@@ -54,8 +54,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-      attestations: write
-      id-token: write
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -134,13 +132,6 @@ jobs:
           path: ${{ runner.temp }}/${{ matrix.component }}.digest
           if-no-files-found: error
           retention-days: 30
-      - name: Publish GitHub artifact attestation
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
-        with:
-          subject-name: ${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-
   image-evidence:
     name: Registry-digest SBOM and vulnerability evidence
     if: always() && inputs.confirm_private_candidate

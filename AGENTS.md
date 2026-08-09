@@ -2,8 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is the authorized W16 release-closure follow-up on
-`codex/w16-release-closure`. The
+This branch is the authorized W16 Private-workflow plan-compatibility fix on
+`codex/w16-release-closure-attestation-fix`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -16,11 +16,13 @@ their tags/releases are immutable:
 - PR 44 merge/origin main `078eb22deb137191660a5511c496fd1dff2b74f3`.
 - W16 PR 45 merge/origin main
   `d1b03993fc912179d3cdbef00b9f26f524ca9c52`.
+- W16 closure PR 46 merge/origin main
+  `aab7efed479ad208ced4786ff43f8e72e4f1c458`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `codex/w16-release-closure`, created from the verified
-W16 merge on `origin/main` above.
+frozen. Work only on `codex/w16-release-closure-attestation-fix`, created from
+the verified W16 closure merge on `origin/main` above.
 
 ## W16 authority boundary
 
@@ -38,19 +40,19 @@ Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
 certification. Do not log in to a cloud, create resources/DNS/TLS, incur cost,
 change repository or package visibility, tag, or release. The user has
-separately authorized the W16 closure branch, one Private GHCR candidate-image
-workflow dispatch after merge, push, PR, normal CI, and squash merge. The
-closure must remain pre-publication and must stop before any `v1.0.0` tag or
-GitHub Release. The authorized repository mutation is one closure commit with
-subject:
+separately authorized this plan-compatibility branch, push, PR, normal CI,
+squash merge, and exactly one new Private GHCR candidate-image workflow
+dispatch after merge. The fix must remain pre-publication and must stop before
+any `v1.0.0` tag or GitHub Release. The authorized repository mutation is one
+commit with subject:
 
-    chore: close W16 release verification
+    fix: make private image workflow plan-compatible
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
 preserve unrelated `.tmp/` content.
 
-## Exact W16 file allowlist
+## Exact plan-compatibility-fix allowlist
 
 Only the following exact paths may be created or modified. Directory
 wildcards are forbidden; add a path here before changing it.
@@ -58,63 +60,31 @@ wildcards are forbidden; add a path here before changing it.
 ~~~text
 AGENTS.md
 .github/workflows/release-images.yml
-README.md
-README.zh-CN.md
-CONTRIBUTING.md
-SECURITY.md
-
 docs/agent-contract.md
-docs/architecture.md
-docs/benchmark-card.md
-docs/demo.md
-docs/model-card.md
 docs/release-notes-v1.0.0.md
-docs/sbom.spdx.json
-docs/sbom-status.md
-docs/adr/0016-w16-release.md
-docs/plans/week-16-release.md
 docs/evidence/week-16-release.md
-
-deploy/helm/flowpilot-arena/Chart.yaml
-deploy/helm/flowpilot-arena/values.yaml
-deploy/helm/flowpilot-arena/values.schema.json
-deploy/helm/flowpilot-arena/templates/_helpers.tpl
-deploy/helm/flowpilot-arena/templates/configmap.yaml
-deploy/helm/flowpilot-arena/templates/deployment.yaml
-deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
-deploy/helm/flowpilot-arena/templates/NOTES.txt
-deploy/helm/flowpilot-arena/templates/service.yaml
-deploy/helm/flowpilot-arena/templates/serviceaccount.yaml
-deploy/helm/flowpilot-arena/templates/tests/test-connection.yaml
-
-scripts/generate_sbom.py
-tests/integration/w16_demo.py
-tests/integration/test_w16_demo.py
-tests/integration/w16_demo_smoke.py
 ~~~
 
 The W15 frozen files are not modified or rerun in Reporting mode. No new
 dependency, lockfile, service, database, migration, network capability, or
-cloud resource may be added without separate user authorization. This closure
+cloud resource may be added without separate user authorization. This fix
 is authorized to publish only four Private `linux/amd64` candidate images in
 the `ghcr.io/taka-wzx` namespace: `flowpilot-arena-control-api`,
 `flowpilot-arena-sandbox-api`, `flowpilot-arena-control-web`, and
 `flowpilot-arena-sandbox-web`. Images use only `sha-<40-hex-merge-commit>`
-tags; `latest` and `v1.0.0` are forbidden in this phase. If an authorized
-Helm, kind, Syft, Trivy, or VHS verification cannot execute, record
-`unavailable`; never claim it passed.
+tags; `latest` and `v1.0.0` are forbidden in this phase. Buildx
+`provenance: mode=max` and `sbom: true` remain mandatory. GitHub native
+Artifact Attestations are `unavailable/private-plan`; do not request
+`attestations: write`, `id-token: write`, or `actions/attest` in this Private
+workflow. If an authorized Helm, kind, Syft, Trivy, or VHS verification cannot
+execute, record `unavailable`; never claim it passed.
 
 ## Required verification
 
-Run available locked dependency syncs, Ruff, format, strict mypy, pytest,
-frontend npm checks, YAML/workflow policy checks, Helm lint/schema/deterministic
-render and Kubernetes security scans, Compose config/build/up/health and
-cleanup, migration empty upgrade/current/check/downgrade/upgrade, W4-W15
-regression, W13/W14 smokes, the W15 Development-only smoke, W16 demo smoke,
-W15 hash immutability, real-call/cost-zero and sensitive-field scans, SBOM
-schema/checksum/license/secret checks, README/link/command checks,
+Run YAML parsing, actionlint, workflow policy checks, W15 hash immutability,
 detect-private-key, gitleaks, `git diff --check`, and exact allowlist/staged
-review. Do not run W15 frozen Reporting final, W12 formal Validation, an
+review locally. Normal PR and main CI remain required for the full repository
+suite. Do not run W15 frozen Reporting final, W12 formal Validation, an
 external Benchmark, or real cloud deployment.
 
 Finish with local forms of:
@@ -129,6 +99,6 @@ git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
 Record unavailable tooling and unexecuted cloud/publication steps honestly.
-After the closure commit, push/PR/CI/squash merge and the single authorized
-Private candidate-image dispatch may proceed. Stop and report before any
+After the single fix commit, push/PR/CI/squash merge and the single authorized
+new Private candidate-image dispatch may proceed. Stop and report before any
 visibility change, tag, Release, or cloud action.

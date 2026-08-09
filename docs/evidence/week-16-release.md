@@ -1,7 +1,8 @@
 # W16 evidence — Release and Reproducibility
 
 Status: W16 implementation, release closure, Private-workflow
-plan-compatibility fix, and Private-image remediation are merged. Runs
+plan-compatibility fix, Private-image remediation, and rollback namespace fix
+are merged. Runs
 31305954309 and 31307531363 ended in
 `startup_failure` with zero jobs because the native attestation was unavailable
 for the Private plan and the repository selected-actions policy initially
@@ -14,8 +15,13 @@ HIGH/CRITICAL, zero secret findings, and the complete local kind/Helm lifecycle.
 Registry run 31312150260 reproduced the four zero-vulnerability/zero-secret
 image gates and passed kind install, rollout, HTTP, and upgrade. Its sole
 failure was a Helm rollback command that omitted `--namespace flowpilot-w16`.
-The current authorized fix scopes that command correctly. No visibility
-change, cloud deployment, tag, Release, or Demo media has been published.
+PR 49 scoped that command correctly. Registry run 31313916608 then again
+passed all four image publications and the registry SBOM/Trivy gate, but the
+kind install exposed a separate chart defect: default-deny egress blocked the
+sandbox-web lookup of the already-created `sandbox-api` Service. The current
+authorized fix permits only kube-system CoreDNS TCP/UDP 53 egress. No
+visibility change, cloud deployment, tag, Release, or Demo media has been
+published.
 
 ## Baseline and immutable evidence
 
@@ -42,6 +48,13 @@ change, cloud deployment, tag, Release, or Demo media has been published.
 - Rollback-namespace-fix branch: codex/w16-private-rollback-namespace
 - Rollback-namespace-fix starting origin/main:
   f334441612f0c3508f197cecf8d0456296a771cf
+- Rollback-namespace-fix commit:
+  688dc2aff59a55fce39ae240d52c3d83b57fbce3
+- Rollback-namespace-fix PR 49 merge/origin main:
+  b62333492aea62a0d4b12147ce863ab76bda0133
+- Scoped-DNS-egress-fix branch: codex/w16-private-dns-egress
+- Scoped-DNS-egress-fix starting origin/main:
+  b62333492aea62a0d4b12147ce863ab76bda0133
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -173,6 +186,16 @@ docs/evidence/week-16-release.md
 docs/release-notes-v1.0.0.md
 ~~~
 
+The scoped DNS egress fix changes only these exact paths:
+
+~~~text
+AGENTS.md
+deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/release-notes-v1.0.0.md
+~~~
+
 ## Helm and Kubernetes
 
 - Chart, values, and JSON schema parsed locally.
@@ -222,6 +245,29 @@ docs/release-notes-v1.0.0.md
   failed with `Error: release: not found`; this is a workflow command scoping
   error, not a workload readiness failure. The authorized fix adds
   `--namespace flowpilot-w16`, matching the already-passing local lifecycle.
+- Rollback namespace PR 49 merged as
+  `b62333492aea62a0d4b12147ce863ab76bda0133`; PR CI 31312968413 and main CI
+  31313862452 passed their required gates. Registry run 31313916608 used the
+  corrected rollback command but timed out earlier during Helm install because
+  sandbox-web could not resolve `sandbox-api`. The run had created the
+  `sandbox-api` ClusterIP Service before Helm, and pod logs reported
+  `host not found in upstream "sandbox-api"`. The chart selected all release
+  pods with a default-deny Egress policy, while its internal policy neither
+  declared `Egress` in `policyTypes` nor allowed kube-system CoreDNS. The
+  current fix declares that policy type and permits only TCP/UDP 53 to pods
+  labelled `k8s-app: kube-dns` in the `kube-system` namespace. It does not add
+  arbitrary external egress.
+- Helm 4.2.0 strict lint passed after the scoped DNS change. Two enabled
+  four-component renders were byte-identical: 22,965 bytes, SHA-256
+  `e640883828785d3d6bc8ec28659a5a1f15e86fc343b820285d3a9dd247612b10`.
+  Trivy 0.73.0 embedded checks found zero HIGH/CRITICAL Kubernetes
+  misconfigurations in the isolated rendered manifests.
+- On kind 0.32.0 / Kubernetes 1.36.1, the two previously verified local Web
+  images were loaded and addressed by their immutable containerd manifest
+  digests. With the stub Service and scoped CoreDNS egress, Helm install,
+  both rollouts, both in-container HTTP checks, upgrade to two replicas,
+  namespace-scoped rollback, history, uninstall, and unconditional cluster
+  cleanup passed.
 - GitHub native Artifact Attestations are `unavailable/private-plan`. Buildx
   maximum provenance and SBOM attestations remain enabled and registry-bound;
   the digest files and downloaded Syft/Trivy artifacts remain the independent
@@ -294,6 +340,17 @@ docs/release-notes-v1.0.0.md
   All four files parsed as SPDX 2.3; the paired downloaded Trivy JSON files
   independently parsed with zero HIGH/CRITICAL vulnerabilities and zero
   secret findings.
+- Downloaded registry-run 31313916608 Syft SPDX 2.3 package counts / byte
+  SHA-256 were: control-api 1,117 /
+  `31536c12f833a8c75e7d97630995647e361b4bd1f6aa97b6f45cd5caa2959615`;
+  sandbox-api 1,110 /
+  `26e02af2293efe81a09c6ae5313b97665e7c99400aead0bd04734c5561cd1abf`;
+  control-web 72 /
+  `e932daf197e74dd48fa707584e9b6eae64fa1d134d255cf36bbb4f7eaa6bb9bc`;
+  sandbox-web 72 /
+  `02dc4e7d18ea4bebeccb46789d4c1212c970e4651fae9917212327be549a9626`.
+  All four files parsed as SPDX 2.3; all four paired Trivy JSON files parsed
+  with zero HIGH/CRITICAL vulnerabilities and zero secret findings.
 
 ## Local quality and regression
 
@@ -364,6 +421,19 @@ reported their own frozen independent grades.
   `sha256:d0abe347f78ff449b41e386cf1b7ebc6fab39585ac9d6285d07496d7b4cf5747`.
   Its digest, Syft SPDX, and Trivy artifacts were downloaded for restricted
   verification. The run failed only at the unscoped Helm rollback command.
+- Registry run 31313916608 again reproduced zero HIGH/CRITICAL and zero secret
+  findings for all four Private images. Its immutable candidate digests were
+  control-api
+  `sha256:f496507c61237f24bc77f570ce4acc9ab985cbacef34678d79b4c98466f62b9b`,
+  sandbox-api
+  `sha256:f8cb656a54e16dc1dbddb50317efa5ee6d25fcb55e6a8bc4bbe86f477025ccd7`,
+  control-web
+  `sha256:b933d0e23f0f207bce23e00dd3924aae96cef7290f92f870d0a1fa439fac95ce`,
+  and sandbox-web
+  `sha256:88eecc09967fe30ef6bcbf29332b648c0f78a3903844fac03a3c4615f1aa3f1f`.
+  Named digest, Syft SPDX, and Trivy artifacts were downloaded and verified.
+  The final gate failed only because default-deny egress prevented cluster DNS
+  during the kind install; the run did not reach the corrected rollback.
 - Consequently one new Private candidate workflow must confirm the corrected
   end-to-end lifecycle, while repository/package public visibility, `v1.0.0`,
   and GitHub Release remain prohibited pending separate publication
@@ -391,11 +461,11 @@ reported their own frozen independent grades.
 
 Unavailable or blocked: GitHub native Artifact Attestations
 (`unavailable/private-plan`), a successful end-to-end registry workflow after
-the rollback namespace correction, complete licence assertions, Demo
-GIF/video, real cloud deployment, anonymous public clone, and final
-public-readiness approval.
+the scoped DNS egress correction, complete licence assertions, Demo GIF/video,
+real cloud deployment, anonymous public clone, and final public-readiness
+approval.
 
-The current authorization covers the rollback namespace fix push/PR/normal
+The current authorization covers the scoped DNS egress fix push/PR/normal
 CI/squash merge and one new Private candidate workflow dispatch. A later
 authorization is still required for repository/package visibility change,
 anonymous verification, annotated v1.0.0 tag, and GitHub Release v1.0.0 -

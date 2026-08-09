@@ -2,8 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is the authorized W16 Private-workflow rollback namespace fix on
-`codex/w16-private-rollback-namespace`. The
+This branch is the authorized W16 Private-workflow scoped DNS egress fix on
+`codex/w16-private-dns-egress`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -22,11 +22,13 @@ their tags/releases are immutable:
   `7661db412fde625ec0a6ff81261d26343cf53052`.
 - W16 Private-image remediation PR 48 merge/origin main
   `f334441612f0c3508f197cecf8d0456296a771cf`.
+- W16 rollback namespace PR 49 merge/origin main
+  `b62333492aea62a0d4b12147ce863ab76bda0133`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `codex/w16-private-rollback-namespace`, created from the
-verified W16 Private-image remediation merge on `origin/main` above.
+frozen. Work only on `codex/w16-private-dns-egress`, created from the verified
+W16 rollback namespace merge on `origin/main` above.
 
 ## W16 authority boundary
 
@@ -44,26 +46,27 @@ Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
 certification. Do not log in to a cloud, create resources/DNS/TLS, incur cost,
 change repository or package visibility, tag, or release. The user has
-separately authorized this rollback namespace fix branch, push, PR, normal CI,
+separately authorized this scoped DNS egress fix branch, push, PR, normal CI,
 squash merge, and one new Private GHCR candidate-image workflow dispatch after
-merge. The fix must remain pre-publication and must stop before any `v1.0.0`
-tag or GitHub Release. The authorized repository mutation is one commit with
-subject:
+merge. The fix may add only cluster-DNS TCP/UDP 53 egress to kube-system
+CoreDNS-selected pods; arbitrary internet or cross-namespace egress remains
+forbidden. It must remain pre-publication and stop before any `v1.0.0` tag or
+GitHub Release. The authorized repository mutation is one commit with subject:
 
-    fix: scope W16 Helm rollback namespace
+    fix: allow scoped DNS egress for W16 Helm
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
 preserve unrelated `.tmp/` content.
 
-## Exact rollback-namespace-fix allowlist
+## Exact scoped-DNS-egress-fix allowlist
 
 Only the following exact paths may be created or modified. Directory
 wildcards are forbidden; add a path here before changing it.
 
 ~~~text
 AGENTS.md
-.github/workflows/release-images.yml
+deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
 docs/agent-contract.md
 docs/evidence/week-16-release.md
 docs/release-notes-v1.0.0.md
@@ -86,13 +89,14 @@ execute, record `unavailable`; never claim it passed.
 
 ## Required verification
 
-Run YAML parsing, actionlint, workflow policy checks, the namespace-scoped Helm
-rollback check, W15 hash immutability, detect-private-key, gitleaks,
-`git diff --check`, and exact allowlist/staged review locally. Normal PR and
-main CI remain required for the full repository suite. The one authorized
-post-merge Private workflow must reproduce the image, SBOM, Trivy, and kind
-lifecycle gates. Do not run W15 frozen Reporting final, W12 formal Validation,
-an external Benchmark, or real cloud deployment.
+Run YAML parsing, Helm lint/schema/deterministic render, Kubernetes security
+scans, a kind DNS-resolution and lifecycle check, W15 hash immutability,
+detect-private-key, gitleaks, `git diff --check`, and exact allowlist/staged
+review locally. Normal PR and main CI remain required for the full repository
+suite. The one authorized post-merge Private workflow must reproduce the
+image, SBOM, Trivy, DNS resolution, and kind lifecycle gates. Do not run W15
+frozen Reporting final, W12 formal Validation, an external Benchmark, or real
+cloud deployment.
 
 Finish with local forms of:
 
@@ -106,6 +110,6 @@ git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
 Record unavailable tooling and unexecuted cloud/publication steps honestly.
-After the single rollback namespace fix commit, push/PR/CI/squash merge and the single
+After the single scoped DNS egress fix commit, push/PR/CI/squash merge and the single
 authorized new Private candidate-image dispatch may proceed. Stop and report
 before any visibility change, tag, Release, or cloud action.

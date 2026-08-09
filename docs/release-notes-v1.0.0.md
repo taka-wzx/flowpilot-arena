@@ -36,17 +36,19 @@ tags/releases are unchanged.
 
 ## Current release blocker
 
-Historical registry run 31308404308 produced four Private digests but found
-120 HIGH/CRITICAL occurrences and omitted the Web-only test's `sandbox-api`
-DNS dependency. The merged remediation corrected both blockers. Registry run
-31312150260 then reproduced zero HIGH/CRITICAL and zero secret findings for all
-four images and passed kind install, rollout, HTTP, and upgrade. Its sole
-failure was the workflow's `helm rollback` command omitting
-`--namespace flowpilot-w16`, which produced `Error: release: not found`. The
-authorized minimal follow-up scopes rollback to that namespace; one new
-post-merge Private workflow must confirm the corrected lifecycle. Public
-visibility, `v1.0.0`, and a GitHub Release remain blocked pending that result
-and separate publication authorization.
+Historical registry run 31308404308 found 120 HIGH/CRITICAL occurrences and
+omitted the Web-only test's `sandbox-api` DNS dependency. The merged image and
+stub remediation corrected those blockers. Run 31312150260 reproduced zero
+HIGH/CRITICAL and zero secret findings but exposed an unscoped Helm rollback;
+PR 49 fixed that command. Run 31313916608 again passed all four image
+publications and the registry SBOM/Trivy gate, but timed out during kind install
+because the chart's default-deny egress prevented sandbox-web from querying
+cluster DNS for the already-created `sandbox-api` Service. The authorized
+minimal follow-up adds only TCP/UDP 53 egress to CoreDNS-selected pods in
+`kube-system`; arbitrary egress remains denied. One new post-merge Private
+workflow must confirm install, rollout, HTTP, upgrade, rollback, and uninstall.
+Public visibility, `v1.0.0`, and a GitHub Release remain blocked pending that
+result and separate publication authorization.
 
 ## Deferred authorization
 

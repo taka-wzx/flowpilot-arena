@@ -325,7 +325,8 @@ jobs:
             wget -q -O /dev/null http://127.0.0.1/
           helm upgrade flowpilot-w16 deploy/helm/flowpilot-arena \
             --wait --timeout 5m --set replicas=2 "${common_args[@]}"
-          helm rollback flowpilot-w16 1 --wait --timeout 5m
+          helm rollback flowpilot-w16 1 --namespace flowpilot-w16 \
+            --wait --timeout 5m
           helm uninstall flowpilot-w16 --namespace flowpilot-w16 --wait
 
   private-candidate-gate:

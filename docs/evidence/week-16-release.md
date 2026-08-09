@@ -1,16 +1,20 @@
 # W16 evidence — Release and Reproducibility
 
-Status: W16 implementation, release closure, and Private-workflow
-plan-compatibility fix are merged. Runs 31305954309 and 31307531363 ended in
+Status: W16 implementation, release closure, Private-workflow
+plan-compatibility fix, and Private-image remediation are merged. Runs
+31305954309 and 31307531363 ended in
 `startup_failure` with zero jobs because the native attestation was unavailable
 for the Private plan and the repository selected-actions policy initially
 omitted the pinned release actions. The minimally extended action policy then
 allowed run 31308404308 to publish four Private digests and generate SBOM/Trivy
 evidence. That run honestly failed: it found 120 HIGH/CRITICAL occurrences and
-its Web-only kind lifecycle omitted the Sandbox API DNS dependency. The
-authorized remediation now passes four local builds, hardened runtime health,
-zero HIGH/CRITICAL, zero secret findings, and the complete kind/Helm lifecycle.
-A post-merge registry workflow must reproduce this result. No visibility
+its Web-only kind lifecycle omitted the Sandbox API DNS dependency. The merged
+remediation passes four local builds, hardened runtime health, zero
+HIGH/CRITICAL, zero secret findings, and the complete local kind/Helm lifecycle.
+Registry run 31312150260 reproduced the four zero-vulnerability/zero-secret
+image gates and passed kind install, rollout, HTTP, and upgrade. Its sole
+failure was a Helm rollback command that omitted `--namespace flowpilot-w16`.
+The current authorized fix scopes that command correctly. No visibility
 change, cloud deployment, tag, Release, or Demo media has been published.
 
 ## Baseline and immutable evidence
@@ -31,6 +35,13 @@ change, cloud deployment, tag, Release, or Demo media has been published.
 - Image-remediation branch: codex/w16-private-image-remediation
 - Image-remediation starting origin/main:
   7661db412fde625ec0a6ff81261d26343cf53052
+- Image-remediation commit:
+  64d61e1f1cd14449f86eff6b9def79ee11b95b9a
+- Image-remediation PR 48 merge/origin main:
+  f334441612f0c3508f197cecf8d0456296a771cf
+- Rollback-namespace-fix branch: codex/w16-private-rollback-namespace
+- Rollback-namespace-fix starting origin/main:
+  f334441612f0c3508f197cecf8d0456296a771cf
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -152,6 +163,16 @@ docs/sbom-status.md
 docs/sbom.spdx.json
 ~~~
 
+The rollback namespace fix changes only these exact paths:
+
+~~~text
+.github/workflows/release-images.yml
+AGENTS.md
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/release-notes-v1.0.0.md
+~~~
+
 ## Helm and Kubernetes
 
 - Chart, values, and JSON schema parsed locally.
@@ -194,6 +215,13 @@ docs/sbom.spdx.json
   stub-backed Helm 4.2.0 strict lint, install, rollouts, in-container HTTP
   checks, upgrade to two replicas, rollback, history, uninstall, and cluster
   cleanup passed.
+- Registry run 31312150260 used the merged remediation images and the Sandbox
+  API DNS stub. It passed Helm install, both Web rollouts and in-container HTTP
+  checks, and the two-replica upgrade. The next command ran
+  `helm rollback flowpilot-w16 1 --wait --timeout 5m` without a namespace and
+  failed with `Error: release: not found`; this is a workflow command scoping
+  error, not a workload readiness failure. The authorized fix adds
+  `--namespace flowpilot-w16`, matching the already-passing local lifecycle.
 - GitHub native Artifact Attestations are `unavailable/private-plan`. Buildx
   maximum provenance and SBOM attestations remain enabled and registry-bound;
   the digest files and downloaded Syft/Trivy artifacts remain the independent
@@ -254,6 +282,18 @@ docs/sbom.spdx.json
   `fbc9d22e5686d8630869c26d0e0a7c6cc0f096fb71f1ef6d1159dc1a8c4ec320`;
   sandbox-web 72 /
   `ad1f73199a6fe03718d5a459bf761185bcad0fa1dd22f6a1359d01633aabc99a`.
+- Downloaded registry-run 31312150260 Syft SPDX 2.3 package counts / byte
+  SHA-256 were: control-api 1,117 /
+  `ba9b74a96cab21967752f6bbcc24b5ee8116b1d9bd729997148d91ca4cce0998`;
+  sandbox-api 1,110 /
+  `479bd9f682e7ac9fd17ca98981ead979e21466b03488bfb64d6ab158ac8cc5d9`;
+  control-web 72 /
+  `f40a34fc84322a75a4cbbb6e1f9f10581b7cb3309c6d2bce08a8cf3d22727635`;
+  sandbox-web 72 /
+  `322c0576ac83aaec6a6d8e5ecbec98848b630c456f45d528edee5468a948b36a`.
+  All four files parsed as SPDX 2.3; the paired downloaded Trivy JSON files
+  independently parsed with zero HIGH/CRITICAL vulnerabilities and zero
+  secret findings.
 
 ## Local quality and regression
 
@@ -311,10 +351,23 @@ reported their own frozen independent grades.
   both API health endpoints and both Web HTTP endpoints returned 200.
 - Trivy 0.73.0 then downloaded a fresh database and found zero HIGH/CRITICAL
   plus zero secret findings in every remediated local image. No ignore,
-  suppression, or waiver was used. Registry reproduction remains required.
-- Consequently a new Private candidate workflow must reproduce the local zero
-  count, while repository/package public visibility, `v1.0.0`, and GitHub
-  Release remain prohibited pending separate publication authorization.
+  suppression, or waiver was used.
+- Registry run 31312150260 reproduced zero HIGH/CRITICAL and zero secret
+  findings for all four Private images. Its immutable candidate digests were
+  control-api
+  `sha256:7ece457fb04d92da2080b7fd2b9591a070ca615f56d348fa5636b8fa5777cd38`,
+  sandbox-api
+  `sha256:04a55382674c3a1fe8e2705e7bffa78ac338527a3eac4ccf190a02fe8b232bb2`,
+  control-web
+  `sha256:d350b81ee5e7be79a827401c0eda2cef4b5e29f093c16906832d8f2f09562f96`,
+  and sandbox-web
+  `sha256:d0abe347f78ff449b41e386cf1b7ebc6fab39585ac9d6285d07496d7b4cf5747`.
+  Its digest, Syft SPDX, and Trivy artifacts were downloaded for restricted
+  verification. The run failed only at the unscoped Helm rollback command.
+- Consequently one new Private candidate workflow must confirm the corrected
+  end-to-end lifecycle, while repository/package public visibility, `v1.0.0`,
+  and GitHub Release remain prohibited pending separate publication
+  authorization.
 
 - gitleaks full-history scan with the protected path excluded: 59 commits,
   approximately 5.13 MB, no leaks.
@@ -337,13 +390,13 @@ reported their own frozen independent grades.
 ## Unavailable and next authorization
 
 Unavailable or blocked: GitHub native Artifact Attestations
-(`unavailable/private-plan`), registry reproduction of the locally passing
-image remediation, complete licence assertions, Demo GIF/video, real cloud
-deployment, anonymous public clone, and final public-readiness approval.
+(`unavailable/private-plan`), a successful end-to-end registry workflow after
+the rollback namespace correction, complete licence assertions, Demo
+GIF/video, real cloud deployment, anonymous public clone, and final
+public-readiness approval.
 
-The current authorization covers image-remediation push/PR/normal CI/squash
-merge and one new Private candidate workflow dispatch. A later
-authorization and a passing image vulnerability gate are still required for
-repository/package visibility change, anonymous verification, annotated
-v1.0.0 tag, and GitHub Release v1.0.0 - FlowPilot Arena. Cloud parameters
-remain a separate scope.
+The current authorization covers the rollback namespace fix push/PR/normal
+CI/squash merge and one new Private candidate workflow dispatch. A later
+authorization is still required for repository/package visibility change,
+anonymous verification, annotated v1.0.0 tag, and GitHub Release v1.0.0 -
+FlowPilot Arena. Cloud parameters remain a separate scope.

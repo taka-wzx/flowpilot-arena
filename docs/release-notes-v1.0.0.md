@@ -36,14 +36,17 @@ tags/releases are unchanged.
 
 ## Current release blocker
 
-Registry run 31308404308 produced four Private digests but found 120
-HIGH/CRITICAL occurrences and zero secret findings; its kind lifecycle also
-timed out because the Web-only test omitted the `sandbox-api` DNS dependency.
-The authorized local remediation now passes hardened runtime health, a full
-kind/Helm lifecycle, and Trivy with zero HIGH/CRITICAL and zero secret findings
-without a waiver. Public visibility, `v1.0.0`, and a GitHub Release remain
-blocked until a new post-merge registry-digest workflow reproduces those local
-results and receives separate publication authorization.
+Historical registry run 31308404308 produced four Private digests but found
+120 HIGH/CRITICAL occurrences and omitted the Web-only test's `sandbox-api`
+DNS dependency. The merged remediation corrected both blockers. Registry run
+31312150260 then reproduced zero HIGH/CRITICAL and zero secret findings for all
+four images and passed kind install, rollout, HTTP, and upgrade. Its sole
+failure was the workflow's `helm rollback` command omitting
+`--namespace flowpilot-w16`, which produced `Error: release: not found`. The
+authorized minimal follow-up scopes rollback to that namespace; one new
+post-merge Private workflow must confirm the corrected lifecycle. Public
+visibility, `v1.0.0`, and a GitHub Release remain blocked pending that result
+and separate publication authorization.
 
 ## Deferred authorization
 

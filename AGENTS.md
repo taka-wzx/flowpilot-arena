@@ -2,7 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is W16: Release and Reproducibility on `week/16-release`. The
+This branch is the authorized W16 release-closure follow-up on
+`codex/w16-release-closure`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -13,11 +14,13 @@ their tags/releases are immutable:
 - W15 merge `94e5a8d74b970c93c9610725dad7cb352545f654`, tag `w15-evaluation`.
 - PR 43 merge `697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3`.
 - PR 44 merge/origin main `078eb22deb137191660a5511c496fd1dff2b74f3`.
+- W16 PR 45 merge/origin main
+  `d1b03993fc912179d3cdbef00b9f26f524ca9c52`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `week/16-release`, created from the verified
-`origin/main` above.
+frozen. Work only on `codex/w16-release-closure`, created from the verified
+W16 merge on `origin/main` above.
 
 ## W16 authority boundary
 
@@ -34,11 +37,14 @@ data, secret, arbitrary URL/API/Shell/SQL/JavaScript capability, or external
 Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
 certification. Do not log in to a cloud, create resources/DNS/TLS, incur cost,
-change repository visibility, push, open a PR, merge, tag, release, dispatch or
-rerun CI. The only authorized repository mutation after validation is one
-local commit with subject:
+change repository or package visibility, tag, or release. The user has
+separately authorized the W16 closure branch, one Private GHCR candidate-image
+workflow dispatch after merge, push, PR, normal CI, and squash merge. The
+closure must remain pre-publication and must stop before any `v1.0.0` tag or
+GitHub Release. The authorized repository mutation is one closure commit with
+subject:
 
-    feat: add W16 release and reproducible demo
+    chore: close W16 release verification
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
@@ -51,6 +57,7 @@ wildcards are forbidden; add a path here before changing it.
 
 ~~~text
 AGENTS.md
+.github/workflows/release-images.yml
 README.md
 README.zh-CN.md
 CONTRIBUTING.md
@@ -87,10 +94,15 @@ tests/integration/w16_demo_smoke.py
 ~~~
 
 The W15 frozen files are not modified or rerun in Reporting mode. No new
-dependency, lockfile, service, database, migration, network capability,
-container image, or cloud resource may be added without separate user
-authorization. If Helm, kind/k3d, SBOM, recording, or cloud tooling is absent,
-record `unavailable` in the evidence; never claim it passed.
+dependency, lockfile, service, database, migration, network capability, or
+cloud resource may be added without separate user authorization. This closure
+is authorized to publish only four Private `linux/amd64` candidate images in
+the `ghcr.io/taka-wzx` namespace: `flowpilot-arena-control-api`,
+`flowpilot-arena-sandbox-api`, `flowpilot-arena-control-web`, and
+`flowpilot-arena-sandbox-web`. Images use only `sha-<40-hex-merge-commit>`
+tags; `latest` and `v1.0.0` are forbidden in this phase. If an authorized
+Helm, kind, Syft, Trivy, or VHS verification cannot execute, record
+`unavailable`; never claim it passed.
 
 ## Required verification
 
@@ -117,6 +129,6 @@ git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
 Record unavailable tooling and unexecuted cloud/publication steps honestly.
-After the single local commit, stop and report changed paths, reproduction
-status, documentation/demo/SBOM/public-readiness results, verification,
-unavailable items, and the separately authorized remote/cloud steps.
+After the closure commit, push/PR/CI/squash merge and the single authorized
+Private candidate-image dispatch may proceed. Stop and report before any
+visibility change, tag, Release, or cloud action.

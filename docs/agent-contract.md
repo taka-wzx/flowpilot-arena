@@ -2,15 +2,17 @@
 
 ## Authority and frozen history
 
-This is the sole implementation authority for W16 on `week/16-release`. The
-branch must start at `origin/main` `078eb22deb137191660a5511c496fd1dff2b74f3`,
-which contains W15 merge `94e5a8d74b970c93c9610725dad7cb352545f654`, PR 43 merge
-`697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3`, and PR 44 merge
-`078eb22deb137191660a5511c496fd1dff2b74f3`. W12 (`w12-production`), W13
+This contract also governs the separately authorized W16 release closure on
+`codex/w16-release-closure`. The closure branch starts at the verified W16 PR
+45 merge on `origin/main`,
+`d1b03993fc912179d3cdbef00b9f26f524ca9c52`, which contains the original W16
+commit `23f546daa8298bfaed20a2574fa9378055d26090`. W12 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. No history rewrite, rollback, retag, rerelease, push, PR, merge,
-visibility change, or v1.0.0 tag/release is authorized in this turn.
+immutable. The closure authorizes one closure commit, push, PR, normal CI,
+squash merge, and one post-merge Private candidate-image workflow dispatch.
+It does not authorize history rewrite, rollback, retag, rerelease, repository
+or package visibility change, cloud action, or a `v1.0.0` tag/Release.
 
 W15 frozen evidence is byte-identified before W16 work:
 
@@ -54,10 +56,12 @@ allowed.
 No new dependency, lockfile, service, database, migration, provider, IdP,
 model/OCR/VLM/embedding/billing call, arbitrary URL/API/Shell/SQL/JavaScript,
 external Benchmark, cloud resource, DNS/TLS, or real account/data may be
-introduced. Missing local Helm/SBOM/recording/kind/k3d tools are recorded as
-`unavailable`, never as passed. Media is supplied only when produced by a real
-local deterministic run; otherwise the static fallback and unavailable record
-are required.
+introduced. The only authorized new container artifacts are the four Private
+`linux/amd64` GHCR candidates named in `AGENTS.md`, tagged only with the exact
+closure merge commit. Missing authorized Helm, kind, Syft, Trivy, or VHS
+verification is recorded as `unavailable`, never as passed. Media is supplied
+only when produced by a real deterministic run; otherwise the static fallback
+and unavailable record are required.
 
 ## Reproducible demo contract
 
@@ -89,6 +93,7 @@ wildcards:
 
 ~~~text
 AGENTS.md
+.github/workflows/release-images.yml
 README.md
 README.zh-CN.md
 CONTRIBUTING.md
@@ -135,11 +140,11 @@ exact staged review. Never run W15 frozen Reporting final, W12 formal
 Validation, external Benchmarks, or cloud deployment.
 
 After evidence reconciliation, explicitly stage only changed paths in this
-allowlist and create exactly one local commit:
+allowlist and create exactly one closure commit:
 
-    feat: add W16 release and reproducible demo
+    chore: close W16 release verification
 
-Then stop. Remote delivery (push/PR/merge/main CI), public-readiness final
-approval, repository visibility change, anonymous clone, cloud deployment,
-annotated `v1.0.0` tag, and Release `v1.0.0 - FlowPilot Arena` require later,
-separate user authorization.
+Push, PR, normal CI, squash merge, and one post-merge Private candidate-image
+workflow dispatch are authorized. Then stop. Repository or package visibility
+change, anonymous public clone, cloud deployment, annotated `v1.0.0` tag, and
+Release `v1.0.0 - FlowPilot Arena` require later, separate user authorization.

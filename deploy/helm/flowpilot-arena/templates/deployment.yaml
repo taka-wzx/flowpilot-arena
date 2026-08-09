@@ -28,6 +28,11 @@ spec:
         {{- toYaml $.Values.global.imagePullSecrets | nindent 8 }}
       securityContext:
         {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+        {{- if or (eq $key "controlWeb") (eq $key "sandboxWeb") }}
+        sysctls:
+          - name: net.ipv4.ip_unprivileged_port_start
+            value: "0"
+        {{- end }}
       containers:
         - name: {{ $component.name }}
           image: {{ printf "%s@%s" $component.image.repository $component.image.digest | quote }}
@@ -40,6 +45,15 @@ spec:
             {{- toYaml $.Values.containerSecurityContext | nindent 12 }}
           resources:
             {{- toYaml $.Values.resources | nindent 12 }}
+          {{- if or (eq $key "controlWeb") (eq $key "sandboxWeb") }}
+          volumeMounts:
+            - name: nginx-run
+              mountPath: /run
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: tmp
+              mountPath: /tmp
+          {{- end }}
           env:
             - name: FLOWPILOT_DEMO_MODE
               valueFrom:
@@ -84,6 +98,21 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 30
+      {{- if or (eq $key "controlWeb") (eq $key "sandboxWeb") }}
+      volumes:
+        - name: nginx-run
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Mi
+        - name: nginx-cache
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi
+        - name: tmp
+          emptyDir:
+            medium: Memory
+            sizeLimit: 16Mi
+      {{- end }}
 ---
 {{- end }}
 {{- end }}

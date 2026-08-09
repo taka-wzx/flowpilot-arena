@@ -8,6 +8,14 @@ redacted demo trace, and a generated SPDX SBOM/status record. Product
 authority, the W15 frozen report, and all remote publication state remain
 unchanged.
 
+The separately authorized closure starts from W16 PR 45 merge
+`d1b03993fc912179d3cdbef00b9f26f524ca9c52`. It may add a manual, Private-only
+GHCR candidate workflow, run checksum-pinned Helm/kind/Syft/Trivy checks, fix
+the authorized NetworkPolicy and Web runtime validation defects, push a
+closure PR, pass normal CI, squash merge, and dispatch that workflow once. It
+must stop before public visibility, cloud activity, `v1.0.0`, or a GitHub
+Release.
+
 ## Frozen starting point
 
 The local branch is created from origin/main at
@@ -33,13 +41,18 @@ maintenance merges 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3 and
    machine-readable unavailable state.
 6. Run all available local gates, record pass/fail/unavailable evidence, review
    exact paths, stage only the allowlist, and make one local commit.
+7. In the closure, publish only four `linux/amd64` Private candidates with an
+   exact `sha-<40-hex-main-commit>` tag, provenance/SBOM evidence, and no
+   `latest` or `v1.0.0`; fail the final workflow gate on image secrets,
+   HIGH/CRITICAL vulnerabilities, or kind/Helm lifecycle failure.
 
 ## Explicit non-goals
 
-No cloud login/resource, DNS/TLS, billable operation, repository visibility
-change, push/PR/merge/tag/release, new dependency/service/database/migration,
+No cloud login/resource, DNS/TLS, billable operation, repository/package
+visibility change, tag/release, new dependency/service/database/migration,
 external Benchmark, W15 Reporting rerun, W12 Validation, or product-code
-change is permitted.
+change is permitted. Closure push/PR/normal CI/squash merge and one Private
+candidate dispatch are the only remote exceptions.
 
 ## Acceptance evidence
 

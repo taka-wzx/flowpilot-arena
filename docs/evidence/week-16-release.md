@@ -1,12 +1,19 @@
 # W16 evidence — Release and Reproducibility
 
-Status: local implementation and verification complete with explicit
-unavailable gates. Remote publication, repository visibility change, cloud
-deployment, Helm cluster validation, and Demo media are not performed.
+Status: W16 implementation merged; the separately authorized release closure
+has completed its local pre-publication checks. Helm/kind validation now passes,
+but the local image vulnerability gate fails. At closure-commit time no GHCR
+candidate, visibility change, cloud deployment, tag, Release, or Demo media has
+been published. Post-merge Private-candidate digests and attestations are
+recorded by the manual workflow rather than predicted in this file.
 
 ## Baseline and immutable evidence
 
-- Branch: week/16-release
+- Original branch/commit: week/16-release /
+  23f546daa8298bfaed20a2574fa9378055d26090
+- W16 PR 45 merge/origin main:
+  d1b03993fc912179d3cdbef00b9f26f524ca9c52
+- Closure branch: codex/w16-release-closure
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -38,9 +45,10 @@ deployment, Helm cluster validation, and Demo media are not performed.
 | kubectl client | 1.36.1 |
 | Chart / appVersion | 1.0.0 / 1.0.0-local |
 | SPDX generator / format | flowpilot-sbom-generator/1.0 / SPDX 2.3 |
-| Helm | unavailable/not installed |
-| kind / k3d | unavailable/not installed |
-| syft / trivy / CycloneDX CLI | unavailable/not installed |
+| Helm | 4.2.0+g0646808, Windows/amd64 asset checksum verified |
+| kind / k3d | kind 0.32.0; k3d not required (kind is the selected runner) |
+| Syft / Trivy | 1.50.0 / 0.73.0, Windows/amd64 asset checksums verified |
+| actionlint | 1.7.12, Windows/amd64 asset checksum verified |
 | recording tool | unavailable/not installed |
 
 ## Exact changed paths
@@ -59,6 +67,7 @@ deploy/helm/flowpilot-arena/templates/_helpers.tpl
 deploy/helm/flowpilot-arena/templates/configmap.yaml
 deploy/helm/flowpilot-arena/templates/deployment.yaml
 deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
+deploy/helm/flowpilot-arena/templates/deployment.yaml
 deploy/helm/flowpilot-arena/templates/service.yaml
 deploy/helm/flowpilot-arena/templates/serviceaccount.yaml
 deploy/helm/flowpilot-arena/templates/tests/test-connection.yaml
@@ -84,6 +93,22 @@ tests/integration/w16_demo_smoke.py
 The literal protected path was excluded from status/diff/scan operations.
 Unrelated .tmp content was not staged or altered by source edits.
 
+The closure changes only these exact paths:
+
+~~~text
+.github/workflows/release-images.yml
+AGENTS.md
+README.md
+README.zh-CN.md
+deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/plans/week-16-release.md
+docs/release-notes-v1.0.0.md
+docs/sbom-status.md
+docs/sbom.spdx.json
+~~~
+
 ## Helm and Kubernetes
 
 - Chart, values, and JSON schema parsed locally.
@@ -94,11 +119,31 @@ Unrelated .tmp content was not staged or altered by source edits.
   and no privileged/host namespaces/hostPath/Docker socket/cluster-admin.
 - Components are disabled by default. An enabled component requires an immutable
   repository plus sha256 digest. No default secret or tag-only image exists.
-- Helm lint, values-schema execution, deterministic Helm render, Kubernetes
-  schema/policy scan, and kind/k3d install/health/upgrade/rollback/uninstall are
-  unavailable because Helm and kind/k3d are not installed and no authorized
-  application-image publication exists. No tool or image was downloaded to
-  fabricate this gate.
+- Helm 4.2.0 strict lint passed with all four components enabled and immutable
+  synthetic digest inputs. Two normalized renders were byte-identical:
+  21,951 bytes, SHA-256
+  `dbc83864ada799a2cd893543b9e2131d99d7fd0673f31f0ccd46aa46229f3211`.
+- Trivy 0.73.0 found zero HIGH/CRITICAL Kubernetes misconfigurations in the
+  enabled rendered manifests. The remote checks bundle refresh could not use
+  the host Docker credential helper, so Trivy explicitly fell back to its
+  versioned embedded checks; this limitation is not hidden.
+- The first kind server-side install found and rejected a duplicate `Egress`
+  entry in `NetworkPolicy.spec.policyTypes`. The separately authorized fix
+  removed only that duplicate. On kind 0.32.0 with
+  `kindest/node:v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5`,
+  install, upgrade, rollback, history, uninstall, and unconditional cluster
+  cleanup then passed.
+- A local Web container reproduced the chart's non-root/read-only runtime and
+  initially failed to create `/run/nginx.pid`. The separately authorized
+  Deployment fix adds Web-only memory-backed `/run`, `/var/cache/nginx`, and
+  `/tmp` volumes plus the Kubernetes safe
+  `net.ipv4.ip_unprivileged_port_start=0` sysctl. Nginx configuration and HTTP
+  probes then passed under non-root, read-only, no-new-privileges, and drop-ALL
+  constraints. The enabled four-component chart also passed kind server-side
+  dry-run before the lifecycle cleanup.
+- Registry-digest web workload health is intentionally deferred to the
+  post-merge Private-candidate workflow because no publication digest exists
+  before that workflow runs.
 - Cloud deployment is not executed and is not passed.
 
 ## Demo and documentation
@@ -126,11 +171,22 @@ Unrelated .tmp content was not staged or altered by source edits.
 - Repeated generation was byte-identical.
 - Working-tree and staged SBOM bytes were identical after forcing LF output.
 - Final generated byte SHA-256:
-  78f13f021f0fd86884e643f2b1fa2f514d0baf8699d407979fa04693d78531a5.
+  a81db2a8568507c5c5914a55c3ba3f9b3f836b74df2de5a2145bf85440caefe5.
 - Machine-path/credential/private-key/Bearer/Cookie scan found no match.
+- Syft 1.50.0 generated local-image SPDX 2.3 evidence in the system temporary
+  directory. Package counts / SBOM SHA-256 were: control-api 1,181 /
+  `c5b84112669cb0f656ab0f1473f54f72f27be0e1e6aee18d82a256b3780c0dfe`;
+  sandbox-api 1,174 /
+  `ae2b56eecddbffb2bc4b0720ea3c99ace2be5ffd9294d86f9880d1338a4874cf`;
+  control-web 69 /
+  `1b93a2d3fcbc7aba7061549903fbab9eeaf41c8615b705263c079f399233be42`;
+  sandbox-web 69 /
+  `8b5615a1387da8f595638977514d13de5d8f20ed5914643f37627778bde2a9e4`.
 - Container Dockerfile declarations and Helm references are recorded, but
-  container_image_digest_coverage is unavailable. Lockfiles contain no
-  authoritative licence field, so package licences remain NOASSERTION.
+  registry `container_image_digest_coverage` remains unavailable until the
+  authorized post-merge Private workflow publishes candidates. Lockfiles
+  contain no authoritative licence field, so package licences remain
+  NOASSERTION.
   Consequently this is an honest partial machine-readable SBOM, not a passed
   complete image/licence SBOM.
 
@@ -163,6 +219,19 @@ reported their own frozen independent grades.
 
 ## Public readiness
 
+- Four local `linux/amd64` images built successfully with the same four
+  application-directory contexts used by the release workflow.
+- Trivy 0.73.0 exact local-image scanning downloaded the current vulnerability
+  database and found no secret findings, but the HIGH/CRITICAL gate failed:
+  each backend image had 4 CRITICAL and 21 HIGH occurrences (24 unique; one
+  unique fixable and 23 unique without a reported fix), while each web image
+  had 2 CRITICAL and 33 HIGH occurrences (35 unique, all with reported fixed
+  package versions). No exception or suppression was applied.
+- Consequently the Private candidate workflow may produce digest-scoped audit
+  evidence, but repository/package public visibility, `v1.0.0`, and GitHub
+  Release remain prohibited until a separately authorized remediation clears
+  the gate.
+
 - gitleaks full-history scan with the protected path excluded: 59 commits,
   approximately 5.13 MB, no leaks.
 - detect-private-key over tracked files with the protected path excluded:
@@ -173,21 +242,21 @@ reported their own frozen independent grades.
   tracking rule.
 - Repository Apache-2.0 LICENSE exists. No W16 font, icon, screenshot, video,
   external Benchmark asset, or third-party data was added.
-- Package licence and container-digest closure are unavailable as recorded in
+- Package licence and registry-digest closure are unavailable as recorded in
   the partial SBOM, so final public-readiness is not claimed passed.
 - Anonymous clone/public README verification is not executed because the
   repository remains Private and visibility change is not authorized.
-- Prior tags/releases are unchanged. No push, PR, merge, tag, Release,
-  workflow dispatch/rerun, or visibility change occurred.
+- Prior tags/releases are unchanged. At closure-commit time no Private image
+  dispatch, tag, Release, or visibility change occurred.
 
 ## Unavailable and next authorization
 
-Unavailable: Helm lint/render, Kubernetes rendered-manifest validation,
-kind/k3d lifecycle, complete image/licence SBOM, Demo GIF/video, real cloud
+Unavailable or blocked: registry-digest completion before the post-merge
+Private workflow, complete licence assertions, Demo GIF/video, real cloud
 deployment, anonymous public clone, and final public-readiness approval.
 
-A later authorization must separately cover remote push/PR/merge/CI, registry
-and immutable image digests, exact cloud provider/account/project/region/
-cluster/domain/DNS/TLS/budget/egress/secret/lifecycle/deletion policy,
-repository visibility change, anonymous verification, annotated v1.0.0 tag,
-and GitHub Release v1.0.0 - FlowPilot Arena.
+The current authorization covers closure push/PR/normal CI/squash merge and
+one Private candidate workflow dispatch. A later authorization and a passing
+image vulnerability gate are still required for repository/package visibility
+change, anonymous verification, annotated v1.0.0 tag, and GitHub Release
+v1.0.0 - FlowPilot Arena. Cloud parameters remain a separate scope.

@@ -2,18 +2,19 @@
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 Private-workflow
-scoped DNS egress fix on `codex/w16-private-dns-egress`. The branch starts at
-the verified W16 rollback namespace PR 49 merge on `origin/main`,
-`b62333492aea62a0d4b12147ce863ab76bda0133`, which contains
+This contract also governs the separately authorized W16 public-release
+evidence closure on `codex/w16-public-release-closure`. The branch starts at
+the verified W16 scoped DNS egress PR 50 merge on `origin/main`,
+`5f37b49a3eb30b63c7aed7fe91676708a28721ac`, which contains
 the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
 W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. This follow-up authorizes one scoped DNS egress fix commit, push,
-PR, normal CI, squash merge, and one new post-merge Private
-candidate-image workflow dispatch.
+immutable. This follow-up authorizes one public-release evidence closure
+commit, push, PR, normal CI, and squash merge. It also authorizes repository
+and package visibility change, anonymous public verification, the annotated
+`v1.0.0` tag, and GitHub Release `v1.0.0 - FlowPilot Arena`.
 It does not authorize history rewrite, rollback, retag, rerelease, repository
 or package visibility change, cloud action, or a `v1.0.0` tag/Release.
 
@@ -59,12 +60,9 @@ allowed.
 No new dependency, lockfile, service, database, migration, provider, IdP,
 model/OCR/VLM/embedding/billing call, arbitrary URL/API/Shell/SQL/JavaScript,
 external Benchmark, cloud resource, DNS/TLS, or real account/data may be
-introduced. The chart may add only TCP/UDP 53 egress to kube-system pods
-selected as CoreDNS; arbitrary internet, node, metadata-service, or general
-cross-namespace egress remains forbidden. The only authorized container artifacts are the four Private
-`linux/amd64` GHCR candidates named in `AGENTS.md`, tagged only with the exact
-DNS-egress-fix merge commit. No Dockerfile or image content may change in this
-follow-up. Buildx-generated maximum provenance and SBOM
+introduced. The four existing Private `linux/amd64` GHCR candidates named in
+`AGENTS.md` are immutable inputs; no Dockerfile or image content may change in
+this follow-up. Buildx-generated maximum provenance and SBOM
 attestations remain required. GitHub native Artifact Attestations are
 `unavailable/private-plan`; the Private workflow must not request their
 permissions or invoke `actions/attest`. Missing authorized Helm, kind, Syft,
@@ -95,37 +93,35 @@ or package hashes. If a container digest or generator is unavailable, the
 machine-readable status and evidence say so; no hand-written component list is
 called a passed SBOM.
 
-## Exact scoped-DNS-egress-fix allowlist
+## Exact public-release-closure allowlist
 
 Only these exact paths may be created or modified. There are no directory
 wildcards:
 
 ~~~text
 AGENTS.md
-deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
 docs/agent-contract.md
 docs/evidence/week-16-release.md
 docs/release-notes-v1.0.0.md
+docs/sbom-status.md
 ~~~
 
 ## Verification and stop condition
 
-Run all locally available scoped-DNS-egress gates listed in `AGENTS.md`: YAML
-parsing, Helm lint/schema/deterministic render, Kubernetes security scans, kind
-DNS resolution and lifecycle, W15 hash immutability, detect-private-key,
-gitleaks, diff check, and exact staged review. Normal PR and main CI provide the
-full repository regression suite. The one authorized post-merge Private
-workflow must reproduce the image, SBOM, Trivy, DNS resolution, and kind
-lifecycle gates. Never run W15 frozen Reporting final, W12 formal Validation,
-external Benchmarks, or cloud deployment.
+Run the locally available public-release-closure gates listed in `AGENTS.md`:
+YAML parsing, W15 hash immutability, detect-private-key, gitleaks, diff check,
+exact staged review, and README/link/command checks. Normal PR and main CI
+provide the full repository regression suite. The final Private workflow
+31316287397 already passed the image, SBOM/Trivy, DNS, and kind lifecycle
+gates. Never run W15 frozen Reporting final, W12 formal Validation, external
+Benchmarks, or cloud deployment.
 
 After evidence reconciliation, explicitly stage only changed paths in this
-allowlist and create exactly one scoped DNS egress fix commit:
+allowlist and create exactly one public-release evidence closure commit:
 
-    fix: allow scoped DNS egress for W16 Helm
+    docs: close W16 public release evidence
 
-Push, PR, normal CI, squash merge, and exactly one new post-merge Private
-candidate-image workflow dispatch are authorized. Then stop. Repository or
-package visibility change, anonymous public clone, cloud deployment, annotated
-`v1.0.0` tag, and Release `v1.0.0 - FlowPilot Arena` require later, separate
-user authorization.
+Push, PR, normal CI, squash merge, repository/package visibility change,
+anonymous public clone, annotated `v1.0.0` tag, and Release
+`v1.0.0 - FlowPilot Arena` are authorized. Cloud deployment remains outside
+scope and requires separate provider parameters and authorization.

@@ -26,7 +26,17 @@ Alpine 3.24 bases and updated the container-only uv installer. Syft 1.50.0
 generated valid SPDX 2.3 documents with 1,117 control-api, 1,110 sandbox-api,
 and 72 packages in each Web image. Trivy 0.73.0 with a freshly downloaded
 database found zero HIGH/CRITICAL and zero secret findings in every remediated
-local image. A new post-merge registry workflow must reproduce those results;
-future digests are never guessed or written into this pre-dispatch document.
+local image. The final post-merge registry workflow 31316287397 reproduced
+those results. Its four immutable image digests and paired Syft/Trivy artifacts
+are recorded in `docs/evidence/week-16-release.md`; future digests are never
+guessed or hand-written into this repository inventory.
+
+The final registry SPDX artifacts contained 1,117, 1,110, 72, and 72 packages
+for control-api, sandbox-api, control-web, and sandbox-web. License fields are
+not uniformly authoritative: 1,051 backend packages and one package in each
+Web image remain `NOASSERTION` in Syft output. This is disclosed for public
+readers and is not silently converted into a license claim. The repository
+Apache-2.0 license remains present; cloud deployment and native GitHub
+Artifact Attestations remain outside the available evidence.
 
 No credential, private URL, machine path, or secret is present in the artifact.

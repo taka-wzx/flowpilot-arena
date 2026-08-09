@@ -2,7 +2,7 @@
 
 Status: W16 implementation, release closure, Private-workflow
 plan-compatibility fix, Private-image remediation, and rollback namespace fix
-are merged. Runs
+and scoped DNS egress fix are merged. Runs
 31305954309 and 31307531363 ended in
 `startup_failure` with zero jobs because the native attestation was unavailable
 for the Private plan and the repository selected-actions policy initially
@@ -22,6 +22,10 @@ sandbox-web lookup of the already-created `sandbox-api` Service. The current
 authorized fix permits only kube-system CoreDNS TCP/UDP 53 egress. No
 visibility change, cloud deployment, tag, Release, or Demo media has been
 published.
+The final authorized Private run 31316287397 passed immutable-source
+validation, all four image publications, registry SBOM/Trivy evidence, kind
+DNS/Web lifecycle, and the final verification gate. This closure records that
+result before the separately authorized public publication steps.
 
 ## Baseline and immutable evidence
 
@@ -55,6 +59,9 @@ published.
 - Scoped-DNS-egress-fix branch: codex/w16-private-dns-egress
 - Scoped-DNS-egress-fix starting origin/main:
   b62333492aea62a0d4b12147ce863ab76bda0133
+- Public-release-closure branch: codex/w16-public-release-closure
+- Public-release-closure starting origin/main:
+  5f37b49a3eb30b63c7aed7fe91676708a28721ac
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -196,6 +203,16 @@ docs/evidence/week-16-release.md
 docs/release-notes-v1.0.0.md
 ~~~
 
+The public-release evidence closure changes only these exact paths:
+
+~~~text
+AGENTS.md
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/release-notes-v1.0.0.md
+docs/sbom-status.md
+~~~
+
 ## Helm and Kubernetes
 
 - Chart, values, and JSON schema parsed locally.
@@ -268,6 +285,9 @@ docs/release-notes-v1.0.0.md
   both rollouts, both in-container HTTP checks, upgrade to two replicas,
   namespace-scoped rollback, history, uninstall, and unconditional cluster
   cleanup passed.
+- Final Private run 31316287397 passed the same digest-only kind/Helm
+  lifecycle remotely, including sandbox-web DNS resolution and the corrected
+  namespace-scoped rollback. No cloud resource was created.
 - GitHub native Artifact Attestations are `unavailable/private-plan`. Buildx
   maximum provenance and SBOM attestations remain enabled and registry-bound;
   the digest files and downloaded Syft/Trivy artifacts remain the independent
@@ -351,6 +371,17 @@ docs/release-notes-v1.0.0.md
   `02dc4e7d18ea4bebeccb46789d4c1212c970e4651fae9917212327be549a9626`.
   All four files parsed as SPDX 2.3; all four paired Trivy JSON files parsed
   with zero HIGH/CRITICAL vulnerabilities and zero secret findings.
+- Downloaded final registry-run 31316287397 Syft SPDX 2.3 package counts / byte
+  SHA-256 were: control-api 1,117 /
+  `8d5b18ecc470195ca90c64b357a47c9769b01331a4ae069615008949b09c14a6`;
+  sandbox-api 1,110 /
+  `528967d3349a632ca8a00e57a29b5aa73fdfd9ae8839e70d5ce6f4f260091523`;
+  control-web 72 /
+  `8ee4d16a7210b1f46b65c28256639bf7c07cf99cdb123c5881669359c2bff06f`;
+  sandbox-web 72 /
+  `c9a0724eb1f22538176d6d412773c48f861ca6a5329a73121c73f15c10db880b`.
+  All four files parsed as SPDX 2.3; paired Trivy JSON files parsed with zero
+  HIGH/CRITICAL vulnerabilities and zero secret findings.
 
 ## Local quality and regression
 
@@ -434,10 +465,19 @@ reported their own frozen independent grades.
   Named digest, Syft SPDX, and Trivy artifacts were downloaded and verified.
   The final gate failed only because default-deny egress prevented cluster DNS
   during the kind install; the run did not reach the corrected rollback.
-- Consequently one new Private candidate workflow must confirm the corrected
-  end-to-end lifecycle, while repository/package public visibility, `v1.0.0`,
-  and GitHub Release remain prohibited pending separate publication
-  authorization.
+- Final registry run 31316287397 reproduced zero HIGH/CRITICAL and zero secret
+  findings for all four Private images. Its immutable candidate digests were
+  control-api
+  `sha256:81f92e2001876900cd323aeb63c6687626d7bff25b371de87bcbd3b684d4f93a`,
+  sandbox-api
+  `sha256:272f214dc2b50dae8853f2abe10f17384a4ed55fd45ad7dce0845899022a5f3e`,
+  control-web
+  `sha256:7c5f42f63d6fe09ad66c80b8a1b7136613d68eeddb8499db7e81c7221c4adc9d`,
+  and sandbox-web
+  `sha256:8c8b10a1f9d978abf35e2f38fefb919fe5d508ffa8ca8e8fa6e7071938444e42`.
+- The final Private image/lifecycle gate is passed. Repository/package
+  visibility change, anonymous verification, `v1.0.0`, and GitHub Release are
+  now authorized by the user; cloud deployment remains outside scope.
 
 - gitleaks full-history scan with the protected path excluded: 59 commits,
   approximately 5.13 MB, no leaks.
@@ -449,24 +489,23 @@ reported their own frozen independent grades.
   tracking rule.
 - Repository Apache-2.0 LICENSE exists. No W16 font, icon, screenshot, video,
   external Benchmark asset, or third-party data was added.
-- Package licence and registry-digest closure are unavailable as recorded in
-  the partial SBOM, so final public-readiness is not claimed passed.
-- Anonymous clone/public README verification is not executed because the
-  repository remains Private and visibility change is not authorized.
-- Prior tags/releases are unchanged. Two planning runs had zero jobs; run
+- Package licence assertions remain partial as recorded in the SBOM; the
+  `NOASSERTION` fields are disclosed rather than inferred.
+- Anonymous clone/public README verification is the next authorized external
+  step after visibility change; it was not run during this closure commit.
+- At this closure commit, prior tags/releases were unchanged. Two planning runs had zero jobs; run
   31308404308 published only blocked Private candidates and restricted evidence.
   No tag, Release, or visibility change occurred.
 
 ## Unavailable and next authorization
 
-Unavailable or blocked: GitHub native Artifact Attestations
-(`unavailable/private-plan`), a successful end-to-end registry workflow after
-the scoped DNS egress correction, complete licence assertions, Demo GIF/video,
-real cloud deployment, anonymous public clone, and final public-readiness
-approval.
+Unavailable or limited: GitHub native Artifact Attestations
+(`unavailable/private-plan`), complete licence assertions for packages whose
+lockfile metadata is `NOASSERTION`, Demo GIF/video, and real cloud deployment.
+The final Private image/lifecycle gate is passed; anonymous public verification
+and the authorized publication operations remain to be executed.
 
-The current authorization covers the scoped DNS egress fix push/PR/normal
-CI/squash merge and one new Private candidate workflow dispatch. A later
-authorization is still required for repository/package visibility change,
+The current authorization covers the public-release evidence closure
+push/PR/normal CI/squash merge, repository/package visibility change,
 anonymous verification, annotated v1.0.0 tag, and GitHub Release v1.0.0 -
 FlowPilot Arena. Cloud parameters remain a separate scope.

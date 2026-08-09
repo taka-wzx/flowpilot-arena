@@ -1,173 +1,121 @@
 # FlowPilot Arena
 
-> A governed enterprise computer-use Agent project and a separate resettable
-> synthetic evaluation environment.
+> A governed enterprise computer-use Agent paired with a resettable synthetic
+> Arena. W16 packages the local system for reproducible review.
 
-**Current status: local W12 - Production Control Plane, private Workflow
-Worker, bounded queue/rates, and deterministic load tooling.** W12 builds on
-the immutable W11 merge `84336fdc1dd056110b2dfb32383ce938361bf316` and tag
-`w11-approval`. It adds asynchronous 202 admission, a durable organization-
-fair PostgreSQL outbox, one private four-slot Workflow Worker, leases and
-fencing, persistent actor/organization token buckets, backpressure, and one
-checksum-frozen 50-user synthetic load profile. W11 approval/audit and W8
-receipt/recovery boundaries remain authoritative; independent Sandbox
-database-fact grading is still the only task-success authority.
+## One-minute overview
 
-Development is on `week/12-production`. The current published release remains
-`v0.2.0 - Hybrid + Recovery` using `w08-recovery`; no W12 push, PR, merge, tag,
-Release, or remote CI run has been performed.
+FlowPilot coordinates bounded Joiner/Mover/Leaver work across synthetic
+enterprise applications. An Agent is useful because it can observe changing
+pages, plan typed actions across systems, recover from interruptions, and stop
+for human approval at high risk. It never becomes the authority: the Control
+Plane enforces identity, tenant/RBAC, approval, audit, queue/lease/fence and
+receipt/idempotency rules, while the independent Sandbox database-fact Grader
+decides business success.
 
-## Current architecture
+The governed loop is:
 
-| Component | Current responsibility | Deliberately absent |
-|---|---|---|
-| W1-W3 | Control skeleton, synthetic Sandbox, immutable Arena/Graders | Real systems/data and Agent-derived success |
-| W4-W7 | Isolated Browser/DOM/Vision/Hybrid/Planning path | Arbitrary browser/API/code capability |
-| W8 | Deterministic Temporal replay, Checkpoints, epochs, receipts | Identity/token/semantic data in history |
-| W9 | Five strict context layers, fixed retrieval/summary/fake memory | Vector DB, embedding, real provider |
-| W10 | Local OIDC, identity DB, closed RBAC, tenant-safe repositories, ETags | Global admin, approvals, production identity platform |
-| W11 | Closed L0-L4 risk, L2/L3 HITL, one-time grants, audit chain | Dynamic policy, L4 override, production worker split |
-| W12 | Durable admission/outbox, private fenced Worker, rate/backpressure, 50-user load profile | Broker, autoscaling, W13 telemetry, real production SLO |
+observe -> plan -> execute -> recover -> verify
+
+The released local Demo uses synthetic data and a deterministic fake provider.
+Real provider/model/OCR/VLM/embedding calls and real cost are exactly zero.
+
+## Architecture
 
 ~~~mermaid
 flowchart LR
-    BrowserUser["Local browser user"] -->|"Code + S256 PKCE"| Keycloak["Keycloak 26.3.2\nfixed local realm"]
-    BrowserUser --> Web["Control Web"]
-    Web -->|"Bearer access token"| API["Control API"]
-    Keycloak -->|"JWKS on internal identity network"| API
-    API --> IdentityDB["Control PostgreSQL\nidentity + org memory"]
-    API --> Risk["Closed L0-L4 policy"]
-    Risk --> Approval["L2/L3 approval state machine"]
-    Approval --> IdentityDB
-    API --> Audit["Per-organization audit chain"]
-    Audit --> IdentityDB
-    API --> Run["W12 run + durable outbox\nrate buckets + idempotency"]
-    Run --> IdentityDB
-    IdentityDB --> Worker["Private Workflow Worker\n4 slots + fenced lease"]
-    Worker --> Temporal["Temporal\nreleased W8 workflow"]
-    API -->|"authorized safe projection only"| Context["W9 Context boundary"]
-    Planning["Planning Agent"] --> Browser["Browser Worker"]
-    Browser --> Sandbox["Synthetic Sandbox"]
-    Grader["Independent Grader"] --> SandboxDB["Sandbox PostgreSQL"]
+  U["Local synthetic user"] --> Web["Control Web"]
+  Web --> API["Control API"]
+  API --> ID["Keycloak + Control PostgreSQL"]
+  API --> WF["Private Workflow Worker"]
+  WF --> T["Temporal + Recovery"]
+  WF --> PA["Planning / DOM / Vision / Hybrid"]
+  PA --> BW["Isolated Browser Worker"]
+  BW --> SB["Synthetic Sandbox"]
+  SB --> G["Independent database-fact Grader"]
+  API --> TR["Opaque trace/replay"]
 ~~~
 
-Control PostgreSQL, Sandbox PostgreSQL, and Temporal PostgreSQL are separate.
-Planning Agent gains no Keycloak, Control API, Control DB, Sandbox DB, Arena, or
-Grader route. Keycloak is reachable from the host only at
-`127.0.0.1:8080` and from Control API through the dedicated identity network.
+The components retain the W1-W15 boundaries documented in
+[docs/architecture.md](docs/architecture.md) and
+[docs/threat-model.md](docs/threat-model.md). W16 Helm is a closed,
+namespace-scoped packaging surface; it is not a new control path.
 
-## Identity, approval, and tenant boundary
+## Five-minute local quickstart
 
-The OIDC trust roots are frozen deployment policy: issuer
-`http://127.0.0.1:8080/realms/flowpilot`, internal JWKS at the corresponding
-`keycloak:8080` realm path, audience `flowpilot-control-api`, browser client
-`flowpilot-control-web`, and algorithm `RS256`. Request-selected issuer, JWKS,
-discovery, client, or algorithm is never accepted. Signature, `kid`, issuer,
-audience, authorized party, subject, expiry, `nbf`, `iat`, JWT header type, and
-Bearer token type fail closed before any tenant query.
-
-The deterministic realm and Control Plane seed contain two synthetic
-organizations and sixteen users/identities/memberships: each organization has
-an administrator, requester/executor, auditor, active manager, active security,
-disabled manager user, disabled security authority, and no-authority user.
-Each organization has four authority rows. Keycloak role claims do not grant
-business or approval authority; they must match the active database membership,
-while manager/security authority is resolved independently from database rows.
-There is no global approver, wildcard tenant, fallback organization,
-impersonation, administrator override, break-glass path, or L4 approval.
-
-- `organization_admin` manages its own organization, users, memberships, and
-  memory.
-- `operator` reads organization/user/memory, writes or resets memory, and
-  projects authorized context; it cannot manage membership or roles.
-- `auditor` is read-only and may project authorized context.
-
-Every tenant-owned key, foreign key, unique constraint, index, query, count,
-write, disable, tombstone, and memory reset is organization-qualified. A cross-
-organization object and a nonexistent object share the same stable 404
-semantics. There is no physical delete.
-
-Every mutable tenant resource starts at version 1. Strong ETags bind resource
-kind, organization, resource ID, and version. Mutations require `If-Match`:
-missing preconditions return 428; malformed, weak, cross-resource, cross-org,
-or stale preconditions return the same 412 without disclosing a current
-version. A successful atomic mutation increments exactly once; two concurrent
-writes from one old version have exactly one winner.
-
-The risk catalog is frozen at 2/2/7/5/5 actions for L0/L1/L2/L3/L4. L0 and L1
-execute automatically and are audited. L2 requires one active manager. L3
-requires an active manager and a different active security user. L4 and unknown
-actions are permanently denied. Strict action parameters are canonicalized and
-SHA-256 bound; caller, page, DOM, model, header, and role input cannot lower
-risk or select an approver.
-
-Completed approvals issue one short-lived grant whose raw credential exists
-only in the bounded Control API executor vault; PostgreSQL stores token and
-nonce hashes only. Claim predicates bind organization, request, task, step,
-action, parameter hash, executor, expiry, state, and version, so concurrent
-claim has exactly one winner and replay cannot create a second effect. Audit
-events are append-only canonical JSON with a per-organization sequence,
-previous hash, and event hash. Verification is deterministic and the property
-is tamper-evident, not tamper-proof or a legal-compliance claim.
-
-W9's released synthetic `scope_id` remains only a fake regression input. New
-W10 context projection derives actor and organization from verified identity
-and returns only closed safe memory fields, versions, hashes, and opaque actor/
-organization authorization hashes. It never forwards tokens, raw claims,
-subjects, names, email, endpoints, or database capabilities to Planning,
-Browser, Temporal, Sandbox, or Grader.
-
-## Local start and deterministic acceptance
-
-Python targets 3.13 and uses uv. Inject a temporary local W8 test envelope key
-for Compose; never commit or log it.
+Requirements: Python 3.13, uv, Node.js 24/npm, and Docker Compose. No cloud
+account, registry credential, or external benchmark is required.
 
 ~~~powershell
-$env:RECOVERY_ENVELOPE_KEY = '<runtime-only base64 key>'
+$env:RECOVERY_ENVELOPE_KEY = '<runtime-only local key>'
+docker compose -f deploy/compose/compose.yaml config
 docker compose -f deploy/compose/compose.yaml up --build -d
 docker compose -f deploy/compose/compose.yaml ps
 docker compose -f deploy/compose/compose.yaml --profile acceptance run --build --rm acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile vision-acceptance run --build --rm vision-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile hybrid-acceptance run --build --rm hybrid-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile planning-acceptance run --build --rm planning-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile recovery-acceptance run --build --rm recovery-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile context-acceptance run --build --rm context-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile identity-acceptance run --build --rm identity-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile approval-acceptance run --build --rm approval-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile production-acceptance run --build --rm production-acceptance-smoke
-docker compose -f deploy/compose/compose.yaml --profile production-load run --build --rm production-load python run_profile.py --development
+python tests/integration/w16_demo_smoke.py
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 Remove-Item Env:RECOVERY_ENVELOPE_KEY
 ~~~
 
-The W10 smoke retains the pinned local issuer/RBAC/tenant/locking regression.
-The W11 smoke exercises L0-L4 policy, L2/L3 separation of duties,
-self/inactive/cross-organization rejection, parameter invalidation, one-winner
-claim/replay, and audit verification. W12 then exercises L1 fail-closed effect
-authority, L2/L3 approval-to-outbox handoff, eight disjoint executable tasks,
-four-slot concurrency, tenant-uniform lookup, independent grading, and audit
-verification. The repeatable load command is Development, never formal
-Validation. These paths execute no Reporting or real provider and incur zero
-actual cost.
+The Compose acceptance profiles also cover vision, hybrid planning, recovery,
+context, identity, approval, production, observability, security, and
+development-only W15 evaluation. A reset is the local Compose volume cleanup
+above; it never authorizes a product delete. Health endpoints are /healthz for
+APIs and / for web containers. Trace/replay and the independent Grader are
+exercised by the existing observability/acceptance smokes.
 
-Exact local gates are in [AGENTS.md](AGENTS.md), scope is in
-[the W12 contract](docs/agent-contract.md), design is in
-[ADR 0012](docs/adr/0012-w12-production.md), and implementation stages are in
-[the W12 plan](docs/plans/week-12-production.md).
+## W16 release and reproducibility
 
-## Evaluation and release discipline
+- Branch: week/16-release, starting from 078eb22...
+- Local chart: [deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena).
+  Components are disabled by default because no authorized immutable app image
+  digest is published. Enable a component only with a local
+  repository@sha256:<64 hex> value and an optional existing Secret.
+- Deterministic demo: [docs/demo.md](docs/demo.md), runner
+  [tests/integration/w16_demo.py](tests/integration/w16_demo.py).
+- Architecture: [docs/architecture.md](docs/architecture.md).
+- Release notes: [docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md).
+- SBOM: [docs/sbom.spdx.json](docs/sbom.spdx.json) and
+  [docs/sbom-status.md](docs/sbom-status.md).
+- Model card: [docs/model-card.md](docs/model-card.md).
+- Contributions/security/license:
+  [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) ·
+  [LICENSE](LICENSE).
 
-W3/W7 catalogs, W9 hashes/ablations, W10 identity/tenant behavior, and W11
-approval/audit behavior remain immutable. Formal W12 ordinals 1 and 2 are
-preserved failures. The user explicitly authorized exactly one replacement
-Validation ordinal 3 after the run/work schemas, handoff, queue/rates, fault
-matrix, profile, result hashes, and Compose topology freeze. Its ordinal-3
-guard is acquired before pre-staging; cleanup counts are observed before the
-final result hash is sealed. No ordinal 4 run is authorized. Reporting remains
-load/schema/checksum-only and unexecuted before W15.
+W15 frozen synthetic Reporting results, matrix, hashes, and WorkArena
+availability are in [docs/evidence/week-15-report.md](docs/evidence/week-15-report.md)
+and [docs/benchmark-card.md](docs/benchmark-card.md). Three repetitions do
+not support significance, real-cost, SLO, ROI, or security-certification
+claims.
 
-W12 remote delivery is not authorized by default. If separately authorized
-after local completion, its tag is `w12-production` and Release title is
-`v0.3.0 - Production Control Plane`; neither exists yet.
+## Demo media
 
-Licensed under Apache-2.0.
+A GIF/video must come from a real local deterministic run and be redacted for
+cookies, bearer material, nonce, DSN, machine paths, personal data, secrets,
+and debug output. The recording tool is not installed in this environment, so
+media is honestly marked unavailable; [docs/demo.md](docs/demo.md) is the
+static fallback with subtitles and step-by-step output. AI-generated frames
+are not used.
+
+## Security boundary and known limitations
+
+This repository is private and this turn does not change visibility. There is
+no real cloud deployment, public ingress, production identity, production
+provider, arbitrary browser/API/code execution, physical delete, impersonation,
+delegation, break-glass, external Benchmark, or production certification.
+Synthetic success is not real model quality. WorkArena is unavailable because
+no versioned local asset, licence material, or checksum exists. Missing Helm,
+SBOM, Kubernetes, recording, or cloud tools remain unavailable in the W16
+evidence.
+
+## Explicitly unsupported production operations
+
+Do not use this release to modify real HR/IAM/ITSM/mail/asset systems, process
+payroll or legal data, bypass approval, grant global administration, upload
+real credentials, expose an endpoint, or treat Agent completion, Dashboard,
+Reporting, Helm, or Demo output as business success.
+
+See the [W16 plan](docs/plans/week-16-release.md) and
+[W16 contract](docs/agent-contract.md) before changing the repository. The
+authorized local commit is feat: add W16 release and reproducible demo; no
+remote delivery is included.

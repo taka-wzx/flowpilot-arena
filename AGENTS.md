@@ -1,121 +1,111 @@
 # FlowPilot Arena agent guide
 
-## Repository purpose and current phase
+## Current phase and immutable baselines
 
-FlowPilot Arena is a production-oriented computer-use Agent paired with a
-separate resettable synthetic evaluation environment. The authoritative
-roadmap is `docs/project-roadmap.md`; the exact and sole W15 implementation
-authority is `docs/agent-contract.md`.
+This branch is W16: Release and Reproducibility on `week/16-release`. The
+authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
+`docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
+their tags/releases are immutable:
 
-This branch is W15: Evaluation on `week/15-evaluation`. The following published
-baselines are immutable and must not be modified, rewritten, rolled back,
-retagged, or rereleased:
+- W12 merge `2c642a67341d0cd1c9c62b6bf883ad8df2853f40`, tag `w12-production`.
+- W13 merge `cedc5f26d41262c955b60854cc69ed4f28baded6`, tag `w13-observability`.
+- W14 merge `6bd960a031069f262fe60fbbb8bf2c65a09e409b`, tag `w14-security`.
+- W15 merge `94e5a8d74b970c93c9610725dad7cb352545f654`, tag `w15-evaluation`.
+- PR 43 merge `697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3`.
+- PR 44 merge/origin main `078eb22deb137191660a5511c496fd1dff2b74f3`.
 
-- W12: PR 35, merge `2c642a67341d0cd1c9c62b6bf883ad8df2853f40`,
-  feature/head `b00dff77b1626a3f347abfba485ac5a197b627a7`, tag
-  `w12-production`, Release `v0.3.0 - Production Control Plane`.
-- W13: PR 36, merge `cedc5f26d41262c955b60854cc69ed4f28baded6`,
-  feature/head `902e4078e1ece0f401f1c5c3010e56a7ae62acf5`, tag
-  `w13-observability`, Release `v0.4.0 - Observability and Replay`.
-- W14: PR 41, merge `6bd960a031069f262fe60fbbb8bf2c65a09e409b`,
-  feature/head `2874cfb6c02d8dfcf18baac069157e0a073ddd02`, tag
-  `w14-security`, Release `v0.5.0 - Security Suite and Threat Model`.
+Do not rewrite, roll back, retag, rerelease, or otherwise modify those
+objects. W15's report, protocol, configuration, schema, and all hashes remain
+frozen. Work only on `week/16-release`, created from the verified
+`origin/main` above.
 
-The expected later tag is `w15-evaluation`. Local authorization stops after
-one commit `feat: add W15 evaluation and reporting`. It does not permit push,
-PR, merge, tag, Release, workflow dispatch/rerun, W12 Validation, W16 work, or
-any real provider, IdP, model, OCR, VLM, embedding, billing, benchmark, account,
-personal-data, or egress call.
+## W16 authority boundary
 
-## W15 scope and authority boundary
+W16 is limited to local release packaging, a namespace-scoped Helm chart,
+deterministic synthetic-demo documentation/runner, bilingual documentation,
+SBOM generation/status, release notes, and evidence. It does not change any
+W1-W15 API, database, migration, identity, tenant, RBAC, approval, audit,
+queue/rate/lease/fence, receipt/idempotency, trace/replay, security, Arena, or
+independent-Grader semantics. `finished_ungraded` remains the Agent terminal
+state and only the Sandbox database-fact Grader determines business success.
 
-W15 may add only deterministic local/CI evaluation protocol verification,
-three pre-registered synthetic repetitions, the frozen baseline/ablation
-matrix, strict attempt retention and aggregation, an unavailable external-
-Benchmark record, and deterministic JSON reporting. The W7 Reporting split is
-unblinded only after the protocol/configuration hashes are frozen.
+No real provider, IdP, model, OCR, VLM, embedding, billing, account, personal
+data, secret, arbitrary URL/API/Shell/SQL/JavaScript capability, or external
+Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
+Helm rendering/local Compose is never cloud deployment or production
+certification. Do not log in to a cloud, create resources/DNS/TLS, incur cost,
+change repository visibility, push, open a PR, merge, tag, release, dispatch or
+rerun CI. The only authorized repository mutation after validation is one
+local commit with subject:
 
-Every W1-W14 API, migration, schema, catalog, split, identity, tenant, RBAC,
-approval, audit, queue, rate, lease, fence, receipt, idempotency, trace/replay,
-security, and independent-Grader boundary remains unchanged. Agent completion
-is still `finished_ungraded`; only the Sandbox database-fact Grader determines
-business success. Evaluation/reporting is observation-only and cannot
-authorize work, select an organization, change policy, create a business
-receipt, or write product state.
+    feat: add W16 release and reproducible demo
 
-W15 adds no W16 Helm/cloud/publication, service, database expansion, dependency,
-real data/account/approver, arbitrary URL/API/Shell/SQL/JavaScript capability,
-generic benchmark framework, production certification, statistical-
-significance claim, or real-cost claim. Security, identity, tenant isolation,
-approval, browser isolation, and the Grader are never configurable ablations.
+The literal `%SystemDrive%/` path and every `code_review_agent` repository are
+outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
+preserve unrelated `.tmp/` content.
 
-The preferred WorkArena benchmark is unavailable because no versioned local
-asset, task subset, licence material, or content checksum exists in the
-repository. Do not download, install, substitute, or execute an external
-benchmark without new user authorization for the exact source, version,
-checksum, licence, and download action. Report it as `unavailable`.
+## Exact W16 file allowlist
 
-## File ownership and prohibited paths
+Only the following exact paths may be created or modified. Directory
+wildcards are forbidden; add a path here before changing it.
 
-Change only exact paths listed in `docs/agent-contract.md`. Add a path there
-before changing it. Directory wildcards are forbidden. Any new service,
-database, dependency, real network/data/provider, Benchmark download, physical
-deletion, W16 feature, or generic abstraction requires user direction first.
+~~~text
+AGENTS.md
+README.md
+README.zh-CN.md
+CONTRIBUTING.md
+SECURITY.md
 
-The literal pre-existing `%SystemDrive%/` path is outside ownership. Do not
-inspect, enumerate, copy, modify, stage, scan, ignore, or delete it. Do not
-access any `code_review_agent` repository. Preserve unrelated `.tmp/` content.
+docs/agent-contract.md
+docs/architecture.md
+docs/benchmark-card.md
+docs/demo.md
+docs/model-card.md
+docs/release-notes-v1.0.0.md
+docs/sbom.spdx.json
+docs/sbom-status.md
+docs/adr/0016-w16-release.md
+docs/plans/week-16-release.md
+docs/evidence/week-16-release.md
 
-## Engineering and evaluation conventions
+deploy/helm/flowpilot-arena/Chart.yaml
+deploy/helm/flowpilot-arena/values.yaml
+deploy/helm/flowpilot-arena/values.schema.json
+deploy/helm/flowpilot-arena/templates/_helpers.tpl
+deploy/helm/flowpilot-arena/templates/configmap.yaml
+deploy/helm/flowpilot-arena/templates/deployment.yaml
+deploy/helm/flowpilot-arena/templates/networkpolicy.yaml
+deploy/helm/flowpilot-arena/templates/NOTES.txt
+deploy/helm/flowpilot-arena/templates/service.yaml
+deploy/helm/flowpilot-arena/templates/serviceaccount.yaml
+deploy/helm/flowpilot-arena/templates/tests/test-connection.yaml
 
-- Python target is 3.13. Use uv; never hand-edit a lockfile. No frontend is in
-  the W15 allowlist.
-- Use strict/frozen Pydantic, `extra=forbid`, closed enums, canonical sorted-key
-  compact UTF-8 JSON, stable SHA-256, and no unused dependency.
-- Verify all W3/W7 catalog, split, instance, Reporting-manifest, protocol,
-  configuration, schema, and report hashes before processing attempts. Any
-  mismatch fails before a result is generated.
-- Execute each frozen configuration in the exact task/seed order. Preserve
-  every planned primary attempt, including failure, timeout, controlled stop,
-  infrastructure error, and missing status. Infrastructure retry is append-only
-  and never replaces its primary attempt. Do not selectively rerun or discard.
-- Keep Development, Validation, Reporting, and external Benchmark records
-  distinct. W12 Validation ordinal 3 is immutable evidence and is not rerun;
-  ordinal 4 does not exist.
-- The authoritative report is JSON. Markdown is evidence narrative only.
-  Reports contain only versions, hashes, opaque references, closed codes,
-  counts, aggregate metrics, bounded latencies, and security references. They
-  contain no raw task/page/DOM/screenshot/model/tool content, Bearer/approval
-  material, Cookie, password, key, DSN, personal data, real secret, URL query,
-  or machine path.
-- Three repetitions do not support inflated significance claims. Report raw
-  repeat summaries, paired percentage-point differences, median/range, and
-  explicit uncertainty/availability.
-- Real provider/model/OCR/VLM/embedding/billing/egress calls and real cost stay
-  exactly zero.
-
-## Required local checks
-
-Run the W15 files through the existing locked Sandbox/Arena development
-toolchain (no W15 dependency or lockfile is added):
-
-~~~powershell
-Set-Location apps/sandbox_api
-uv sync --locked --all-groups
-uv run ruff check ../../tests/integration/w15_evaluation.py ../../tests/integration/test_w15_evaluation.py ../../tests/integration/w15_evaluation_smoke.py
-uv run ruff format --check ../../tests/integration/w15_evaluation.py ../../tests/integration/test_w15_evaluation.py ../../tests/integration/w15_evaluation_smoke.py
-uv run mypy --strict ../../tests/integration/w15_evaluation.py ../../tests/integration/w15_evaluation_smoke.py
-uv run pytest ../../tests/integration/test_w15_evaluation.py
+scripts/generate_sbom.py
+tests/integration/w16_demo.py
+tests/integration/test_w16_demo.py
+tests/integration/w16_demo_smoke.py
 ~~~
 
-Also run available YAML/workflow policy validation; Compose config/build/up/
-health; relevant migration empty upgrade/current/check/downgrade/upgrade;
-W4-W14 regression; W13 observability smoke; W14 deterministic security smoke;
-W15 Development evaluation smoke; the single W15 frozen Reporting final;
-catalog/split/config/schema/report checksum gates; real-call-zero and sensitive-
-field scans; exact allowlist/staged/unstaged review; and cleanup.
+The W15 frozen files are not modified or rerun in Reporting mode. No new
+dependency, lockfile, service, database, migration, network capability,
+container image, or cloud resource may be added without separate user
+authorization. If Helm, kind/k3d, SBOM, recording, or cloud tooling is absent,
+record `unavailable` in the evidence; never claim it passed.
 
-Finish with the locally available forms of:
+## Required verification
+
+Run available locked dependency syncs, Ruff, format, strict mypy, pytest,
+frontend npm checks, YAML/workflow policy checks, Helm lint/schema/deterministic
+render and Kubernetes security scans, Compose config/build/up/health and
+cleanup, migration empty upgrade/current/check/downgrade/upgrade, W4-W15
+regression, W13/W14 smokes, the W15 Development-only smoke, W16 demo smoke,
+W15 hash immutability, real-call/cost-zero and sensitive-field scans, SBOM
+schema/checksum/license/secret checks, README/link/command checks,
+detect-private-key, gitleaks, `git diff --check`, and exact allowlist/staged
+review. Do not run W15 frozen Reporting final, W12 formal Validation, an
+external Benchmark, or real cloud deployment.
+
+Finish with local forms of:
 
 ~~~powershell
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
@@ -126,21 +116,7 @@ git diff -- . ':(exclude)%SystemDrive%'
 git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
-Record unavailable tooling without weakening a gate or claiming it passed.
-Do not run an external Benchmark, W12 formal Validation, or W16 work.
-
-## Git completion discipline
-
-Work only on `week/15-evaluation`. Never develop on `main`, W12, W13, W14, or
-another published branch. Development smokes may repeat. The Reporting final
-may run once only after protocol freeze and all prerequisite gates pass.
-
-After evidence reconciliation, explicitly stage only exact changed W15
-allowlist paths, create the one local commit below, and stop:
-
-~~~text
-feat: add W15 evaluation and reporting
-~~~
-
-Do not push, open a PR, merge, tag, create a Release, dispatch/rerun CI, or call
-a real provider or external Benchmark.
+Record unavailable tooling and unexecuted cloud/publication steps honestly.
+After the single local commit, stop and report changed paths, reproduction
+status, documentation/demo/SBOM/public-readiness results, verification,
+unavailable items, and the separately authorized remote/cloud steps.

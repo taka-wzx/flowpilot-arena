@@ -1,0 +1,13 @@
+FlowPilot Arena W16 local chart
+
+This chart is namespace-scoped and uses deterministic fake-provider demo mode.
+Only enabled components with repository@sha256 image references render. No
+cloud resource, public ingress, credential, or production certification is
+created.
+
+Inspect the closed deployment:
+  kubectl get pods,svc,networkpolicy -n {{ .Release.Namespace }}
+  kubectl logs -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+The independent Sandbox database-fact Grader remains the only business-success
+authority; the Agent terminal state is finished_ungraded.

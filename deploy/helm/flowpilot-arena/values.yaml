@@ -1,0 +1,78 @@
+global:
+  imagePullSecrets: []
+  existingSecret: ""
+  demo:
+    mode: deterministic-fake-provider
+    realCalls: "0"
+    realCostMicrousd: "0"
+
+serviceAccount:
+  create: true
+  name: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+replicas: 1
+
+components:
+  controlApi:
+    enabled: false
+    name: control-api
+    image:
+      repository: ""
+      digest: ""
+    port: 8000
+    servicePort: 8000
+    healthPath: /healthz
+    existingSecret: ""
+  sandboxApi:
+    enabled: false
+    name: sandbox-api
+    image:
+      repository: ""
+      digest: ""
+    port: 8001
+    servicePort: 8001
+    healthPath: /healthz
+    existingSecret: ""
+  controlWeb:
+    enabled: false
+    name: control-web
+    image:
+      repository: ""
+      digest: ""
+    port: 80
+    servicePort: 80
+    healthPath: /
+    existingSecret: ""
+  sandboxWeb:
+    enabled: false
+    name: sandbox-web
+    image:
+      repository: ""
+      digest: ""
+    port: 80
+    servicePort: 80
+    healthPath: /
+    existingSecret: ""

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "flowpilot.fullname" . }}-demo
+  labels:
+    {{- include "flowpilot.labels" . | nindent 4 }}
+data:
+  FLOWPILOT_DEMO_MODE: {{ .Values.global.demo.mode | quote }}
+  FLOWPILOT_REAL_CALLS: {{ .Values.global.demo.realCalls | quote }}
+  FLOWPILOT_REAL_COST_MICROUSD: {{ .Values.global.demo.realCostMicrousd | quote }}
+  FLOWPILOT_AGENT_TERMINAL_STATE: finished_ungraded
+  FLOWPILOT_GRADER_AUTHORITY: independent-sandbox-database-fact

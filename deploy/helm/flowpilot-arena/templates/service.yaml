@@ -1,0 +1,23 @@
+{{- range $key, $component := .Values.components }}
+{{- if $component.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "flowpilot.fullname" $ }}-{{ $component.name }}
+  labels:
+    {{- include "flowpilot.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component.name }}
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: {{ include "flowpilot.name" $ }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/component: {{ $component.name }}
+  ports:
+    - name: http
+      port: {{ $component.servicePort }}
+      targetPort: http
+      protocol: TCP
+---
+{{- end }}
+{{- end }}

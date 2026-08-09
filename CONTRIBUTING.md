@@ -1,69 +1,34 @@
 # Contributing to FlowPilot Arena
 
-## Start with scope
+## Scope first
 
-Read [docs/project-roadmap.md](docs/project-roadmap.md),
-[docs/agent-contract.md](docs/agent-contract.md), and the active weekly plan
-before changing code. W1 work is restricted to the contract allowlist. Do not
-turn a foundation task into a Sandbox, agent, browser, model, workflow, or
-evaluation implementation.
+Read docs/project-roadmap.md, docs/agent-contract.md, and
+docs/plans/week-16-release.md before editing. W16 permits only the exact
+allowlist in the contract. Preserve W1-W15 product and evidence semantics.
 
 ## Local setup
 
-Use Python 3.13 with `uv` for the API and Node.js 22.12+ with npm for the web
-application.
+Use Python 3.13 with uv and Node.js 24/npm. Run locked syncs from each project
+before its checks; never hand-edit uv.lock or npm lockfiles.
 
-```powershell
-Push-Location apps/control_api
-uv sync --locked --all-groups
-Pop-Location
+## Review workflow
 
-Push-Location apps/control_web
-npm ci
-Pop-Location
-```
+1. Work only on week/16-release, based on the verified origin/main commit.
+2. Amend the contract before adding a path; do not use directory wildcards.
+3. Run the listed lint, type, test, Compose, Helm, SBOM, redaction and secret
+   checks. Record unavailable tooling honestly.
+4. Review staged paths against the exact allowlist and keep unrelated .tmp/
+   content untouched.
+5. This turn permits one local commit only:
+   feat: add W16 release and reproducible demo
 
-On Windows systems that block `npm.ps1`, use `npm.cmd` instead.
+Do not push, open a PR, merge, tag, create a Release, change visibility, log in
+to a cloud, or run an external Benchmark without separate authorization.
 
-## Change workflow
+## Data and security
 
-1. Start from the relevant weekly branch; never develop directly on `main`.
-2. Keep the change within that week's written contract. Amend the contract
-   before adding a necessary W1 path; seek direction when the change broadens
-   the milestone.
-3. Make small, reviewable commits using a Conventional Commit-style message,
-   for example `feat: add control API health check`.
-4. Run the checks listed in the weekly plan and include the observed results in
-   the evidence report.
-5. Open a PR only after review is ready. Do not push, merge, force-push, or tag
-   without the required authorization.
-
-## Required review material
-
-Every weekly PR must include:
-
-- the weekly plan and task contract;
-- an exact changed-file list;
-- architecture/ADR rationale when the structure changes;
-- lint, type-check, test, build, Compose, and secret-scan results;
-- screenshots or traces only when the current week actually creates them;
-- known limitations and items intentionally deferred to the next week;
-- whether any paid model was used and its actual cost.
-
-W1 must report zero paid-model calls and zero real enterprise-system calls.
-
-## Code and data rules
-
-- Keep Python type annotated and pass Ruff, mypy, and pytest.
-- Keep TypeScript strict and pass ESLint, TypeScript, Vitest, and Vite build.
-- Update both manifest and lockfile together.
-- Never add credentials, personal data, private local paths, or generated
-  dependency directories.
-- Do not stage unrelated files. In particular, `%SystemDrive%/` is not part of
-  this project and must remain untouched.
-
-## Release convention
-
-After an authorized PR merge to `main`, create the annotated tag named by the
-roadmap (W1: `w01-foundation`). Pushing the branch or tag remains an explicit
-authorization step.
+Never add real accounts, personal data, credentials, cookies, Bearer material,
+private keys, DSNs, machine paths, arbitrary endpoints, or generated dependency
+directories. The Demo uses synthetic values and deterministic-fake-provider/1.0;
+real provider/model/OCR/VLM/embedding/billing calls remain zero. The independent
+Sandbox database-fact Grader is the sole success authority.

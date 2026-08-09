@@ -10,11 +10,17 @@ lockfile integrity/hash fields. Re-running the generator with unchanged inputs
 must produce the same bytes and SHA-256.
 
 The artifact explicitly records container_image_digest_coverage=unavailable.
-Dockerfiles currently declare build tags and no authorized immutable application
-image has been published; no registry was contacted. Therefore this is a
-machine-readable partial inventory plus an honest unavailable status, not a
-claim that a complete image-inclusive SBOM or cloud deployment passed. Syft,
-Trivy, CycloneDX CLI, Helm, and kind/k3d were not installed in this environment
-when checked.
+Dockerfiles currently declare build tags and, at closure-commit time, no
+immutable application image has been published. Therefore this repository
+artifact remains a machine-readable partial inventory, not a claim that a
+complete registry-image SBOM or cloud deployment passed.
+
+The authorized closure used checksum-verified Syft 1.50.0 and Trivy 0.73.0,
+built all four local `linux/amd64` images, and generated temporary per-image
+SPDX documents. Trivy found no embedded secret findings, but every image failed the
+HIGH/CRITICAL vulnerability gate. The post-merge manual workflow repeats these
+checks against Private GHCR digests and uploads the reports as restricted
+workflow artifacts. Those future registry digests are never guessed or written
+into this pre-dispatch document.
 
 No credential, private URL, machine path, or secret is present in the artifact.

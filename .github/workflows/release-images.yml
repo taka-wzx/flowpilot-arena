@@ -1,0 +1,348 @@
+name: W16 Private Candidate Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact 40-character main commit to publish
+        required: true
+        type: string
+      confirm_private_candidate:
+        description: Publish the four Private linux/amd64 candidate images
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: w16-private-candidate-${{ inputs.source_ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-source:
+    name: Validate immutable main source
+    if: inputs.confirm_private_candidate
+    runs-on: ubuntu-24.04
+    outputs:
+      source_sha: ${{ steps.source.outputs.sha }}
+    steps:
+      - name: Check out the requested source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - name: Require the workflow commit and source commit to match
+        id: source
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_REF" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$SOURCE_REF" == "$WORKFLOW_SHA" ]]
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_REF" ]]
+          git merge-base --is-ancestor "$SOURCE_REF" origin/main
+          echo "sha=$SOURCE_REF" >> "$GITHUB_OUTPUT"
+
+  build-and-push:
+    name: Publish ${{ matrix.component }}
+    needs: validate-source
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - component: control-api
+            image: flowpilot-arena-control-api
+            context: apps/control_api
+            dockerfile: apps/control_api/Dockerfile
+          - component: sandbox-api
+            image: flowpilot-arena-sandbox-api
+            context: apps/sandbox_api
+            dockerfile: apps/sandbox_api/Dockerfile
+          - component: control-web
+            image: flowpilot-arena-control-web
+            context: apps/control_web
+            dockerfile: apps/control_web/Dockerfile
+          - component: sandbox-web
+            image: flowpilot-arena-sandbox-web
+            context: apps/sandbox_web
+            dockerfile: apps/sandbox_web/Dockerfile
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ghcr.io/taka-wzx/${{ matrix.image }}
+      IMAGE_TAG: sha-${{ needs.validate-source.outputs.source_sha }}
+    steps:
+      - name: Check out the validated source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.validate-source.outputs.source_sha }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+      - name: Log in to GHCR with the repository token
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push the Private candidate
+        id: push
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.validate-source.outputs.source_sha }}
+            org.opencontainers.image.version=${{ env.IMAGE_TAG }}
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.title=${{ matrix.image }}
+          provenance: mode=max
+          sbom: true
+      - name: Record the immutable digest
+        env:
+          COMPONENT: ${{ matrix.component }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="${RUNNER_TEMP}/${COMPONENT}.digest"
+          {
+            echo "component=${COMPONENT}"
+            echo "image=${IMAGE_NAME}"
+            echo "tag=${IMAGE_TAG}"
+            echo "digest=${DIGEST}"
+          } > "$output"
+      - name: Upload digest evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: w16-${{ matrix.component }}-digest
+          path: ${{ runner.temp }}/${{ matrix.component }}.digest
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish GitHub artifact attestation
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  image-evidence:
+    name: Registry-digest SBOM and vulnerability evidence
+    if: always() && inputs.confirm_private_candidate
+    needs: build-and-push
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+    outputs:
+      blocking_vulnerabilities: ${{ steps.summary.outputs.blocking_vulnerabilities }}
+      secret_findings: ${{ steps.summary.outputs.secret_findings }}
+    steps:
+      - name: Download all digest evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: w16-*-digest
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+      - name: Log in to GHCR with the repository token
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install checksum-verified Syft and Trivy
+        env:
+          SYFT_SHA256: bf7b29ff57f06da30918266a0e1c2885a8f99784798d1bdb1628886aa015d788
+          TRIVY_SHA256: 2edd39da482bb4e9831962487b68f68e3928ec3137794757f54d00383d79547b
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin_dir="$RUNNER_TEMP/w16-bin"
+          mkdir -p "$bin_dir"
+          curl --fail --silent --show-error --location \
+            --output "$RUNNER_TEMP/syft.tar.gz" \
+            https://github.com/anchore/syft/releases/download/v1.50.0/syft_1.50.0_linux_amd64.tar.gz
+          echo "$SYFT_SHA256  $RUNNER_TEMP/syft.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/syft.tar.gz" -C "$bin_dir" syft
+          curl --fail --silent --show-error --location \
+            --output "$RUNNER_TEMP/trivy.tar.gz" \
+            https://github.com/aquasecurity/trivy/releases/download/v0.73.0/trivy_0.73.0_Linux-64bit.tar.gz
+          echo "$TRIVY_SHA256  $RUNNER_TEMP/trivy.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/trivy.tar.gz" -C "$bin_dir" trivy
+          echo "$bin_dir" >> "$GITHUB_PATH"
+      - name: Generate exact-digest evidence
+        id: summary
+        env:
+          SYFT_CHECK_FOR_APP_UPDATE: "false"
+        shell: bash
+        run: |
+          set -euo pipefail
+          output_dir="$RUNNER_TEMP/image-evidence"
+          mkdir -p "$output_dir"
+          total_blocking=0
+          total_secrets=0
+          for component in control-api sandbox-api control-web sandbox-web; do
+            record="$RUNNER_TEMP/digests/${component}.digest"
+            image="$(sed -n 's/^image=//p' "$record")"
+            digest="$(sed -n 's/^digest=//p' "$record")"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            reference="${image}@${digest}"
+            syft "$reference" -o "spdx-json=$output_dir/${component}.spdx.json"
+            trivy image --skip-version-check --scanners vuln,secret \
+              --format json --output "$output_dir/${component}.trivy.json" \
+              --timeout 10m "$reference"
+            blocking="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' "$output_dir/${component}.trivy.json")"
+            secrets="$(jq '[.Results[]?.Secrets[]?] | length' "$output_dir/${component}.trivy.json")"
+            noassertion="$(jq '[.packages[]? | select((.licenseDeclared // "NOASSERTION") == "NOASSERTION" or (.licenseConcluded // "NOASSERTION") == "NOASSERTION")] | length' "$output_dir/${component}.spdx.json")"
+            total_blocking=$((total_blocking + blocking))
+            total_secrets=$((total_secrets + secrets))
+            echo "${component}: ${reference}; HIGH/CRITICAL=${blocking}; secrets=${secrets}; SPDX_NOASSERTION=${noassertion}" >> "$GITHUB_STEP_SUMMARY"
+          done
+          echo "blocking_vulnerabilities=$total_blocking" >> "$GITHUB_OUTPUT"
+          echo "secret_findings=$total_secrets" >> "$GITHUB_OUTPUT"
+      - name: Upload SBOM and Trivy evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: w16-private-candidate-image-evidence
+          path: ${{ runner.temp }}/image-evidence
+          if-no-files-found: error
+          retention-days: 30
+
+  kind-helm-smoke:
+    name: kind and Helm digest-only lifecycle
+    if: always() && inputs.confirm_private_candidate
+    needs: build-and-push
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+    steps:
+      - name: Check out the validated source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_ref }}
+      - name: Download all digest evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: w16-*-digest
+          path: ${{ runner.temp }}/digests
+          merge-multiple: true
+      - name: Install checksum-verified Helm, kind, and kubectl
+        env:
+          HELM_SHA256: 97dbeb971be4ac4b27e3839976d9564c0fb35c6f3b1da89dd1e292d236af4096
+          KIND_SHA256: 50030de23cf40a18505f20426f6a8506bedf13c6e509244bd1fa9463721b0f54
+          KUBECTL_SHA256: 629d3f410e09bf49b64ae7079f7f0bda1191efed311f7d37fdbab0ad5b0ec2b7
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin_dir="$RUNNER_TEMP/w16-bin"
+          mkdir -p "$bin_dir"
+          curl --fail --silent --show-error --location \
+            --output "$RUNNER_TEMP/helm.tar.gz" \
+            https://get.helm.sh/helm-v4.2.0-linux-amd64.tar.gz
+          echo "$HELM_SHA256  $RUNNER_TEMP/helm.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/helm.tar.gz" -C "$RUNNER_TEMP"
+          mv "$RUNNER_TEMP/linux-amd64/helm" "$bin_dir/helm"
+          curl --fail --silent --show-error --location \
+            --output "$bin_dir/kind" \
+            https://kind.sigs.k8s.io/dl/v0.32.0/kind-linux-amd64
+          echo "$KIND_SHA256  $bin_dir/kind" | sha256sum --check
+          curl --fail --silent --show-error --location \
+            --output "$bin_dir/kubectl" \
+            https://dl.k8s.io/release/v1.36.1/bin/linux/amd64/kubectl
+          echo "$KUBECTL_SHA256  $bin_dir/kubectl" | sha256sum --check
+          chmod +x "$bin_dir/helm" "$bin_dir/kind" "$bin_dir/kubectl"
+          echo "$bin_dir" >> "$GITHUB_PATH"
+      - name: Exercise a digest-only web deployment lifecycle
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cleanup() {
+            kind delete cluster --name flowpilot-w16
+          }
+          trap cleanup EXIT
+          kind create cluster --name flowpilot-w16 --wait 180s \
+            --image kindest/node:v1.36.1@sha256:3489c7674813ba5d8b1a9977baea8a6e553784dab7b84759d1014dbd78f7ebd5
+          kubectl create namespace flowpilot-w16
+          kubectl --namespace flowpilot-w16 create secret docker-registry ghcr-pull \
+            --docker-server=ghcr.io \
+            --docker-username="$GITHUB_ACTOR" \
+            --docker-password="$GHCR_TOKEN"
+          kubectl --namespace flowpilot-w16 create secret generic flowpilot-runtime
+          control_web_image="$(sed -n 's/^image=//p' "$RUNNER_TEMP/digests/control-web.digest")"
+          control_web_digest="$(sed -n 's/^digest=//p' "$RUNNER_TEMP/digests/control-web.digest")"
+          sandbox_web_image="$(sed -n 's/^image=//p' "$RUNNER_TEMP/digests/sandbox-web.digest")"
+          sandbox_web_digest="$(sed -n 's/^digest=//p' "$RUNNER_TEMP/digests/sandbox-web.digest")"
+          common_args=(
+            --namespace flowpilot-w16
+            --set-string global.existingSecret=flowpilot-runtime
+            --set-string 'global.imagePullSecrets[0].name=ghcr-pull'
+            --set components.controlWeb.enabled=true
+            --set-string components.controlWeb.image.repository="$control_web_image"
+            --set-string components.controlWeb.image.digest="$control_web_digest"
+            --set components.sandboxWeb.enabled=true
+            --set-string components.sandboxWeb.image.repository="$sandbox_web_image"
+            --set-string components.sandboxWeb.image.digest="$sandbox_web_digest"
+          )
+          helm lint deploy/helm/flowpilot-arena --strict "${common_args[@]}"
+          helm upgrade --install flowpilot-w16 deploy/helm/flowpilot-arena \
+            --wait --timeout 5m "${common_args[@]}"
+          kubectl --namespace flowpilot-w16 rollout status \
+            deployment/flowpilot-w16-flowpilot-arena-control-web --timeout=180s
+          kubectl --namespace flowpilot-w16 rollout status \
+            deployment/flowpilot-w16-flowpilot-arena-sandbox-web --timeout=180s
+          kubectl --namespace flowpilot-w16 exec \
+            deployment/flowpilot-w16-flowpilot-arena-control-web -- \
+            wget -q -O /dev/null http://127.0.0.1/
+          kubectl --namespace flowpilot-w16 exec \
+            deployment/flowpilot-w16-flowpilot-arena-sandbox-web -- \
+            wget -q -O /dev/null http://127.0.0.1/
+          helm upgrade flowpilot-w16 deploy/helm/flowpilot-arena \
+            --wait --timeout 5m --set replicas=2 "${common_args[@]}"
+          helm rollback flowpilot-w16 1 --wait --timeout 5m
+          helm uninstall flowpilot-w16 --namespace flowpilot-w16 --wait
+
+  private-candidate-gate:
+    name: Private candidate verification gate
+    if: always() && inputs.confirm_private_candidate
+    needs:
+      - build-and-push
+      - image-evidence
+      - kind-helm-smoke
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require provenance, lifecycle, secrets, and vulnerability gates
+        env:
+          BUILD_RESULT: ${{ needs.build-and-push.result }}
+          EVIDENCE_RESULT: ${{ needs.image-evidence.result }}
+          KIND_HELM_RESULT: ${{ needs.kind-helm-smoke.result }}
+          BLOCKING_VULNERABILITIES: ${{ needs.image-evidence.outputs.blocking_vulnerabilities }}
+          SECRET_FINDINGS: ${{ needs.image-evidence.outputs.secret_findings }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$BUILD_RESULT" == "success" ]]
+          [[ "$EVIDENCE_RESULT" == "success" ]]
+          [[ "$KIND_HELM_RESULT" == "success" ]]
+          [[ "$BLOCKING_VULNERABILITIES" == "0" ]]
+          [[ "$SECRET_FINDINGS" == "0" ]]

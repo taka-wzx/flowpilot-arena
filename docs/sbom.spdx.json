@@ -5,7 +5,7 @@
       "annotationDate": "1970-01-01T00:00:00Z",
       "annotationType": "OTHER",
       "annotator": "Tool: flowpilot-sbom-generator/1.0",
-      "comment": "input_sha256=87fa5eaf332229b1dfa266d7b223d290639bed7da32c5f5e0f814187c3c20cb9"
+      "comment": "input_sha256=9861849311af5acc0374ce7ca12ee73d68d223397ae837a5f6df695a570134f3"
     },
     {
       "annotationDate": "1970-01-01T00:00:00Z",

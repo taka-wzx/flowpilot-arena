@@ -66,11 +66,16 @@ exercised by the existing observability/acceptance smokes.
 
 ## W16 release and reproducibility
 
-- Branch: week/16-release, starting from 078eb22...
+- W16 PR 45 is merged at `d1b03993...`; the separately authorized closure is
+  prepared on `codex/w16-release-closure`.
 - Local chart: [deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena).
-  Components are disabled by default because no authorized immutable app image
-  digest is published. Enable a component only with a local
-  repository@sha256:<64 hex> value and an optional existing Secret.
+  Components remain disabled by default and may be enabled only with
+  `repository@sha256:<64 hex>` plus an optional existing Secret.
+- Private candidate workflow:
+  [.github/workflows/release-images.yml](.github/workflows/release-images.yml).
+  It accepts only an exact main commit, publishes four `linux/amd64`
+  `sha-<40-hex>` candidates, records SBOM/Trivy/provenance evidence, exercises
+  a kind/Helm lifecycle, and never creates `latest` or `v1.0.0`.
 - Deterministic demo: [docs/demo.md](docs/demo.md), runner
   [tests/integration/w16_demo.py](tests/integration/w16_demo.py).
 - Architecture: [docs/architecture.md](docs/architecture.md).
@@ -99,14 +104,16 @@ are not used.
 
 ## Security boundary and known limitations
 
-This repository is private and this turn does not change visibility. There is
+This repository is Private and this closure does not change visibility. There is
 no real cloud deployment, public ingress, production identity, production
 provider, arbitrary browser/API/code execution, physical delete, impersonation,
 delegation, break-glass, external Benchmark, or production certification.
 Synthetic success is not real model quality. WorkArena is unavailable because
-no versioned local asset, licence material, or checksum exists. Missing Helm,
-SBOM, Kubernetes, recording, or cloud tools remain unavailable in the W16
-evidence.
+no versioned local asset, licence material, or checksum exists. Helm 4.2.0 and
+kind 0.32.0 local validation pass after the NetworkPolicy correction. Complete
+registry-digest/licence SBOM coverage, recording, cloud deployment, and public
+readiness remain unavailable. Trivy reports HIGH/CRITICAL findings in every
+local candidate, so public visibility, `v1.0.0`, and Release are blocked.
 
 ## Explicitly unsupported production operations
 
@@ -117,5 +124,6 @@ Reporting, Helm, or Demo output as business success.
 
 See the [W16 plan](docs/plans/week-16-release.md) and
 [W16 contract](docs/agent-contract.md) before changing the repository. The
-authorized local commit is feat: add W16 release and reproducible demo; no
-remote delivery is included.
+authorized closure commit is `chore: close W16 release verification`. Only the
+closure PR/CI/squash merge and one Private candidate dispatch are authorized;
+public visibility, tag, Release, and cloud actions are not.

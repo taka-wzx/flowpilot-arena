@@ -2,8 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is the authorized W16 public-release evidence closure on
-`codex/w16-public-release-closure`. The
+This branch is the authorized W16 public README alignment on
+`codex/w16-public-readme-closure`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -26,11 +26,13 @@ their tags/releases are immutable:
   `b62333492aea62a0d4b12147ce863ab76bda0133`.
 - W16 scoped DNS egress PR 50 merge/origin main
   `5f37b49a3eb30b63c7aed7fe91676708a28721ac`.
+- W16 public-release evidence PR 51 merge/origin main
+  `bc5da48060b999e85553d9d2db6d03b16303d5c9`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `codex/w16-public-release-closure`, created from the
-verified W16 scoped DNS egress merge on `origin/main` above.
+frozen. Work only on `codex/w16-public-readme-closure`, created from the
+verified W16 public-release evidence merge on `origin/main` above.
 
 ## W16 authority boundary
 
@@ -48,7 +50,7 @@ Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
 certification. Do not log in to a cloud, create resources/DNS/TLS, incur cost,
 change repository or package visibility, tag, or release. The user has
-separately authorized this public-release evidence closure branch, push, PR,
+separately authorized this public README alignment branch, push, PR,
 normal CI, and squash merge. The user also authorized repository/package
 visibility change, anonymous public verification, the annotated `v1.0.0` tag,
 and GitHub Release `v1.0.0 - FlowPilot Arena`. Cloud deployment, provider,
@@ -56,23 +58,23 @@ account, region, cluster, DNS, TLS, budget, egress, and secret parameters
 remain outside this authorization. The authorized repository mutation is one
 commit with subject:
 
-    docs: close W16 public release evidence
+    docs: align public W16 README
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
 preserve unrelated `.tmp/` content.
 
-## Exact public-release-closure allowlist
+## Exact public-README-alignment allowlist
 
 Only the following exact paths may be created or modified. Directory
 wildcards are forbidden; add a path here before changing it.
 
 ~~~text
 AGENTS.md
+README.md
+README.zh-CN.md
 docs/agent-contract.md
 docs/evidence/week-16-release.md
-docs/release-notes-v1.0.0.md
-docs/sbom-status.md
 ~~~
 
 The W15 frozen files are not modified or rerun in Reporting mode. No new
@@ -110,6 +112,6 @@ git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
 Record unavailable tooling and unexecuted cloud/publication steps honestly.
-After the single public-release-closure commit, push/PR/CI/squash merge may
+After the single public README alignment commit, push/PR/CI/squash merge may
 proceed. Then perform the authorized visibility, anonymous verification, tag,
 and Release steps. Stop before any cloud action.

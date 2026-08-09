@@ -62,14 +62,18 @@ smoke 覆盖。
 
 ## W16 材料
 
-- W16 PR 45 已合并于 `d1b03993...`；单独授权的 closure 位于
-  `codex/w16-release-closure`。
+- W16 PR 45 及截至 PR 51 的 release-closure follow-up 均已合并；main 上的
+  公开证据基线为 `bc5da480...`。
 - Helm：[deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena)
-- Private 候选镜像 workflow：
+- 候选镜像 workflow：
   [.github/workflows/release-images.yml](.github/workflows/release-images.yml)。
   它只接受 main 上精确的 40 位 commit，只发布四个 `linux/amd64`
   `sha-<commit>` 候选，生成 SBOM/Trivy/provenance 证据并执行 kind/Helm
   生命周期；不会创建 `latest` 或 `v1.0.0`。
+- 最终 workflow run 31316287397 已通过四镜像精确 digest 构建、零
+  HIGH/CRITICAL、零 secret、registry SPDX/Trivy、sandbox-web DNS 和完整
+  kind/Helm 生命周期。精确 digest 与 artifact checksum 见
+  [docs/evidence/week-16-release.md](docs/evidence/week-16-release.md)。
 - Demo：[docs/demo.md](docs/demo.md) 与
   [tests/integration/w16_demo.py](tests/integration/w16_demo.py)
 - 架构：[docs/architecture.md](docs/architecture.md)
@@ -94,13 +98,15 @@ GIF/视频必须来自真实的本地确定性运行并完成 Cookie、Bearer、
 
 ## 安全边界与已知限制
 
-仓库仍为 Private，本 closure 不改变可见性。没有真实云部署、公共入口、生产身份、
+仓库现为 Public。没有真实云部署、公共入口、生产身份、
 生产 provider、任意浏览器/API/代码执行、物理删除、impersonation、delegation、
 break-glass、外部 Benchmark 或生产认证。合成结果不是实际模型质量；WorkArena
 因仓库没有版本化本地资产、许可材料和 checksum 而 unavailable。Helm 4.2.0 与
-kind 0.32.0 在修复 NetworkPolicy 后已通过本地验证；完整的 registry digest/许可
-SBOM、录屏、云部署和公开就绪仍为 unavailable。Trivy 在每个本地候选镜像中均
-发现 HIGH/CRITICAL 项，因此公开可见性、`v1.0.0` 和 Release 均被阻断。
+kind 0.32.0 在 NetworkPolicy、Web 运行时、rollback 与限定 CoreDNS 修复后已通过
+验证。最终 registry run 的四个镜像均为零 HIGH/CRITICAL、零 secret。仓库与
+registry SPDX 证据按实际限制公开：大量 package license 字段仍为 `NOASSERTION`，
+Private-plan run 无 GitHub native Artifact Attestations，录屏和云部署仍 unavailable；
+这些限制被明确披露，不作为 waiver。
 
 ## 明确不支持的生产操作
 
@@ -108,7 +114,8 @@ SBOM、录屏、云部署和公开就绪仍为 unavailable。Trivy 在每个本�
 绕过审批、授予全局管理员、上传真实凭据、暴露服务入口，或把 Agent 完成状态、
 Dashboard、Reporting、Helm、Demo 输出当成业务成功。
 
-修改仓库前请先阅读 [W16 plan](docs/plans/week-16-release.md) 和
-[W16 contract](docs/agent-contract.md)。授权的 closure 提交主题为
-`chore: close W16 release verification`。只允许 closure PR/CI/squash merge 和
-一次 Private 候选镜像 dispatch；不允许公开可见性、tag、Release 或云操作。
+修改仓库前请先阅读 [W16 plan](docs/plans/week-16-release.md)、
+[W16 contract](docs/agent-contract.md) 与
+[release evidence](docs/evidence/week-16-release.md)。公开源码复核已完成；package
+visibility、`v1.0.0` 与 GitHub Release 是显式发布操作。云操作仍需单独授权，且不
+属于本 release。

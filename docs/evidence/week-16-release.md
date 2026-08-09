@@ -62,6 +62,13 @@ result before the separately authorized public publication steps.
 - Public-release-closure branch: codex/w16-public-release-closure
 - Public-release-closure starting origin/main:
   5f37b49a3eb30b63c7aed7fe91676708a28721ac
+- Public-release-closure commit:
+  956f717588abbc20c181645a25264cc74f60b8f3
+- Public-release-closure PR 51 merge/origin main:
+  bc5da48060b999e85553d9d2db6d03b16303d5c9
+- Public-README-alignment branch: codex/w16-public-readme-closure
+- Public-README-alignment starting origin/main:
+  bc5da48060b999e85553d9d2db6d03b16303d5c9
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -211,6 +218,16 @@ docs/agent-contract.md
 docs/evidence/week-16-release.md
 docs/release-notes-v1.0.0.md
 docs/sbom-status.md
+~~~
+
+The public README alignment changes only these exact paths:
+
+~~~text
+AGENTS.md
+README.md
+README.zh-CN.md
+docs/agent-contract.md
+docs/evidence/week-16-release.md
 ~~~
 
 ## Helm and Kubernetes
@@ -491,8 +508,16 @@ reported their own frozen independent grades.
   external Benchmark asset, or third-party data was added.
 - Package licence assertions remain partial as recorded in the SBOM; the
   `NOASSERTION` fields are disclosed rather than inferred.
-- Anonymous clone/public README verification is the next authorized external
-  step after visibility change; it was not run during this closure commit.
+- Repository visibility changed to Public after PR 51/main CI. An unauthenticated
+  request to `raw.githubusercontent.com/taka-wzx/flowpilot-arena/main/README.md`
+  returned HTTP 200 and 6,159 bytes. That check exposed stale pre-remediation
+  Private/vulnerability wording, which this exact English/Chinese README
+  alignment corrects before tag/Release.
+- The four linked GHCR packages remained `visibility=private` after repository
+  publication because existing granular package visibility did not inherit.
+  GitHub exposes that irreversible change through each Package settings Danger
+  Zone; tag/Release remain paused until the four packages are manually Public
+  and anonymously pullable.
 - At this closure commit, prior tags/releases were unchanged. Two planning runs had zero jobs; run
   31308404308 published only blocked Private candidates and restricted evidence.
   No tag, Release, or visibility change occurred.
@@ -502,8 +527,9 @@ reported their own frozen independent grades.
 Unavailable or limited: GitHub native Artifact Attestations
 (`unavailable/private-plan`), complete licence assertions for packages whose
 lockfile metadata is `NOASSERTION`, Demo GIF/video, and real cloud deployment.
-The final Private image/lifecycle gate is passed; anonymous public verification
-and the authorized publication operations remain to be executed.
+The final Private image/lifecycle gate and anonymous public source verification
+are passed. Four package visibility changes, anonymous digest pulls, tag, and
+Release remain to be executed.
 
 The current authorization covers the public-release evidence closure
 push/PR/normal CI/squash merge, repository/package visibility change,

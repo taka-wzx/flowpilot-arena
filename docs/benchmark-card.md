@@ -1,31 +1,25 @@
-# W15 external Benchmark card
+# Benchmark card — W15 frozen evidence
 
-## Decision
+## Executed set
 
-Preferred Benchmark: WorkArena.
+The only executed W15 Reporting set is the versioned synthetic W7 JML Arena.
+Its protocol, task order, seeds, matrix, report schema, and report hash are frozen
+in [the W15 JSON report](evidence/week-15-report.json) and
+[its evidence narrative](evidence/week-15-report.md).
 
-Closed availability: `unavailable`.
-Reason: `local_assets_absent`.
+The report contains three synthetic repetitions and closed aggregate metrics.
+It does not support a p-value, confidence/significance claim, real model-quality
+claim, real cost, production SLO, ROI, or security certification.
 
-The W15 baseline repository contains no authorized versioned WorkArena data or
-image, no frozen task subset, no local licence artifact, and no content
-checksum. No WorkArena or fallback content was downloaded, installed, opened,
-adapted, or executed. Planned and executed external attempts are both zero.
+## External benchmark
 
-Because no content was consumed, version, subset, licence, and checksum fields
-remain absent rather than guessed. This is an unavailable result, not a pass
-and not evidence of external generalization.
+WorkArena is unavailable/local_assets_absent: the repository contains no
+versioned local asset, task subset, licence artifact, or content checksum. No
+download, fallback substitution, or external execution occurred.
 
-## Reproduction boundary
+## Interpretation
 
-Future use requires separate user authorization for all of:
-
-- exact upstream source and immutable version/commit;
-- exact closed task subset and ordering;
-- licence identifier plus locally retained licence material;
-- raw content checksum after an authorized download;
-- download/install action and network destination; and
-- a closed no-real-account/no-personal-data/no-egress execution plan.
-
-No fallback to WebArena-Verified, MiniWoB, or VisualWebArena is automatic. JML
-Arena remains W15's only executed primary set.
+Use the W15 report only for deterministic wiring and pre-registered synthetic
+comparisons. Keep Development, Validation, Reporting, and external Benchmark
+records distinct. The independent Sandbox database-fact Grader remains the only
+business-success authority.

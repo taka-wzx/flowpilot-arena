@@ -1,52 +1,38 @@
 # Security policy
 
-## W1 security posture
+## W16 posture
 
-This repository is a Foundation-only scaffold. It contains no production
-credentials, enterprise data, model credentials, or real system integrations.
-The W1 API is deliberately stateless and its web page makes no network calls.
+FlowPilot Arena remains a private, synthetic local evaluation and release
+repository. W1-W15 identity, tenant isolation, RBAC, approval, audit, browser
+isolation, trace/replay, and independent-Grader controls are frozen. W16 adds
+only a closed namespace-scoped Helm packaging surface and redacted
+reproducibility documentation.
 
-Security controls included in W1 are:
+The chart defaults to no enabled image, no public ingress, no ServiceAccount
+token automount, no privilege escalation, read-only root filesystems,
+RuntimeDefault seccomp, dropped capabilities, fixed resources, and
+default-deny network policy. Secrets are existingSecret/runtime-injection
+references only. This is not a cloud-production certification.
 
-- `.gitignore` rules that reject local environment files and common credential
-  containers;
-- an `.env.example` file with no secret values;
-- a pre-commit private-key detector;
-- a GitHub Actions Gitleaks scan for repository history and changes;
-- Dependabot configuration for declared package ecosystems;
-- PR and evidence requirements that require a secret/data review.
+## Prohibited material
 
-Repository maintainers must also enable GitHub's native secret scanning,
-push protection, Dependabot alerts, branch protection, and required CI checks
-in repository settings. Those hosted settings cannot be asserted by files in
-this repository.
+Do not commit real credentials, personal data, production DSNs, tokens, cookies,
+approval material, private keys, screenshots, GIFs, videos, or arbitrary
+provider/API/URL/Shell/SQL/JavaScript capability. The current Demo uses
+deterministic-fake-provider/1.0 and makes zero real calls and zero real cost.
+WorkArena is unavailable because no versioned local asset or licence checksum
+is present.
 
 ## Reporting a vulnerability
 
-Do not publish credentials, exploit details, or personal data in a public
-issue. Prefer GitHub's private vulnerability-reporting flow when it is enabled
-for this repository. If it is unavailable, open a minimal public issue asking
-for a private reporting channel without including sensitive details.
+Do not publish sensitive details in an issue. Use the repository's private
+vulnerability-reporting channel when enabled; otherwise open a minimal issue
+requesting a private channel without including exploit material. Include the
+affected commit, impact, safe reproduction, and whether any secret or external
+system is involved.
 
-Include:
+## Release boundary
 
-- affected commit or release identifier;
-- concise impact and reproduction summary;
-- whether any secret, personal data, or external system could be affected;
-- a safe remediation suggestion, if available.
-
-## Handling secrets and data
-
-- Never commit `.env`, API keys, tokens, private keys, certificates, cookies,
-  real endpoints, screenshots with personal data, or production exports.
-- Use obvious placeholders only when a format must be documented; do not use
-  plausible-looking secret strings.
-- Rotate and revoke any accidentally committed credential before trying to
-  remove it from history.
-- Keep real security reports outside the repository until a maintainer has
-  supplied a suitable private channel.
-
-## Supported versions
-
-Until the first release, only the default branch and active weekly branch are
-maintained. W1 is not a production deployment or a security certification.
+Repository visibility, cloud resources, DNS/TLS, registry publication, push,
+PR, merge, tag and GitHub Release are separate authorized steps. Do not hide
+history, force-push, rewrite tags, or call unavailable checks passed.

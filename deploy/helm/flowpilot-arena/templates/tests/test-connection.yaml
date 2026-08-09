@@ -1,0 +1,33 @@
+{{- range $key, $component := .Values.components }}
+{{- if and $component.enabled (or (eq $key "controlApi") (eq $key "sandboxApi")) }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "flowpilot.fullname" $ }}-{{ $component.name }}-test
+  labels:
+    {{- include "flowpilot.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component.name }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  securityContext:
+    {{- toYaml $.Values.podSecurityContext | nindent 4 }}
+  containers:
+    - name: probe
+      image: {{ printf "%s@%s" $component.image.repository $component.image.digest | quote }}
+      imagePullPolicy: IfNotPresent
+      securityContext:
+        {{- toYaml $.Values.containerSecurityContext | nindent 8 }}
+      command:
+        - python
+        - -c
+        - >-
+          from urllib.request import urlopen;
+          assert urlopen('http://{{ include "flowpilot.fullname" $ }}-{{ $component.name }}:{{ $component.servicePort }}{{ $component.healthPath }}', timeout=3).status == 200
+      resources:
+        {{- toYaml $.Values.resources | nindent 8 }}
+{{- end }}
+{{- end }}

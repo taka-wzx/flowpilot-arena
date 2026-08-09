@@ -2,16 +2,16 @@
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 Private-image gate
-remediation on `codex/w16-private-image-remediation`. The remediation branch
-starts at the verified W16 Private-workflow compatibility PR 47 merge on
-`origin/main`, `7661db412fde625ec0a6ff81261d26343cf53052`, which contains
+This contract also governs the separately authorized W16 Private-workflow
+rollback namespace fix on `codex/w16-private-rollback-namespace`. The branch
+starts at the verified W16 Private-image remediation PR 48 merge on
+`origin/main`, `f334441612f0c3508f197cecf8d0456296a771cf`, which contains
 the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
 W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. This follow-up authorizes one image-gate remediation commit, push,
+immutable. This follow-up authorizes one rollback namespace fix commit, push,
 PR, normal CI, squash merge, and one new post-merge Private
 candidate-image workflow dispatch.
 It does not authorize history rewrite, rollback, retag, rerelease, repository
@@ -59,12 +59,10 @@ allowed.
 No new dependency, lockfile, service, database, migration, provider, IdP,
 model/OCR/VLM/embedding/billing call, arbitrary URL/API/Shell/SQL/JavaScript,
 external Benchmark, cloud resource, DNS/TLS, or real account/data may be
-introduced. The only authorized changed container artifacts are the four
-Private `linux/amd64` GHCR candidates named in `AGENTS.md`, tagged only with
-the exact remediation merge commit. The four image Dockerfiles may change only to
-checksum-pin official linux/amd64 bases, update the container-only uv
-installer, and clear exact registry HIGH/CRITICAL findings without an
-exception or suppression. Buildx-generated maximum provenance and SBOM
+introduced. The only authorized container artifacts are the four Private
+`linux/amd64` GHCR candidates named in `AGENTS.md`, tagged only with the exact
+rollback-fix merge commit. No Dockerfile or image content may change in this
+follow-up. Buildx-generated maximum provenance and SBOM
 attestations remain required. GitHub native Artifact Attestations are
 `unavailable/private-plan`; the Private workflow must not request their
 permissions or invoke `actions/attest`. Missing authorized Helm, kind, Syft,
@@ -95,7 +93,7 @@ or package hashes. If a container digest or generator is unavailable, the
 machine-readable status and evidence say so; no hand-written component list is
 called a passed SBOM.
 
-## Exact Private-image-remediation allowlist
+## Exact rollback-namespace-fix allowlist
 
 Only these exact paths may be created or modified. There are no directory
 wildcards:
@@ -103,32 +101,25 @@ wildcards:
 ~~~text
 AGENTS.md
 .github/workflows/release-images.yml
-apps/control_api/Dockerfile
-apps/control_web/Dockerfile
-apps/sandbox_api/Dockerfile
-apps/sandbox_web/Dockerfile
 docs/agent-contract.md
 docs/evidence/week-16-release.md
 docs/release-notes-v1.0.0.md
-docs/sbom-status.md
-docs/sbom.spdx.json
 ~~~
 
 ## Verification and stop condition
 
-Run all locally available image-remediation gates listed in `AGENTS.md`: YAML
-parsing, actionlint, workflow policy, four locked image builds, hardened
-runtime health, exact Trivy vulnerability/secret gates, Syft/SPDX validation,
-Helm and kind lifecycle, deterministic repository SBOM generation, W15 hash
-immutability, detect-private-key, gitleaks, diff check, and exact staged review.
-Normal PR and main CI provide the full repository regression suite. Never run
-W15 frozen Reporting final, W12 formal Validation, external Benchmarks, or
-cloud deployment.
+Run all locally available rollback-fix gates listed in `AGENTS.md`: YAML
+parsing, actionlint, workflow policy, namespace-scoped Helm rollback, W15 hash
+immutability, detect-private-key, gitleaks, diff check, and exact staged
+review. Normal PR and main CI provide the full repository regression suite.
+The one authorized post-merge Private workflow must reproduce the image, SBOM,
+Trivy, and kind lifecycle gates. Never run W15 frozen Reporting final, W12
+formal Validation, external Benchmarks, or cloud deployment.
 
 After evidence reconciliation, explicitly stage only changed paths in this
-allowlist and create exactly one image-remediation commit:
+allowlist and create exactly one rollback namespace fix commit:
 
-    fix: remediate W16 private image gates
+    fix: scope W16 Helm rollback namespace
 
 Push, PR, normal CI, squash merge, and exactly one new post-merge Private
 candidate-image workflow dispatch are authorized. Then stop. Repository or

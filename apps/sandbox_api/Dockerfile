@@ -1,4 +1,4 @@
-FROM python:3.13-slim
+FROM python:3.13.14-alpine3.24@sha256:c25cd44f45df1279a2cba589e67dfcd9db04647ea483b117a7de8b1a99bdfb23
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -6,14 +6,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir "uv==0.11.14"
+RUN pip install --no-cache-dir "uv==0.12.3"
 
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY migrations ./migrations
 COPY src ./src
 RUN uv sync --locked --no-dev
 
-RUN useradd --create-home --uid 10002 flowpilot
+RUN adduser -D -u 10002 flowpilot
 USER flowpilot
 
 EXPOSE 8001

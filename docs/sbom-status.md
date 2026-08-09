@@ -10,17 +10,23 @@ lockfile integrity/hash fields. Re-running the generator with unchanged inputs
 must produce the same bytes and SHA-256.
 
 The artifact explicitly records container_image_digest_coverage=unavailable.
-Dockerfiles currently declare build tags and, at closure-commit time, no
-immutable application image has been published. Therefore this repository
-artifact remains a machine-readable partial inventory, not a claim that a
-complete registry-image SBOM or cloud deployment passed.
+The four release Dockerfiles now checksum-pin their linux/amd64 Docker Official
+Image bases, but application-image digests and their registry-generated SBOMs
+remain workflow artifacts rather than inputs to this repository generator.
+Therefore this repository artifact remains a machine-readable partial
+inventory, not a claim that a complete registry-image SBOM or cloud deployment
+passed. Repeated remediation generation produced 355 packages and byte SHA-256
+`a3e036f6ace6966df83f9d10c6a5133840a3496e367bb5f7caa78d6c07b038db`.
 
-The authorized closure used checksum-verified Syft 1.50.0 and Trivy 0.73.0,
-built all four local `linux/amd64` images, and generated temporary per-image
-SPDX documents. Trivy found no embedded secret findings, but every image failed the
-HIGH/CRITICAL vulnerability gate. The post-merge manual workflow repeats these
-checks against Private GHCR digests and uploads the reports as restricted
-workflow artifacts. Those future registry digests are never guessed or written
-into this pre-dispatch document.
+The first registry-backed run with jobs, 31308404308, generated four Private
+digests and SPDX/Trivy artifacts. Its four images had zero secret findings but
+120 HIGH/CRITICAL occurrences, so they are not releasable. The authorized
+remediation rebuilt all four local `linux/amd64` images from checksum-pinned
+Alpine 3.24 bases and updated the container-only uv installer. Syft 1.50.0
+generated valid SPDX 2.3 documents with 1,117 control-api, 1,110 sandbox-api,
+and 72 packages in each Web image. Trivy 0.73.0 with a freshly downloaded
+database found zero HIGH/CRITICAL and zero secret findings in every remediated
+local image. A new post-merge registry workflow must reproduce those results;
+future digests are never guessed or written into this pre-dispatch document.
 
 No credential, private URL, machine path, or secret is present in the artifact.

@@ -122,6 +122,20 @@ describe("W10 browser OIDC", () => {
     expect((approvalCall?.[1]?.headers as Headers).get("Authorization")).toBe(
       "Bearer runtime-access-token",
     );
+    for (const [path, method] of [
+      ["/api/v1/organizations/org_syn_alpha_0001/production-runs", "GET"],
+      ["/api/v1/organizations/org_syn_alpha_0001/production-runs", "POST"],
+      ["/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001", "GET"],
+      ["/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001/trace", "GET"],
+    ] as const) {
+      await authorizedApiFetch(path, { method }, approvalFetch);
+    }
+    expect(approvalFetch.mock.calls.slice(1).map((call) => call[0])).toEqual([
+      "http://127.0.0.1:8000/api/v1/organizations/org_syn_alpha_0001/production-runs",
+      "http://127.0.0.1:8000/api/v1/organizations/org_syn_alpha_0001/production-runs",
+      "http://127.0.0.1:8000/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001",
+      "http://127.0.0.1:8000/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001/trace",
+    ]);
     expect(window.localStorage.length).toBe(0);
   });
 
@@ -197,6 +211,35 @@ describe("W10 browser OIDC", () => {
     ).rejects.toThrow(/allowlist/iu);
     await expect(
       authorizedApiFetch("/api/v1/approval-authorities/me", { method: "POST" }),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch("/api/v1/organizations/org_short/production-runs"),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch(
+        "/api/v1/organizations/org_syn_alpha_0001/production-runs/run_bad/trace",
+      ),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch(
+        "/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001?include=secret",
+      ),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch(
+        "/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001#trace",
+      ),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch(
+        "https://example.invalid/api/v1/organizations/org_syn_alpha_0001/production-runs",
+      ),
+    ).rejects.toThrow(/allowlist/iu);
+    await expect(
+      authorizedApiFetch(
+        "/api/v1/organizations/org_syn_alpha_0001/production-runs/run_syn_alpha_0001/claim",
+        { method: "POST" },
+      ),
     ).rejects.toThrow(/allowlist/iu);
   });
 });

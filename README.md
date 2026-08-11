@@ -1,7 +1,8 @@
 # FlowPilot Arena
 
 > A governed enterprise computer-use Agent paired with a resettable synthetic
-> Arena. W16 packages the local system for reproducible review.
+> Arena. W17 presents the existing local evidence through a bounded Portfolio
+> Demo Console.
 
 ## One-minute overview
 
@@ -63,6 +64,29 @@ development-only W15 evaluation. A reset is the local Compose volume cleanup
 above; it never authorizes a product delete. Health endpoints are /healthz for
 APIs and / for web containers. Trace/replay and the independent Grader are
 exercised by the existing observability/acceptance smokes.
+
+## W17 Portfolio Demo Console
+
+After the local Compose stack is ready, open:
+
+- Control Web: `http://127.0.0.1:5173`
+- Sandbox Web: `http://127.0.0.1:5174`
+
+Control Web is explicitly marked `SYNTHETIC LOCAL DEMO`. It shows the current
+identity and role, synthetic run counts, pending approvals, audit-chain state,
+fixed Joiner/Mover/Leaver submission, client-side run filtering, bounded run
+detail and trace/replay, and a normal link to the isolated Sandbox Web. The
+three submission choices use fixed local schemas and synthetic parameters;
+there is no arbitrary JSON, URL, provider, Shell, SQL, or JavaScript input.
+
+The API path name `production-runs` is historical and does not mean real
+production. This console uses no real provider, personal data, production
+identity, production certification, or public deployment. Agent terminal state
+and independent grading remain separate: `finished_ungraded` is not business
+success, and this Control API surface reports `Grader result unavailable from
+this surface` instead of inventing a verdict. See the
+[W17 demo guide](docs/demo.md), [ADR](docs/adr/0017-w17-portfolio-demo-console.md),
+and [implementation plan](docs/plans/week-17-portfolio-demo-console.md).
 
 ## W16 release and reproducibility
 
@@ -144,9 +168,9 @@ payroll or legal data, bypass approval, grant global administration, upload
 real credentials, expose an endpoint, or treat Agent completion, Dashboard,
 Reporting, Helm, or Demo output as business success.
 
-See the [W16 plan](docs/plans/week-16-release.md),
-[W16 contract](docs/agent-contract.md), and
-[release evidence](docs/evidence/week-16-release.md) before changing the
+See the [W17 plan](docs/plans/week-17-portfolio-demo-console.md),
+[W17 contract](docs/agent-contract.md), and
+[W17 evidence](docs/evidence/week-17-portfolio-demo-console.md) before changing the
 repository. Public source verification is complete; package visibility,
 `v1.0.0`, and GitHub Release are explicit release operations. The separately
 authorized ECS/K3s validation is complete, cleaned up, and not part of this

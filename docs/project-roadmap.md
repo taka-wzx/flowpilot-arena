@@ -4,7 +4,9 @@
 
 ## 1. 项目概述
 
-项目周期按 **16 周、每周 18～22 小时**设计。若每周只能投入 8～10 小时，应延长到约 24 周，不建议压缩功能和验证质量。
+核心产品与 v1.0 发布按 **16 周、每周 18～22 小时**完成；W17 是发布后的
+Portfolio Demo Console 展示层收口，不扩展产品权威或发布语义。若每周只能投入
+8～10 小时，应延长周期，不建议压缩功能和验证质量。
 
 项目由两部分组成：
 
@@ -461,7 +463,7 @@ Agent 指标：
 - 目标人工点击数下降 ≥50%。
 - 不声称真实企业 ROI。
 
-## 12. 16 周执行计划
+## 12. 17 周执行计划
 
 | 周 | 主要任务 | 周末验收 | Git 标签 |
 |---|---|---|---|
@@ -481,6 +483,7 @@ Agent 指标：
 | W14 | Prompt Injection、恶意页面、越权、secret redaction、浏览器沙箱 | 安全套件和威胁模型闭环 | `w14-security` |
 | W15 | 外部 Benchmark、三次重复、消融、Reporting 终测 | 生成冻结评测报告 | `w15-evaluation` |
 | W16 | 云端 Demo、Helm、双语 README、视频、文档、SBOM、v1.0 Release | 陌生人可复现，仓库公开 | `v1.0.0` |
+| W17 | Control Web Portfolio Demo Console：Overview、固定 JML 提交、run list/detail、审批、audit、受限 trace/replay | 本地合成能力可统一展示，Agent/Grader 边界不变 | —（发布后；`v1.0.0` 不变） |
 
 W12 在 W11 审批与审计边界上增加异步 202 admission、Control PostgreSQL
 durable outbox、一个私有四槽 Workflow Worker、组织轮询公平调度、30/10 秒
@@ -494,6 +497,13 @@ W9 `scope_id` 仍不构成身份或授权；Planning、Browser、Recovery、Sand
 Grader 仍无 Control Plane 数据库能力。W12 不包含 W13 telemetry、W14 恶意页
 面套件、W15 Reporting/外部 Benchmark、W16 Helm/云部署、真实企业 IdP/账号/
 个人数据、动态策略、全局审批人、跨租户绕过、物理删除或 L4 override。
+
+W17 只组合已有 Control Web、identity、approval、audit、production-run 和
+observability read surface。它不增加后端 endpoint、数据库、迁移、依赖或任意
+输入能力；`production-runs` 是历史 API 名称，不代表真实生产。页面只允许固定
+Joiner/Mover/Leaver 合成提交，五秒轮询最多两分钟，并在隐藏、卸载、终态、错误
+或超时时停止。`finished_ungraded` 仍不是业务成功；Control API 没有独立 Grader
+结果时必须明确显示 unavailable。
 
 阶段版本：
 
@@ -515,6 +525,7 @@ week/02-sandbox
 week/03-arena
 ...
 week/16-release
+codex/w17-portfolio-demo-console
 ```
 
 `main` 必须始终可运行，不允许直接开发。

@@ -23,6 +23,7 @@ import {
   type ApprovalRole,
   type AuditSnapshot,
 } from "./approval";
+import DemoConsole from "./components/DemoConsole";
 
 type AuthenticatedData = Readonly<{
   identity: CurrentIdentity;
@@ -73,9 +74,8 @@ function App() {
         }
       } catch (error) {
         if (!active) return;
-        if (error instanceof ForbiddenError) {
-          setView({ kind: "forbidden" });
-        } else {
+        if (error instanceof ForbiddenError) setView({ kind: "forbidden" });
+        else {
           clearInMemoryAuth();
           setView({ kind: "failed" });
         }
@@ -148,145 +148,72 @@ function App() {
     }
   };
 
+  if (view.kind === "authenticated") {
+    return (
+      <main className="app-shell" aria-labelledby="page-title">
+        <DemoConsole
+          identity={view.data.identity}
+          approvalRoles={view.data.approvalRoles}
+          requests={view.data.requests}
+          audit={view.data.audit}
+          auditValid={view.data.auditValid}
+          notice={view.notice}
+          onDecide={decide}
+          onVerifyAudit={verifyAudit}
+          onLogout={logout}
+        />
+      </main>
+    );
+  }
+
   return (
-    <main className="page-shell">
-      <section className="hero" aria-labelledby="page-title">
-        <p className="eyebrow">W11 / Approval boundary</p>
+    <main className="auth-shell" aria-labelledby="page-title">
+      <section className="auth-hero">
+        <div className="environment-badge"><span aria-hidden="true" /> SYNTHETIC LOCAL DEMO</div>
+        <p className="eyebrow">W17 / Portfolio Demo Console</p>
         <h1 id="page-title">FlowPilot Arena</h1>
         <p className="lead">
-          Database-backed identity, closed risk policy, one-time approval, and tamper-evident audit.
+          Local synthetic workflow evidence with database-backed identity, approval, and audit boundaries.
         </p>
       </section>
 
       {view.kind === "loading" && (
-        <section className="card" aria-live="polite">
-          <h2>Checking identity</h2>
+        <section className="auth-card" aria-live="polite">
+          <p className="section-kicker">Local identity</p>
+          <h2>Checking access</h2>
           <p>Validating the local OIDC transaction and server authorization.</p>
         </section>
       )}
 
       {view.kind === "signed_out" && (
-        <section className="card">
-          <h2>Sign in</h2>
+        <section className="auth-card">
+          <p className="section-kicker">Local identity</p>
+          <h2>Sign in to the console</h2>
           <p>Use the fixed local Keycloak realm with Authorization Code and PKCE.</p>
-          <button type="button" onClick={() => void login()}>
-            Sign in with local OIDC
-          </button>
+          <button type="button" onClick={() => void login()}>Sign in with local OIDC</button>
         </section>
       )}
 
-      {view.kind === "authenticated" && (
-        <>
-          <section className="card" aria-labelledby="identity-title">
-            <h2 id="identity-title">Current identity</h2>
-            <dl>
-              <div>
-                <dt>Organization</dt>
-                <dd>{view.data.identity.organizationId}</dd>
-              </div>
-              <div>
-                <dt>Business role</dt>
-                <dd>{view.data.identity.role}</dd>
-              </div>
-              <div>
-                <dt>Approval role</dt>
-                <dd>{view.data.approvalRoles.join(", ") || "none"}</dd>
-              </div>
-            </dl>
-            <button type="button" onClick={logout}>
-              Sign out
-            </button>
-          </section>
-
-          <section className="card" aria-labelledby="approval-title">
-            <h2 id="approval-title">Approval requests</h2>
-            {view.data.requests.length === 0 ? (
-              <p>No organization approval requests.</p>
-            ) : (
-              <ul className="request-list">
-                {view.data.requests.map((item) => (
-                  <li key={item.requestId}>
-                    <div>
-                      <strong>{item.actionType}</strong>
-                      <span>
-                        {item.riskLevel} / {item.status}
-                      </span>
-                      <span>
-                        Task {item.taskId} / step {item.stepId}
-                      </span>
-                      <span>Binding {item.parameterHash}</span>
-                      <span>Expires {item.expiresAt}</span>
-                    </div>
-                    {item.status === "pending" && view.data.approvalRoles.length > 0 && (
-                      <div className="button-row">
-                        <button type="button" onClick={() => void decide(item.requestId, "approved")}>
-                          Approve
-                        </button>
-                        <button type="button" onClick={() => void decide(item.requestId, "rejected")}>
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {view.notice !== null && <p role="status">{view.notice}</p>}
-          </section>
-
-          {view.data.identity.permissions.includes("audit.read") && (
-            <section className="card" aria-labelledby="audit-title">
-              <h2 id="audit-title">Audit chain</h2>
-              <p>{view.data.audit.events.length} append-only event references.</p>
-              <p>
-                Head {view.data.audit.headSequence} / {view.data.audit.headHash}
-              </p>
-              {view.data.audit.events.length > 0 && (
-                <ol className="audit-list">
-                  {view.data.audit.events.map((event) => (
-                    <li key={event.eventId}>
-                      <span>#{event.sequence}</span>
-                      <strong>{event.eventType}</strong>
-                      <span>{event.eventHash}</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              <p>
-                Verification: {view.data.auditValid === null ? "not run" : view.data.auditValid ? "valid" : "failed"}
-              </p>
-              {view.data.identity.permissions.includes("audit.verify") && (
-                <button type="button" onClick={() => void verifyAudit()}>
-                  Verify audit chain
-                </button>
-              )}
-            </section>
-          )}
-        </>
-      )}
-
       {view.kind === "forbidden" && (
-        <section className="card status-card" role="alert">
-          <h2>Forbidden</h2>
+        <section className="auth-card is-error" role="alert">
+          <p className="section-kicker">Authorization boundary</p>
+          <h2>Access forbidden</h2>
           <p>The identity is valid, but its current database membership is not authorized.</p>
-          <button type="button" onClick={logout}>
-            Sign out
-          </button>
+          <button type="button" onClick={logout}>Sign out</button>
         </section>
       )}
 
       {view.kind === "failed" && (
-        <section className="card status-card" role="alert">
+        <section className="auth-card is-error" role="alert">
+          <p className="section-kicker">Closed failure</p>
           <h2>Identity check failed</h2>
-          <p>The callback, token, or current identity response was rejected.</p>
-          <button type="button" onClick={() => setView({ kind: "signed_out" })}>
-            Return to sign in
-          </button>
+          <p>The callback, credential exchange, or current identity response was rejected.</p>
+          <button type="button" onClick={() => setView({ kind: "signed_out" })}>Return to sign in</button>
         </section>
       )}
 
-      <p className="footnote">
-        Tokens stay in memory. Approval grants and nonce material never enter the browser.
+      <p className="auth-footnote">
+        Credentials stay in memory. Temporary authorization material is never rendered by this console.
       </p>
     </main>
   );

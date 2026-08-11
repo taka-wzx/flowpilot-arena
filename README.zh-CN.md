@@ -1,7 +1,7 @@
 # FlowPilot Arena
 
-> 受治理的企业级 computer-use Agent 与可重置的合成 Arena。W16 将本地系统
-> 封装为可复现、可审计的发布材料。
+> 受治理的企业级 computer-use Agent 与可重置的合成 Arena。W17 通过边界
+> 明确的 Portfolio Demo Console 展示已有本地证据。
 
 ## 一分钟了解
 
@@ -59,6 +59,27 @@ approval、production、observability、security 和 W15 Development-only
 evaluation。上面的 Compose 体积清理是本地 reset，不会授权产品删除。API
 健康端点为 /healthz，Web 健康端点为 /；trace/replay 和独立 Grader 由已有
 smoke 覆盖。
+
+## W17 Portfolio Demo Console
+
+本地 Compose 就绪后打开：
+
+- Control Web：`http://127.0.0.1:5173`
+- Sandbox Web：`http://127.0.0.1:5174`
+
+Control Web 明确标记为 `SYNTHETIC LOCAL DEMO`，展示当前身份和角色、合成 run
+数量、待审批数、audit-chain 状态、固定 Joiner/Mover/Leaver 提交、客户端状态
+筛选、受限 run detail 与 trace/replay，并以普通链接进入保持隔离的 Sandbox
+Web。三个提交选项只使用固定本地 schema 与合成参数，不提供任意 JSON、URL、
+provider、Shell、SQL 或 JavaScript 输入。
+
+API 名称 `production-runs` 是历史命名，不代表真实生产。本控制台不使用真实
+provider、个人数据、生产身份、生产认证或公网部署。Agent terminal state 与独立
+Grader 严格分离：`finished_ungraded` 不是业务成功；当前 Control API 不提供独立
+Grader 结果时，页面明确显示 `Grader result unavailable from this surface`，不会
+编造结论。详见 [W17 Demo 指南](docs/demo.md)、
+[ADR](docs/adr/0017-w17-portfolio-demo-console.md) 和
+[实施计划](docs/plans/week-17-portfolio-demo-console.md)。
 
 ## W16 材料
 
@@ -124,8 +145,8 @@ native SPDX SBOM Attestation。`licenseConcluded=NOASSERTION` 仍如实表示未
 绕过审批、授予全局管理员、上传真实凭据、暴露服务入口，或把 Agent 完成状态、
 Dashboard、Reporting、Helm、Demo 输出当成业务成功。
 
-修改仓库前请先阅读 [W16 plan](docs/plans/week-16-release.md)、
-[W16 contract](docs/agent-contract.md) 与
-[release evidence](docs/evidence/week-16-release.md)。公开源码复核已完成；package
+修改仓库前请先阅读 [W17 plan](docs/plans/week-17-portfolio-demo-console.md)、
+[W17 contract](docs/agent-contract.md) 与
+[W17 evidence](docs/evidence/week-17-portfolio-demo-console.md)。公开源码复核已完成；package
 visibility、`v1.0.0` 与 GitHub Release 是显式发布操作。另行授权的 ECS/K3s 验证已
 完成并清理，且不属于本 release；此处不再授权任何云操作。

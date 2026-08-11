@@ -331,6 +331,24 @@ export const authorizedApiFetch = async (
         /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/audit-events\/verify$/u,
       method: "POST",
     },
+    {
+      pattern: /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/production-runs$/u,
+      method: "GET",
+    },
+    {
+      pattern: /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/production-runs$/u,
+      method: "POST",
+    },
+    {
+      pattern:
+        /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/production-runs\/run_[A-Za-z0-9_-]{8,64}$/u,
+      method: "GET",
+    },
+    {
+      pattern:
+        /^\/api\/v1\/organizations\/org_[A-Za-z0-9_-]{8,64}\/production-runs\/run_[A-Za-z0-9_-]{8,64}\/trace$/u,
+      method: "GET",
+    },
   ];
   if (
     path.includes("?") ||

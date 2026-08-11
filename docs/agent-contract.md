@@ -1,144 +1,176 @@
-# W16 agent contract — release and reproducible demo
+# W17 agent contract — Portfolio Demo Console
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 Aliyun ECS
-cloud-evidence closure on `codex/w16-aliyun-ecs-evidence`. The branch starts at
-the verified PR 54 merge on `origin/main`,
-`66c71a5a5b47f1cae814092b6832006ac43fddca`, which contains
-the PR 53 merge `14ad304ef64df638c9a61a898db5c3329021fd33`,
-the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
-W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
-(`w12-production`), W13
-(`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
-releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. The repository, four GHCR packages, annotated `v1.0.0` tag, and
-GitHub Release are already public and final. This follow-up authorizes only the
-exact cloud-evidence documentation changes, push, PR, normal CI, and squash
-merge. It records the separately completed temporary Aliyun ECS single-node
-K3s validation; that execution was not an ACK managed-cluster deployment. The
-selected-actions policy addition and the two exact workflow dispatches are
-complete and must not be repeated. It does not authorize history rewrite,
-rollback, retag, rerelease, editing the existing GitHub Release, redeployment,
-ACK creation, public ingress, paid resources, or any further cloud mutation.
-Credentials and unprovided cloud parameters must never be committed, printed,
-or invented.
+W17 runs only on `codex/w17-portfolio-demo-console`, created from the exact PR
+55 squash merge on `origin/main`:
+`1d54afc738cf34a6cec1ebb144368b47a7a4b2dd`. PR 55 CI run `31467351190` and
+post-merge main CI run `31468247367` passed before W17 began.
 
-W15 frozen evidence is byte-identified before W16 work:
+W12-W16 and the public v1.0 release remain immutable. In particular:
 
-- `docs/evidence/week-15-report.json` byte SHA-256 is
-  `42058cc83d310b51011e4774909b32dab6f3e0370d546c3c7928a5518f86cc00`;
-  its self-excluding `report_hash` field is
+- W12 `2c642a67341d0cd1c9c62b6bf883ad8df2853f40` / `w12-production`.
+- W13 `cedc5f26d41262c955b60854cc69ed4f28baded6` / `w13-observability`.
+- W14 `6bd960a031069f262fe60fbbb8bf2c65a09e409b` / `w14-security`.
+- W15 `94e5a8d74b970c93c9610725dad7cb352545f654` / `w15-evaluation`.
+- W16 PR 45 through PR 55 merge objects listed in `AGENTS.md`.
+- Annotated `v1.0.0` and its published GitHub Release remain at
+  `4795aefe15be66f2405a2b899db7e5764810b8ea`.
+
+No history rewrite, rollback, force push to main, tag move, retag, rerelease,
+Release edit, workflow dispatch, or cloud mutation is authorized.
+
+W15 frozen evidence remains byte-identified:
+
+- `docs/evidence/week-15-report.json` SHA-256:
+  `42058cc83d310b51011e4774909b32dab6f3e0370d546c3c7928a5518f86cc00`.
+- W15 self-excluding `report_hash`:
   `ef2f1690a662eb5119214fb1e4fef80c22b1879ad0a88603b1e3e520c5cd9d3e`.
-- `tests/integration/w15-reporting-protocol.json` has protocol hash
-  `b5aa0ddd4d0d07dd3d4a26faac11c947c223b85d14ac5dbc316681edc6de1379`.
-  Its byte SHA-256 is
+- `tests/integration/w15-reporting-protocol.json` byte SHA-256:
   `42d5439629be60727b7d69324fd5f1c76ba879d2e10fa6bb2d5ad2496901ae41`.
-- Its configuration hash is
-  `c9ea8d997e470a7b7584e40001e8dbff349bd9a73aa80cdbf1a32b84d81d7ec5` and its
-  schema hash is
+- Protocol hash:
+  `b5aa0ddd4d0d07dd3d4a26faac11c947c223b85d14ac5dbc316681edc6de1379`.
+- Configuration hash:
+  `c9ea8d997e470a7b7584e40001e8dbff349bd9a73aa80cdbf1a32b84d81d7ec5`.
+- Schema hash:
   `9a869a014f5ea34530230027dfbc780627ce0eed99ce753ff34ec897a8167962`.
-- WorkArena remains `unavailable/local_assets_absent`; no external content is
-  downloaded, substituted, or executed.
+- WorkArena: `unavailable/local_assets_absent`.
 
-## Scope and non-goals
+## Product authority boundary
 
-W16 may add only deterministic local release/deployment packaging,
-documentation, reproducible synthetic-demo evidence, SBOM generation/status,
-and release notes. Existing product authority remains unchanged: Agent
-completion is `finished_ungraded`; only the independent Sandbox database-fact
-Grader determines business success. Helm, README, dashboard, reporting,
-Compose, and cloud deployment are observation/documentation surfaces and can
-never authorize work, select an organization, bypass Control Plane policy, or
-write product state.
+W17 refines only the existing Control Web presentation. It does not change any
+backend API, database, migration, identity, tenant, RBAC, approval, audit,
+queue/rate/lease/fence, receipt/idempotency, recovery, Grader, security, Arena,
+or W1-W16 semantics.
 
-The chart is namespace-scoped and closed. It must not request cluster-admin,
-automount a ServiceAccount token, use privileged/host namespaces/hostPath/
-Docker socket, grant arbitrary egress, include default credentials, or claim
-cloud-production certification. Secrets can only be referenced through an
-existing Secret/runtime injection. Demo identities and data are synthetic.
-Default-deny NetworkPolicy, non-root/read-only/seccomp RuntimeDefault,
-no-privilege-escalation, dropped capabilities, fixed resources, and all probes
-are mandatory for enabled components. Every enabled image must be supplied as
-an immutable `repository@sha256:<64 hex>` reference; no tag-only default is
-allowed.
+`finished_ungraded` is an Agent terminal state, not business success. Only the
+independent Sandbox database-fact Grader can determine business success. The
+Control API used by W17 does not return that verdict; the UI must state
+`Grader result unavailable from this surface` and must not infer a result from
+run status, trace status, receipt, audit, or Dashboard metadata.
 
-No new dependency, lockfile, service, database, migration, provider, IdP,
-model/OCR/VLM/embedding/billing call, arbitrary URL/API/Shell/SQL/JavaScript,
-external Benchmark, or real account/data may be introduced. Product behavior
-is frozen. The two API Dockerfiles may remove only build-time `uv`/`pip` and
-cache material from their final runtime images, while their project metadata
-may declare the repository's existing Apache-2.0 license. Buildx-generated
-maximum provenance and SBOM attestations remain required. GitHub native
-Artifact Attestations use only the pinned action named in `AGENTS.md`.
-Existing release digests receive SPDX SBOM attestations; signed build
-provenance is generated only alongside a real new image build. Missing
-authorized Helm, kind, Syft, Trivy, or cloud verification is recorded as
-`unavailable`, never as passed.
-The completed ECS validation may be described only as a temporary,
-single-node, Web-only cloud check based on the operator-supplied execution
-record. It is not ACK, high availability, public ingress, production readiness,
-or certification.
-Media is supplied only when produced by a real deterministic run; otherwise
-the static fallback and unavailable record are required.
+The console is synthetic, local, and deterministic. `production-runs` is a
+historical API name, not a production claim. There is no real provider, IdP,
+model, OCR, VLM, embedding, billing account, personal data, production
+identity, public deployment, SLO, ROI, or security certification. The completed
+Aliyun cloud check was temporary ECS single-node K3s validation, not ACK,
+managed-cluster deployment, high availability, public ingress, or production
+certification. No further cloud action is permitted.
 
-## Reproducible demo contract
+## UI contract
 
-`tests/integration/w16_demo.py` emits canonical, redacted JSON events for the
-synthetic JML story: observe → plan → execute → recover → verify, DOM-to-vision
-fallback, contradiction follow-up, cross-system plan, high-risk approval,
-worker restart recovery, independent Verifier/Grader, and trace/replay. It
-contains no page/DOM/screenshot/model/tool payload, secret, cookie, token,
-nonce, DSN, machine path, URL query, or personal data. The smoke asserts stable
-hash, synthetic account markers, `finished_ungraded`, independent grading, and
-zero real calls/cost. It is not a product-success source or a claim about model
-quality, production SLO, ROI, significance, or certification.
+Control Web at `http://127.0.0.1:5173` must provide:
 
-## SBOM contract
+1. A visible `SYNTHETIC LOCAL DEMO` environment marker.
+2. Overview of current opaque identity, organization, business/approval role,
+   active and terminal run counts, pending approvals, and audit-chain status.
+3. Fixed Joiner/Mover/Leaver submission using the existing task IDs, closed
+   schema, current organization, `generate_plan`, and task-reference parameter.
+4. A run list with process, task reference, status, updated timestamp, and a
+   client-side all/active/terminal filter.
+5. Strict loading, empty, forbidden, failure, stale, and polling-timeout states.
+6. Run detail with observe → plan → execute → recover → verify timing derived
+   only from fields returned by run and trace APIs.
+7. Constrained trace/replay showing only ordinal/sequence, phase, status,
+   reason, failure category, and observed time.
+8. Existing approval decisions through the current strong ETag read-before-
+   decide flow and stale-decision protection.
+9. Separate Agent and independent-Grader result presentation.
+10. A normal external link to `http://127.0.0.1:5174`; no iframe or browser-
+    isolation bypass.
+11. Responsive desktop/tablet layout, semantic controls, keyboard operation,
+    visible focus, meaningful labels, live status, and alert semantics.
 
-`scripts/generate_sbom.py` is the deterministic local generator. It reads only
-the frozen Python/npm lockfiles, Dockerfile base-image declarations, and this
-chart; normalizes the SPDX 2.3 timestamp to the fixed epoch and sorts all
-components. `docs/sbom.spdx.json` is generated output and must have a stable
-SHA-256 for unchanged inputs. Artifact checksums come from lockfile integrity
-or package hashes. If a container digest or generator is unavailable, the
-machine-readable status and evidence say so; no hand-written component list is
-called a passed SBOM.
+The UI must not accept arbitrary JSON, URL, provider, Shell, SQL, JavaScript,
+secret, token, DSN, browser payload, or personal-data input. It must not render
+access/ID tokens, nonce, grant material, internal worker/lease/claim endpoints,
+trace/span IDs, worker references, authorization hashes, raw attributes,
+receipt payloads, or sensitive fields.
 
-## Exact post-release evidence allowlist
+## API and browser-security contract
 
-Only these exact paths may be created or modified. There are no directory
-wildcards:
+W17 may call only:
+
+- `GET/POST /api/v1/organizations/{organization_id}/production-runs`
+- `GET /api/v1/organizations/{organization_id}/production-runs/{run_id}`
+- `GET /api/v1/organizations/{organization_id}/production-runs/{run_id}/trace`
+- Existing identity, approval, and audit endpoints already used by Control Web.
+
+The `auth.ts` allowlist binds each exact path to GET or POST, limits organization
+IDs to `org_[A-Za-z0-9_-]{8,64}` and run IDs to
+`run_[A-Za-z0-9_-]{8,64}`, and rejects queries, fragments, cross-origin URLs,
+unknown paths, caller-provided Authorization, claim/lease/worker surfaces, and
+unsupported methods.
+
+Access tokens remain module-memory-only. Existing pre-login OIDC PKCE/state/
+nonce transaction material remains a bounded, one-use `sessionStorage` record;
+tokens are never written to `localStorage` or `sessionStorage`. Polling uses a
+five-second fixed interval and a two-minute maximum duration, exposes manual
+refresh, and stops on terminal state, visibility loss, unmount, error, or
+timeout.
+
+Run and trace parsers require exact schema versions, exact key sets, closed
+statuses/taxonomies, bounded arrays/integers, UTC timestamps, valid IDs, matching
+organization/run identity, ordered trace/replay, and
+`sensitive_fields_present = false`. Unknown and extra fields fail closed.
+
+## Exact file allowlist
+
+Only these exact paths may be created or modified:
 
 ~~~text
 AGENTS.md
 README.md
 README.zh-CN.md
 docs/agent-contract.md
-docs/evidence/week-16-release.md
-docs/sbom-status.md
+docs/project-roadmap.md
+docs/demo.md
+docs/adr/0017-w17-portfolio-demo-console.md
+docs/plans/week-17-portfolio-demo-console.md
+docs/evidence/week-17-portfolio-demo-console.md
+apps/control_web/src/App.tsx
+apps/control_web/src/App.css
+apps/control_web/src/App.test.tsx
+apps/control_web/src/auth.ts
+apps/control_web/src/auth.test.ts
+apps/control_web/src/runs.ts
+apps/control_web/src/runs.test.ts
+apps/control_web/src/components/DemoConsole.tsx
+apps/control_web/src/components/DemoConsole.test.tsx
+apps/control_web/src/components/RunTimeline.tsx
+apps/control_web/src/components/RunTimeline.test.tsx
 ~~~
 
-## Verification and stop condition
+No package manifest, lockfile, backend, Compose, Helm, workflow, database,
+migration, service, dependency, or other path may change. `%SystemDrive%/`,
+`.tmp/`, and every `code_review_agent` repository are outside scope and must not
+be inspected, enumerated, modified, deleted, or staged.
 
-Run the locally available post-release closure gates listed in `AGENTS.md`:
-YAML parsing, W15 hash immutability, detect-private-key, gitleaks, diff check,
-exact staged review, and README/link/command checks. Normal PR and main CI
-provide the full repository regression suite. The final Private workflow
-31316287397 already passed the image, SBOM/Trivy, DNS, and kind lifecycle
-gates. Never run W15 frozen Reporting final, W12 formal Validation, or
-external Benchmarks. The completed Aliyun ECS validation must not be rerun.
-No ACK context, redeployment, public port, or further cloud mutation is
-authorized by this closure.
+## Verification and closure
 
-After local evidence verification, explicitly stage only changed paths in this
-allowlist and create the evidence commit:
+Run in `apps/control_web`:
 
-    docs: record W16 Aliyun ECS validation
+~~~powershell
+npm ci
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+~~~
 
-Push, PR, normal CI, and squash merge are authorized. Runs 31454356060 and
-31454378571, their downloaded artifacts, and anonymous verification provide
-the exact evidence; neither workflow may be rerun. The annotated `v1.0.0` tag
-and existing Release remain immutable. The operator-reported Aliyun ECS
-single-node K3s validation is complete and cleaned up; ACK was not used and no
-additional cloud execution is allowed in this change.
+Also parse Compose YAML without starting services; compare bilingual README
+commands and relative links; verify W12-W16 objects and W15 hashes; run
+detect-private-key, gitleaks, `git diff --check`, exact allowlist review, and
+staged diff review. Unavailable tooling is evidence, not a pass.
+
+Do not run W15 Reporting final, W12 formal Validation, an external Benchmark,
+either W16 release workflow, ECS deployment, ACK creation, or any cloud action.
+
+The single W17 commit subject is:
+
+    feat(web): add W17 portfolio demo console
+
+After local closure, push the W17 branch, open one non-Draft PR, wait for normal
+PR CI, and squash merge only when CI is green and GitHub reports CLEAN/
+MERGEABLE. Verify one post-merge main CI run, then delete the remote W17 branch.
+The annotated `v1.0.0` tag and published Release remain unchanged.

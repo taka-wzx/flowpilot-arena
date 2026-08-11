@@ -14,8 +14,10 @@ The four release Dockerfiles now checksum-pin their linux/amd64 Docker Official
 Image bases, but application-image digests and their registry-generated SBOMs
 remain workflow artifacts rather than inputs to this repository generator.
 Therefore this repository artifact remains a machine-readable partial
-inventory, not a claim that a complete registry-image SBOM or cloud deployment
-passed. Repeated remediation generation produced 355 packages and byte SHA-256
+inventory, not evidence for the later ECS/K3s execution and not a claim that a
+complete registry-image SBOM passed. That separate Web-only cloud validation is
+recorded in `docs/evidence/week-16-release.md`. Repeated remediation generation
+produced 355 packages and byte SHA-256
 `a3e036f6ace6966df83f9d10c6a5133840a3496e367bb5f7caa78d6c07b038db`.
 
 The first registry-backed run with jobs, 31308404308, generated four Private
@@ -76,5 +78,11 @@ checksum-bound backfill for the four `v1.0.0` digests. Run 31454378571 signed
 and verified both SLSA provenance and SPDX 2.3 SBOM attestations for all four
 new digests. Independent verification with an empty Docker credential
 directory returned one expected attestation of each type for every subject.
+
+The later Aliyun ECS single-node K3s validation referenced `control-web` and
+`sandbox-web` by exact image digest. It did not build or publish an image,
+regenerate an SBOM, alter an attestation, or change the partial-coverage status
+of this repository artifact. It was not an ACK deployment or a complete image
+inventory audit.
 
 No credential, private URL, machine path, or secret is present in the artifact.

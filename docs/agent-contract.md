@@ -2,25 +2,27 @@
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 post-release
-evidence closure on `codex/w16-post-release-evidence`. The branch starts at
-the verified PR 53 merge on `origin/main`,
-`14ad304ef64df638c9a61a898db5c3329021fd33`, which contains
+This contract also governs the separately authorized W16 Aliyun ECS
+cloud-evidence closure on `codex/w16-aliyun-ecs-evidence`. The branch starts at
+the verified PR 54 merge on `origin/main`,
+`66c71a5a5b47f1cae814092b6832006ac43fddca`, which contains
+the PR 53 merge `14ad304ef64df638c9a61a898db5c3329021fd33`,
 the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
 W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
 immutable. The repository, four GHCR packages, annotated `v1.0.0` tag, and
-GitHub Release are already public and final. This follow-up authorizes the
-exact post-release evidence changes, push, PR, normal CI, squash merge,
-anonymous verification, and deployment to the previously authorized Aliyun
-ACK target. The selected-actions policy addition and the two exact workflow
-dispatches are complete and must not be repeated. It does not authorize history
-rewrite, rollback, retag, rerelease, editing the existing GitHub Release, or
-deployment to any other cloud target. Cloud mutation requires a concrete
-authenticated ACK context and recoverable target values; credentials must
-never be committed or printed.
+GitHub Release are already public and final. This follow-up authorizes only the
+exact cloud-evidence documentation changes, push, PR, normal CI, and squash
+merge. It records the separately completed temporary Aliyun ECS single-node
+K3s validation; that execution was not an ACK managed-cluster deployment. The
+selected-actions policy addition and the two exact workflow dispatches are
+complete and must not be repeated. It does not authorize history rewrite,
+rollback, retag, rerelease, editing the existing GitHub Release, redeployment,
+ACK creation, public ingress, paid resources, or any further cloud mutation.
+Credentials and unprovided cloud parameters must never be committed, printed,
+or invented.
 
 W15 frozen evidence is byte-identified before W16 work:
 
@@ -73,6 +75,10 @@ Existing release digests receive SPDX SBOM attestations; signed build
 provenance is generated only alongside a real new image build. Missing
 authorized Helm, kind, Syft, Trivy, or cloud verification is recorded as
 `unavailable`, never as passed.
+The completed ECS validation may be described only as a temporary,
+single-node, Web-only cloud check based on the operator-supplied execution
+record. It is not ACK, high availability, public ingress, production readiness,
+or certification.
 Media is supplied only when produced by a real deterministic run; otherwise
 the static fallback and unavailable record are required.
 
@@ -121,18 +127,18 @@ exact staged review, and README/link/command checks. Normal PR and main CI
 provide the full repository regression suite. The final Private workflow
 31316287397 already passed the image, SBOM/Trivy, DNS, and kind lifecycle
 gates. Never run W15 frozen Reporting final, W12 formal Validation, or
-external Benchmarks. The Aliyun deployment is limited to the recovered
-authorized ACK context, namespace-scoped Helm resources, immutable image
-digests, and synthetic demo settings.
+external Benchmarks. The completed Aliyun ECS validation must not be rerun.
+No ACK context, redeployment, public port, or further cloud mutation is
+authorized by this closure.
 
 After local evidence verification, explicitly stage only changed paths in this
 allowlist and create the evidence commit:
 
-    docs: record W16 post-release attestations
+    docs: record W16 Aliyun ECS validation
 
 Push, PR, normal CI, and squash merge are authorized. Runs 31454356060 and
 31454378571, their downloaded artifacts, and anonymous verification provide
 the exact evidence; neither workflow may be rerun. The annotated `v1.0.0` tag
-and existing Release remain immutable. Aliyun ACK execution remains pending
-only because the current runtime has no kubeconfig or kubectl context; a later
-cloud-evidence change is allowed after the authorized context is restored.
+and existing Release remain immutable. The operator-reported Aliyun ECS
+single-node K3s validation is complete and cleaned up; ACK was not used and no
+additional cloud execution is allowed in this change.

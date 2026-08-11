@@ -2,8 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is the authorized W16 post-release evidence closure on
-`codex/w16-post-release-evidence`. The
+This branch is the authorized W16 Aliyun ECS cloud-evidence closure on
+`codex/w16-aliyun-ecs-evidence`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -33,11 +33,13 @@ their tags/releases are immutable:
   `4795aefe15be66f2405a2b899db7e5764810b8ea`.
 - W16 post-release compliance PR 53 merge/origin main
   `14ad304ef64df638c9a61a898db5c3329021fd33`.
+- W16 post-release evidence PR 54 merge/origin main
+  `66c71a5a5b47f1cae814092b6832006ac43fddca`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `codex/w16-post-release-evidence`, created from the
-verified PR 53 merge on `origin/main` above. Never move or
+frozen. Work only on `codex/w16-aliyun-ecs-evidence`, created from the verified
+PR 54 merge on `origin/main` above. Never move or
 replace the existing `v1.0.0` tag or edit/rerelease its GitHub Release.
 
 ## W16 authority boundary
@@ -54,18 +56,17 @@ No real provider, IdP, model, OCR, VLM, embedding, billing, account, personal
 data, secret, arbitrary URL/API/Shell/SQL/JavaScript capability, or external
 Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
-certification. The repository and four GHCR packages are already Public. The
-user authorized PR 53, the selected-actions policy addition, the two exact
-workflow dispatches, anonymous verification, this evidence-only branch,
-push, PR, normal CI, squash merge, and deployment to the previously authorized
-Aliyun ACK target. Runs 31454356060 and 31454378571 passed; they must not be
-rerun. Cloud mutation must still stop
-unless a concrete authenticated ACK kubeconfig/context and target
-region/cluster are present. Public DNS/TLS or paid resource creation also
-requires the concrete already-authorized values to be recoverable; never
-invent them or print credentials. The evidence commit subject is:
+certification. A separately authorized, temporary Aliyun ECS single-node K3s
+validation has now completed; it was not an ACK managed-cluster deployment and
+does not certify production. Only the operator-reported outcome may be recorded
+here. The repository and four GHCR packages are already Public. Runs
+31454356060 and 31454378571 passed; they must not be rerun. This branch
+authorizes only the exact documentation change, push, PR, normal CI, and squash
+merge. Do not redeploy, create ACK, open a public port, create paid resources,
+or perform any further cloud mutation. Never invent cloud parameters or print
+credentials. The evidence commit subject is:
 
-    docs: record W16 post-release attestations
+    docs: record W16 Aliyun ECS validation
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
@@ -110,10 +111,9 @@ Run YAML parsing, W15 hash immutability, detect-private-key, gitleaks,
 `git diff --check`, exact allowlist/staged review, and README/link/command
 checks locally. The final pre-publication run 31316287397 already passed image,
 SBOM/Trivy, DNS, and kind/Helm lifecycle gates. Do not run W15 frozen
-Reporting final, W12 formal Validation, or an external Benchmark. An Aliyun
-deployment may use only the recovered authorized ACK context and immutable
-digests; it may not introduce real providers, arbitrary egress, or secrets in
-Git.
+Reporting final, W12 formal Validation, or an external Benchmark. The completed
+Aliyun ECS validation must not be rerun; no ACK context or further deployment
+is authorized.
 
 Finish with local forms of:
 
@@ -122,13 +122,11 @@ docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 pre-commit run detect-private-key --all-files
 gitleaks git --no-banner --redact --exit-code 1 .
 git diff --check
-git diff -- . ':(exclude)%SystemDrive%'
-git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
+git diff -- . ':(exclude)%SystemDrive%' ':(exclude).tmp'
+git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%' ':(exclude).tmp'
 ~~~
 
-Record unavailable tooling and cloud parameters honestly. The two authorized
-workflows are complete and must not be dispatched again. After this single
-evidence commit, push/PR/CI/squash merge may proceed. Stop before any cloud
-target other than the recovered authorized Aliyun ACK context; if that context
-is restored later, record its namespace-scoped result in a separate authorized
-cloud-evidence change.
+Record unavailable tooling and unprovided cloud parameters honestly. The two
+authorized workflows are complete and must not be dispatched again. After this
+single cloud-evidence commit, push/PR/CI/squash merge may proceed. Stop before
+all cloud mutation.

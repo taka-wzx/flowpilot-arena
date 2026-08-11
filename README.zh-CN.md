@@ -62,8 +62,8 @@ smoke 覆盖。
 
 ## W16 材料
 
-- W16 PR 45 及截至 PR 53 的 release/post-release follow-up 均已合并；main
-  上的 Attestation 基线为 `14ad304e...`。
+- W16 PR 45 及截至 PR 54 的 release/post-release follow-up 均已合并；main
+  上的 Attestation 来源为 `14ad304e...`，发布后证据基线为 `66c71a5...`。
 - Helm：[deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena)
 - Release 镜像 workflow：
   [.github/workflows/release-images.yml](.github/workflows/release-images.yml)。
@@ -83,7 +83,9 @@ smoke 覆盖。
 - Release Notes：[docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md)
 - SBOM：[docs/sbom.spdx.json](docs/sbom.spdx.json) 与
   [docs/sbom-status.md](docs/sbom-status.md)
-- 阿里云 ACK：[凭据安全部署 runbook](docs/deploy-aliyun-ack.md)
+- 阿里云云端验证：两个 Web 镜像已在现有 ECS 的临时单节点 K3s 上完成检查，
+  详见[发布证据](docs/evidence/week-16-release.md)。这不是 ACK 部署；
+  [ACK runbook](docs/deploy-aliyun-ack.md) 未执行。
 - 模型卡：[docs/model-card.md](docs/model-card.md)
 - 贡献/安全/许可证：[CONTRIBUTING.md](CONTRIBUTING.md) ·
   [SECURITY.md](SECURITY.md) · [LICENSE](LICENSE)
@@ -102,9 +104,10 @@ GIF/视频必须来自真实的本地确定性运行并完成 Cookie、Bearer、
 
 ## 安全边界与已知限制
 
-仓库现为 Public。没有真实云部署、公共入口、生产身份、
-生产 provider、任意浏览器/API/代码执行、物理删除、impersonation、delegation、
-break-glass、外部 Benchmark 或生产认证。合成结果不是实际模型质量；WorkArena
+仓库现为 Public。云端证据仅限在现有阿里云 ECS 上临时进行的单节点 K3s
+双 Web 镜像验证；它不是 ACK 或生产部署，未开放公网入口，验证后已清理。
+没有托管集群部署、生产身份、生产 provider、任意浏览器/API/代码执行、物理删除、
+impersonation、delegation、break-glass、外部 Benchmark 或生产认证。合成结果不是实际模型质量；WorkArena
 因仓库没有版本化本地资产、许可材料和 checksum 而 unavailable。Helm 4.2.0 与
 kind 0.32.0 在 NetworkPolicy、Web 运行时、rollback 与限定 CoreDNS 修复后已通过
 验证。发布后 registry run 的四个镜像均为零 HIGH/CRITICAL、零 secret。移除仅构建
@@ -112,7 +115,8 @@ kind 0.32.0 在 NetworkPolicy、Web 运行时、rollback 与限定 CoreDNS 修�
 `NOASSERTION` 的数量收敛为 3/3/1/1，且意外项为零。新四 digest 的 GitHub native
 provenance 与 SPDX SBOM Attestation 均通过匿名验证，四个 `v1.0.0` digest 也已有
 native SPDX SBOM Attestation。`licenseConcluded=NOASSERTION` 仍如实表示未进行独立
-法律结论。录屏和云部署仍 unavailable；这些限制被明确披露，不作为 waiver。
+法律结论。录屏与 ACK 托管集群部署仍 unavailable/未执行；有限 ECS 验证不改变
+这些边界。
 
 ## 明确不支持的生产操作
 
@@ -123,5 +127,5 @@ Dashboard、Reporting、Helm、Demo 输出当成业务成功。
 修改仓库前请先阅读 [W16 plan](docs/plans/week-16-release.md)、
 [W16 contract](docs/agent-contract.md) 与
 [release evidence](docs/evidence/week-16-release.md)。公开源码复核已完成；package
-visibility、`v1.0.0` 与 GitHub Release 是显式发布操作。云操作仍需单独授权，且不
-属于本 release。
+visibility、`v1.0.0` 与 GitHub Release 是显式发布操作。另行授权的 ECS/K3s 验证已
+完成并清理，且不属于本 release；此处不再授权任何云操作。

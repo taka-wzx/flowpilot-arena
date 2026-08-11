@@ -66,8 +66,9 @@ exercised by the existing observability/acceptance smokes.
 
 ## W16 release and reproducibility
 
-- W16 PR 45 and the release/post-release follow-ups through PR 53 are merged;
-  the attestation baseline is `14ad304e...` on `main`.
+- W16 PR 45 and the release/post-release follow-ups through PR 54 are merged;
+  the attestation source is `14ad304e...` and the post-release evidence
+  baseline is `66c71a5...` on `main`.
 - Local chart: [deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena).
   Components remain disabled by default and may be enabled only with
   `repository@sha256:<64 hex>` plus an optional existing Secret.
@@ -90,7 +91,10 @@ exercised by the existing observability/acceptance smokes.
 - Release notes: [docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md).
 - SBOM: [docs/sbom.spdx.json](docs/sbom.spdx.json) and
   [docs/sbom-status.md](docs/sbom-status.md).
-- Aliyun ACK: [credential-safe deployment runbook](docs/deploy-aliyun-ack.md).
+- Aliyun cloud validation: a temporary ECS single-node K3s check of the two Web
+  images is recorded in
+  [the release evidence](docs/evidence/week-16-release.md). It was not an ACK
+  deployment; the [ACK runbook](docs/deploy-aliyun-ack.md) was not executed.
 - Model card: [docs/model-card.md](docs/model-card.md).
 - Contributions/security/license:
   [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) ·
@@ -113,10 +117,12 @@ are not used.
 
 ## Security boundary and known limitations
 
-This repository is Public. There is no real cloud deployment, public ingress,
-production identity, production
-provider, arbitrary browser/API/code execution, physical delete, impersonation,
-delegation, break-glass, external Benchmark, or production certification.
+This repository is Public. Cloud evidence is limited to a temporary Aliyun ECS
+single-node K3s validation of the two Web images. It was not ACK or production,
+used no public ingress, and was removed after the checks. There is no managed
+cluster deployment, production identity, production provider, arbitrary
+browser/API/code execution, physical delete, impersonation, delegation,
+break-glass, external Benchmark, or production certification.
 Synthetic success is not real model quality. WorkArena is unavailable because
 no versioned local asset, licence material, or checksum exists. Helm 4.2.0 and
 kind 0.32.0 validation passes after the NetworkPolicy, Web runtime, rollback,
@@ -128,8 +134,8 @@ zero unexpected declarations. GitHub native provenance and SPDX SBOM
 attestations verify anonymously for the new digests, and the four `v1.0.0`
 digests have native SPDX SBOM attestations. `licenseConcluded=NOASSERTION`
 still records the absence of an independent legal conclusion. Recording and
-cloud deployment remain unavailable; these limits are disclosed rather than
-treated as waivers.
+managed ACK deployment remain unavailable/not performed; the limited ECS check
+does not waive these boundaries.
 
 ## Explicitly unsupported production operations
 
@@ -142,5 +148,6 @@ See the [W16 plan](docs/plans/week-16-release.md),
 [W16 contract](docs/agent-contract.md), and
 [release evidence](docs/evidence/week-16-release.md) before changing the
 repository. Public source verification is complete; package visibility,
-`v1.0.0`, and GitHub Release are explicit release operations. Cloud actions
-remain separately authorized and are not part of this release.
+`v1.0.0`, and GitHub Release are explicit release operations. The separately
+authorized ECS/K3s validation is complete, cleaned up, and not part of this
+release; no further cloud action is authorized here.

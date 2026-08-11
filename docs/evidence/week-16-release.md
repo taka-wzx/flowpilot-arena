@@ -69,6 +69,18 @@ result before the separately authorized public publication steps.
 - Public-README-alignment branch: codex/w16-public-readme-closure
 - Public-README-alignment starting origin/main:
   bc5da48060b999e85553d9d2db6d03b16303d5c9
+- Public-README-alignment PR 52 merge/origin main and `v1.0.0` target:
+  4795aefe15be66f2405a2b899db7e5764810b8ea
+- Post-release-compliance PR 53 merge/origin main:
+  14ad304ef64df638c9a61a898db5c3329021fd33
+- Post-release-evidence branch: codex/w16-post-release-evidence
+- Post-release-evidence commit:
+  e7b280bd50ab431c2a058db75b19889838bc4b8d
+- Post-release-evidence PR 54 merge/origin main:
+  66c71a5a5b47f1cae814092b6832006ac43fddca
+- Aliyun-ECS-cloud-evidence branch: codex/w16-aliyun-ecs-evidence
+- Aliyun-ECS-cloud-evidence starting origin/main:
+  66c71a5a5b47f1cae814092b6832006ac43fddca
 - Starting origin/main: 078eb22deb137191660a5511c496fd1dff2b74f3
 - W15 merge: 94e5a8d74b970c93c9610725dad7cb352545f654
 - PR 43 merge: 697c8b8b9a6b4c25b571e7b0dbf6c01bcb82bbf3
@@ -105,6 +117,7 @@ result before the separately authorized public publication steps.
 | Syft / Trivy | 1.50.0 / 0.73.0, Windows/amd64 asset checksums verified |
 | actionlint | 1.7.12, Windows/amd64 asset checksum verified |
 | recording tool | unavailable/not installed |
+| Aliyun ECS K3s / Helm | K3s v1.36.1+k3s1 / Helm v4.2.0; operator-reported, checksum-pinned, temporary, removed |
 
 ## Exact changed paths
 
@@ -230,6 +243,28 @@ docs/agent-contract.md
 docs/evidence/week-16-release.md
 ~~~
 
+The post-release attestation closure changes only these exact paths:
+
+~~~text
+AGENTS.md
+README.md
+README.zh-CN.md
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/sbom-status.md
+~~~
+
+The Aliyun ECS cloud-evidence closure changes only these exact paths:
+
+~~~text
+AGENTS.md
+README.md
+README.zh-CN.md
+docs/agent-contract.md
+docs/evidence/week-16-release.md
+docs/sbom-status.md
+~~~
+
 ## Helm and Kubernetes
 
 - Chart, values, and JSON schema parsed locally.
@@ -309,7 +344,8 @@ docs/evidence/week-16-release.md
   maximum provenance and SBOM attestations remain enabled and registry-bound;
   the digest files and downloaded Syft/Trivy artifacts remain the independent
   workflow evidence surfaces.
-- Cloud deployment is not executed and is not passed.
+- At the PR 54 evidence baseline, cloud deployment had not executed. The later
+  limited Aliyun ECS single-node K3s validation is recorded separately below.
 
 ## Demo and documentation
 
@@ -492,9 +528,10 @@ reported their own frozen independent grades.
   `sha256:7c5f42f63d6fe09ad66c80b8a1b7136613d68eeddb8499db7e81c7221c4adc9d`,
   and sandbox-web
   `sha256:8c8b10a1f9d978abf35e2f38fefb919fe5d508ffa8ca8e8fa6e7071938444e42`.
-- The final Private image/lifecycle gate is passed. Repository/package
-  visibility change, anonymous verification, `v1.0.0`, and GitHub Release are
-  now authorized by the user; cloud deployment remains outside scope.
+- The final Private image/lifecycle gate is passed. At that historical gate,
+  repository/package visibility change, anonymous verification, `v1.0.0`, and
+  GitHub Release were authorized while cloud deployment remained outside its
+  scope. The later ECS validation did not alter that workflow result.
 
 - gitleaks full-history scan with the protected path excluded: 59 commits,
   approximately 5.13 MB, no leaks.
@@ -522,7 +559,7 @@ reported their own frozen independent grades.
   31308404308 published only blocked Private candidates and restricted evidence.
   No tag, Release, or visibility change occurred.
 
-## Post-release compliance and Aliyun ACK closure
+## Post-release compliance and cloud-evidence closure
 
 The repository and all four GHCR packages are Public. The annotated `v1.0.0`
 tag resolves to `4795aefe15be66f2405a2b899db7e5764810b8ea`, and GitHub Release
@@ -597,9 +634,51 @@ With the same empty Docker credential directory, each new digest independently
 verified exactly one native SLSA provenance and one native SPDX 2.3 SBOM
 attestation constrained to the release workflow and source commit.
 
-Aliyun ACK deployment is authorized, but this workstation currently has no
-Aliyun CLI configuration, Alibaba Cloud environment variables, kubeconfig, or
-kubectl context. No cloud mutation has occurred in this closure yet. The
-credential-safe deployment and cleanup sequence is documented in
-`docs/deploy-aliyun-ack.md`; execution requires the previously authorized ACK
-kubeconfig/context to be restored outside the repository.
+## Aliyun ECS single-node K3s cloud validation
+
+A separately authorized validation completed on an existing Aliyun ECS host.
+This was explicitly an **Aliyun ECS single-node K3s cloud validation**, not an
+ACK managed-cluster deployment and not a production certification. This change
+records the operator-supplied execution outcome; it does not reconnect to or
+independently rerun the cloud session.
+
+- K3s v1.36.1+k3s1 and Helm v4.2.0 were installed temporarily from
+  checksum-pinned artifacts.
+- Helm enabled only the `control-web` and `sandbox-web` workloads, each
+  referenced by an exact `sha256` digest rather than a tag. No `latest` or
+  `v1.0.0` image tag was created, moved, or published.
+- Both Pods reached `Ready`. HTTP checks from inside each Pod returned 200.
+  Loopback-only port-forwards bound to `127.0.0.1` also returned 200; no public
+  listener or public ingress was opened.
+- The Helm release, namespace, K3s installation, temporary firewall rules,
+  pulled FlowPilot images, and temporary files were removed after validation.
+  The four pre-existing `crag` containers remained healthy after cleanup.
+- No ACK cluster was created. No Control API, Sandbox API, database, identity,
+  provider, Grader, public DNS/TLS, high-availability, or production behavior
+  was validated or claimed.
+- No ECS identifier, region, public address, credential, kubeconfig, or raw
+  operator log is committed. Literal host-specific values not supplied to this
+  documentation change remain unavailable and are not invented.
+
+The existing [ACK runbook](../deploy-aliyun-ack.md) remains an unexecuted
+credential-safe reference. The validation changed no repository product code,
+workflow, image, tag, Release, or frozen W15 evidence, and it authorizes no
+further cloud mutation.
+
+### Cloud-evidence documentation verification
+
+- The six changed paths exactly match the post-release allowlist;
+  `git diff --check` and the English/Chinese relative-link and PowerShell-command
+  parity checks passed.
+- The frozen W15 report byte hash and internal `report_hash`, protocol byte and
+  internal hashes, configuration hash, and schema byte hash all exactly match
+  the immutable values above. Reporting final, formal Validation, and external
+  Benchmarks were not run.
+- Standalone Docker Compose 5.3.1 parsed `deploy/compose/compose.yaml`,
+  `pre-commit validate-config` parsed `.pre-commit-config.yaml`, and the required
+  Compose down/volume/orphan cleanup completed. A generic local PyYAML parser,
+  Helm, and actionlint were unavailable in the current runtime; no YAML file is
+  changed by this documentation closure, and normal PR CI remains the workflow
+  parsing/regression authority.
+- `detect-private-key --all-files` passed. Gitleaks scanned 79 commits and
+  approximately 5.76 MB with redaction enabled and found no leaks.

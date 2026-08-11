@@ -2,21 +2,26 @@
 
 ## Authority and frozen history
 
-This contract also governs the separately authorized W16 public README
-alignment on `codex/w16-public-readme-closure`. The branch starts at the
-verified W16 public-release evidence PR 51 merge on `origin/main`,
-`bc5da48060b999e85553d9d2db6d03b16303d5c9`, which contains
+This contract also governs the separately authorized W16 post-release
+compliance and Aliyun ACK closure on
+`codex/w16-post-release-compliance-cloud`. The branch starts at the verified
+public `v1.0.0` commit on `origin/main`,
+`4795aefe15be66f2405a2b899db7e5764810b8ea`, which contains
 the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
 W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 (`w12-production`), W13
 (`w13-observability`), W14 (`w14-security`), and W15 (`w15-evaluation`) tags,
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
-immutable. This follow-up authorizes one public README alignment
-commit, push, PR, normal CI, and squash merge. It also authorizes repository
-and package visibility change, anonymous public verification, the annotated
-`v1.0.0` tag, and GitHub Release `v1.0.0 - FlowPilot Arena`.
-It does not authorize history rewrite, rollback, retag, rerelease, repository
-or package visibility change, cloud action, or a `v1.0.0` tag/Release.
+immutable. The repository, four GHCR packages, annotated `v1.0.0` tag, and
+GitHub Release are already public and final. This follow-up authorizes the
+exact post-release file changes, selected-actions policy addition, push, PR,
+normal CI, squash merge, one existing-digest SBOM-attestation dispatch, one
+new image/attestation dispatch, anonymous verification, and deployment to the
+previously authorized Aliyun ACK target. It does not authorize history
+rewrite, rollback, retag, rerelease, editing the existing GitHub Release, or
+deployment to any other cloud target. Cloud mutation requires a concrete
+authenticated ACK context and recoverable target values; credentials must
+never be committed or printed.
 
 W15 frozen evidence is byte-identified before W16 work:
 
@@ -59,14 +64,16 @@ allowed.
 
 No new dependency, lockfile, service, database, migration, provider, IdP,
 model/OCR/VLM/embedding/billing call, arbitrary URL/API/Shell/SQL/JavaScript,
-external Benchmark, cloud resource, DNS/TLS, or real account/data may be
-introduced. The four existing Private `linux/amd64` GHCR candidates named in
-`AGENTS.md` are immutable inputs; no Dockerfile or image content may change in
-this follow-up. Buildx-generated maximum provenance and SBOM
-attestations remain required. GitHub native Artifact Attestations are
-`unavailable/private-plan`; the Private workflow must not request their
-permissions or invoke `actions/attest`. Missing authorized Helm, kind, Syft,
-Trivy, or VHS verification is recorded as `unavailable`, never as passed.
+external Benchmark, or real account/data may be introduced. Product behavior
+is frozen. The two API Dockerfiles may remove only build-time `uv`/`pip` and
+cache material from their final runtime images, while their project metadata
+may declare the repository's existing Apache-2.0 license. Buildx-generated
+maximum provenance and SBOM attestations remain required. GitHub native
+Artifact Attestations use only the pinned action named in `AGENTS.md`.
+Existing release digests receive SPDX SBOM attestations; signed build
+provenance is generated only alongside a real new image build. Missing
+authorized Helm, kind, Syft, Trivy, or cloud verification is recorded as
+`unavailable`, never as passed.
 Media is supplied only when produced by a real deterministic run; otherwise
 the static fallback and unavailable record are required.
 
@@ -93,7 +100,7 @@ or package hashes. If a container digest or generator is unavailable, the
 machine-readable status and evidence say so; no hand-written component list is
 called a passed SBOM.
 
-## Exact public-README-alignment allowlist
+## Exact post-release closure allowlist
 
 Only these exact paths may be created or modified. There are no directory
 wildcards:
@@ -102,26 +109,39 @@ wildcards:
 AGENTS.md
 README.md
 README.zh-CN.md
+apps/control_api/Dockerfile
+apps/control_api/pyproject.toml
+apps/sandbox_api/Dockerfile
+apps/sandbox_api/pyproject.toml
+.github/workflows/release-images.yml
+.github/workflows/attest-v1.0.0-images.yml
 docs/agent-contract.md
+docs/deploy-aliyun-ack.md
 docs/evidence/week-16-release.md
+docs/sbom-status.md
 ~~~
 
 ## Verification and stop condition
 
-Run the locally available public-README-alignment gates listed in `AGENTS.md`:
+Run the locally available post-release closure gates listed in `AGENTS.md`:
 YAML parsing, W15 hash immutability, detect-private-key, gitleaks, diff check,
 exact staged review, and README/link/command checks. Normal PR and main CI
 provide the full repository regression suite. The final Private workflow
 31316287397 already passed the image, SBOM/Trivy, DNS, and kind lifecycle
-gates. Never run W15 frozen Reporting final, W12 formal Validation, external
-Benchmarks, or cloud deployment.
+gates. Never run W15 frozen Reporting final, W12 formal Validation, or
+external Benchmarks. The Aliyun deployment is limited to the recovered
+authorized ACK context, namespace-scoped Helm resources, immutable image
+digests, and synthetic demo settings.
 
-After evidence reconciliation, explicitly stage only changed paths in this
-allowlist and create exactly one public README alignment commit:
+After local implementation verification, explicitly stage only changed paths
+in this allowlist and create the implementation commit:
 
-    docs: align public W16 README
+    fix: close W16 post-release compliance gaps
 
-Push, PR, normal CI, squash merge, repository/package visibility change,
-anonymous public clone, annotated `v1.0.0` tag, and Release
-`v1.0.0 - FlowPilot Arena` are authorized. Cloud deployment remains outside
-scope and requires separate provider parameters and authorization.
+Push, PR, normal CI, and squash merge are authorized. After merge, add the
+single pinned `actions/attest` reference to the existing selected-actions
+policy, execute exactly one existing-digest attestation dispatch and one
+remediated-image dispatch, verify all four subjects through the GitHub API and
+anonymous GHCR access, and record exact evidence. A separate evidence-only
+commit/PR is authorized when remote run IDs/digests or ACK results are known.
+The annotated `v1.0.0` tag and existing Release remain immutable.

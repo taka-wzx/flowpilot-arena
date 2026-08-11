@@ -32,11 +32,31 @@ are recorded in `docs/evidence/week-16-release.md`; future digests are never
 guessed or hand-written into this repository inventory.
 
 The final registry SPDX artifacts contained 1,117, 1,110, 72, and 72 packages
-for control-api, sandbox-api, control-web, and sandbox-web. License fields are
-not uniformly authoritative: 1,051 backend packages and one package in each
-Web image remain `NOASSERTION` in Syft output. This is disclosed for public
-readers and is not silently converted into a license claim. The repository
-Apache-2.0 license remains present; cloud deployment and native GitHub
-Artifact Attestations remain outside the available evidence.
+for control-api, sandbox-api, control-web, and sandbox-web. Their declared
+license fields were not uniformly authoritative: 1,051 backend packages and
+one package in each Web image were `NOASSERTION` in Syft output. A post-release
+audit traced 1,038 of each backend count to Rust components embedded in the
+build-only `uv` executable that had been left in the runtime image. Six more
+were pip's Windows launcher binaries, three came from uv cache metadata, and
+the local project lacked PEP 621 license metadata. The post-release image
+change removes system `uv` and pip after the locked environment is built,
+disables uv cache persistence, and declares the repository's existing
+Apache-2.0 license in both API project files. It does not hand-edit or infer
+licenses in generated SBOM JSON.
+
+The release workflow now separates `licenseDeclared` from
+`licenseConcluded`. It gates unexpected declared `NOASSERTION` packages while
+allowing only the base-image `.python-rundeps`, the Python binary package, and
+the document-root image package. `licenseConcluded=NOASSERTION` remains an
+honest statement that no independent legal conclusion was performed. Exact
+post-release package counts and checksums are recorded only after the remote
+registry workflow passes.
+
+The repository became Public after run 31316287397. The post-release workflow
+therefore adds GitHub native SLSA provenance to new builds and native SPDX 2.3
+SBOM attestations to new and existing release digests through the immutable
+`actions/attest` commit recorded in the W16 contract. Existing release images
+receive SBOM attestations only; their original build provenance is never
+retroactively claimed as GitHub-native.
 
 No credential, private URL, machine path, or secret is present in the artifact.

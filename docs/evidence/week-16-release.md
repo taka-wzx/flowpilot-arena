@@ -522,16 +522,34 @@ reported their own frozen independent grades.
   31308404308 published only blocked Private candidates and restricted evidence.
   No tag, Release, or visibility change occurred.
 
-## Unavailable and next authorization
+## Post-release compliance and Aliyun ACK closure
 
-Unavailable or limited: GitHub native Artifact Attestations
-(`unavailable/private-plan`), complete licence assertions for packages whose
-lockfile metadata is `NOASSERTION`, Demo GIF/video, and real cloud deployment.
-The final Private image/lifecycle gate and anonymous public source verification
-are passed. Four package visibility changes, anonymous digest pulls, tag, and
-Release remain to be executed.
+The repository and all four GHCR packages are Public. The annotated `v1.0.0`
+tag resolves to `4795aefe15be66f2405a2b899db7e5764810b8ea`, and GitHub Release
+`v1.0.0 - FlowPilot Arena` is published. These objects are immutable and are
+not modified by the post-release closure.
 
-The current authorization covers the public-release evidence closure
-push/PR/normal CI/squash merge, repository/package visibility change,
-anonymous verification, annotated v1.0.0 tag, and GitHub Release v1.0.0 -
-FlowPilot Arena. Cloud parameters remain a separate scope.
+The final pre-publication image run 31316287397 could not use GitHub native
+Artifact Attestations because the repository was Private on a non-Enterprise
+plan. After publication, the GitHub Attestations API still returned 404 for
+the four release digests. The post-release closure adds a one-time workflow
+that checksum-verifies and SBOM-attests the exact four SPDX files from run
+31316287397. It does not manufacture historical build provenance. New image
+builds sign native SLSA provenance in the build job and sign the exact
+registry-generated SPDX 2.3 document after Syft/Trivy verification.
+
+The declared-license root cause is recorded in `docs/sbom-status.md`. The two
+API runtime images are changed only to remove build-only uv, pip, and uv cache
+content and to include the existing Apache-2.0 project metadata. The release
+workflow now fails on any declared `NOASSERTION` package other than the exact
+base-image/runtime document roots listed in the contract. Remote run IDs,
+digests, SBOM hashes, residual counts, vulnerability results, and attestation
+verification are appended only after the implementation reaches main and the
+two authorized workflow dispatches pass.
+
+Aliyun ACK deployment is authorized, but this workstation currently has no
+Aliyun CLI configuration, Alibaba Cloud environment variables, kubeconfig, or
+kubectl context. No cloud mutation has occurred in this closure yet. The
+credential-safe deployment and cleanup sequence is documented in
+`docs/deploy-aliyun-ack.md`; execution requires the previously authorized ACK
+kubeconfig/context to be restored outside the repository.

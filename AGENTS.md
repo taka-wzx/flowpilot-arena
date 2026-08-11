@@ -2,8 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is the authorized W16 public README alignment on
-`codex/w16-public-readme-closure`. The
+This branch is the authorized W16 post-release compliance and Aliyun ACK
+closure on `codex/w16-post-release-compliance-cloud`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -28,11 +28,15 @@ their tags/releases are immutable:
   `5f37b49a3eb30b63c7aed7fe91676708a28721ac`.
 - W16 public-release evidence PR 51 merge/origin main
   `bc5da48060b999e85553d9d2db6d03b16303d5c9`.
+- W16 public README PR 52 merge/origin main, annotated `v1.0.0` tag, and
+  published GitHub Release
+  `4795aefe15be66f2405a2b899db7e5764810b8ea`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `codex/w16-public-readme-closure`, created from the
-verified W16 public-release evidence merge on `origin/main` above.
+frozen. Work only on `codex/w16-post-release-compliance-cloud`, created from
+the verified public `v1.0.0` commit on `origin/main` above. Never move or
+replace the existing `v1.0.0` tag or edit/rerelease its GitHub Release.
 
 ## W16 authority boundary
 
@@ -48,23 +52,24 @@ No real provider, IdP, model, OCR, VLM, embedding, billing, account, personal
 data, secret, arbitrary URL/API/Shell/SQL/JavaScript capability, or external
 Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
-certification. Do not log in to a cloud, create resources/DNS/TLS, incur cost,
-change repository or package visibility, tag, or release. The user has
-separately authorized this public README alignment branch, push, PR,
-normal CI, and squash merge. The user also authorized repository/package
-visibility change, anonymous public verification, the annotated `v1.0.0` tag,
-and GitHub Release `v1.0.0 - FlowPilot Arena`. Cloud deployment, provider,
-account, region, cluster, DNS, TLS, budget, egress, and secret parameters
-remain outside this authorization. The authorized repository mutation is one
-commit with subject:
+certification. The repository and four GHCR packages are already Public. The
+user has authorized this post-release branch, exact file changes below,
+selected-actions policy addition for `actions/attest`, push, PR, normal CI,
+squash merge, one existing-digest SBOM-attestation dispatch, one remediated
+image dispatch, anonymous attestation/image verification, and deployment to
+the previously authorized Aliyun ACK target. Cloud mutation must still stop
+unless a concrete authenticated ACK kubeconfig/context and target
+region/cluster are present. Public DNS/TLS or paid resource creation also
+requires the concrete already-authorized values to be recoverable; never
+invent them or print credentials. The implementation commit subject is:
 
-    docs: align public W16 README
+    fix: close W16 post-release compliance gaps
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
 preserve unrelated `.tmp/` content.
 
-## Exact public-README-alignment allowlist
+## Exact post-release closure allowlist
 
 Only the following exact paths may be created or modified. Directory
 wildcards are forbidden; add a path here before changing it.
@@ -73,32 +78,47 @@ wildcards are forbidden; add a path here before changing it.
 AGENTS.md
 README.md
 README.zh-CN.md
+apps/control_api/Dockerfile
+apps/control_api/pyproject.toml
+apps/sandbox_api/Dockerfile
+apps/sandbox_api/pyproject.toml
+.github/workflows/release-images.yml
+.github/workflows/attest-v1.0.0-images.yml
 docs/agent-contract.md
+docs/deploy-aliyun-ack.md
 docs/evidence/week-16-release.md
+docs/sbom-status.md
 ~~~
 
 The W15 frozen files are not modified or rerun in Reporting mode. No new
-dependency, lockfile, service, database, migration, network capability, or
-cloud resource may be added. The four existing Private `linux/amd64` candidate
-images in the `ghcr.io/taka-wzx` namespace are: `flowpilot-arena-control-api`,
+dependency, lockfile, service, database, migration, or product network
+capability may be added. The four existing Public `linux/amd64` images in the
+`ghcr.io/taka-wzx` namespace are: `flowpilot-arena-control-api`,
 `flowpilot-arena-sandbox-api`, `flowpilot-arena-control-web`, and
 `flowpilot-arena-sandbox-web`. Images use only `sha-<40-hex-merge-commit>`
-tags; `latest` and `v1.0.0` remain forbidden for image publication. No
-Dockerfile or image content may change in this follow-up. Buildx
-`provenance: mode=max` and `sbom: true` remain mandatory. GitHub native
-Artifact Attestations are `unavailable/private-plan`; do not request
-`attestations: write`, `id-token: write`, or `actions/attest` in this Private
-workflow. If an authorized Helm, kind, Syft, Trivy, or VHS verification cannot
-execute, record `unavailable`; never claim it passed.
+tags; `latest` and `v1.0.0` remain forbidden for image publication. Dockerfile
+changes are limited to removing build-only `uv`/`pip` and cache content from
+the two API runtime images; application code and behavior must not change.
+Buildx `provenance: mode=max` and `sbom: true` remain mandatory. Because the
+repository is now Public, GitHub native Artifact Attestations are authorized
+through only `actions/attest@a1948c3f048ba23858d222213b7c278aabede763`.
+Existing `v1.0.0` digests receive honest SPDX SBOM attestations only; never
+backfill or imply build provenance that was not signed in the original build
+job. New images must receive native SLSA provenance in their build job and
+native SPDX SBOM attestations after registry scanning. If an authorized tool
+or cloud verification cannot execute, record `unavailable`; never claim it
+passed.
 
 ## Required verification
 
 Run YAML parsing, W15 hash immutability, detect-private-key, gitleaks,
 `git diff --check`, exact allowlist/staged review, and README/link/command
-checks locally. The final Private run 31316287397 already passed image,
+checks locally. The final pre-publication run 31316287397 already passed image,
 SBOM/Trivy, DNS, and kind/Helm lifecycle gates. Do not run W15 frozen
-Reporting final, W12 formal Validation, an external Benchmark, or cloud
-deployment.
+Reporting final, W12 formal Validation, or an external Benchmark. An Aliyun
+deployment may use only the recovered authorized ACK context and immutable
+digests; it may not introduce real providers, arbitrary egress, or secrets in
+Git.
 
 Finish with local forms of:
 
@@ -111,7 +131,9 @@ git diff -- . ':(exclude)%SystemDrive%'
 git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
-Record unavailable tooling and unexecuted cloud/publication steps honestly.
-After the single public README alignment commit, push/PR/CI/squash merge may
-proceed. Then perform the authorized visibility, anonymous verification, tag,
-and Release steps. Stop before any cloud action.
+Record unavailable tooling and cloud parameters honestly. After the
+implementation commit, push/PR/CI/squash merge may proceed, then update the
+selected-actions policy, execute the two authorized workflows, verify their
+attestations/artifacts, and use a separate evidence-only closure commit if
+remote run IDs/digests or ACK results must be recorded. Stop before any cloud
+target other than the recovered authorized Aliyun ACK context.

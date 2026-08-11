@@ -1,0 +1,148 @@
+name: W16 v1.0.0 SBOM Attestations
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact 40-character main commit containing this workflow
+        required: true
+        type: string
+      confirm_release_digests:
+        description: Attest the four immutable v1.0.0 image digests
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: w16-v1-sbom-attestations
+  cancel-in-progress: false
+
+jobs:
+  attest:
+    name: Attest and verify immutable v1.0.0 image SBOMs
+    if: inputs.confirm_release_digests
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      artifact-metadata: write
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    env:
+      EVIDENCE_RUN_ID: "31316287397"
+      CONTROL_API_DIGEST: sha256:81f92e2001876900cd323aeb63c6687626d7bff25b371de87bcbd3b684d4f93a
+      SANDBOX_API_DIGEST: sha256:272f214dc2b50dae8853f2abe10f17384a4ed55fd45ad7dce0845899022a5f3e
+      CONTROL_WEB_DIGEST: sha256:7c5f42f63d6fe09ad66c80b8a1b7136613d68eeddb8499db7e81c7221c4adc9d
+      SANDBOX_WEB_DIGEST: sha256:8c8b10a1f9d978abf35e2f38fefb919fe5d508ffa8ca8e8fa6e7071938444e42
+    steps:
+      - name: Check out the authorized workflow source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - name: Validate immutable main workflow source
+        env:
+          SOURCE_REF: ${{ inputs.source_ref }}
+          WORKFLOW_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$SOURCE_REF" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$SOURCE_REF" == "$WORKFLOW_SHA" ]]
+          [[ "$(git rev-parse HEAD)" == "$SOURCE_REF" ]]
+          git merge-base --is-ancestor "$SOURCE_REF" origin/main
+      - name: Download the immutable registry SBOM evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: w16-private-candidate-image-evidence
+          path: ${{ runner.temp }}/v1-image-evidence
+          github-token: ${{ github.token }}
+          repository: taka-wzx/flowpilot-arena
+          run-id: ${{ env.EVIDENCE_RUN_ID }}
+      - name: Verify original SBOM checksums and subjects
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/v1-image-evidence"
+          echo "8d5b18ecc470195ca90c64b357a47c9769b01331a4ae069615008949b09c14a6  $evidence/control-api.spdx.json" | sha256sum --check
+          echo "528967d3349a632ca8a00e57a29b5aa73fdfd9ae8839e70d5ce6f4f260091523  $evidence/sandbox-api.spdx.json" | sha256sum --check
+          echo "8ee4d16a7210b1f46b65c28256639bf7c07cf99cdb123c5881669359c2bff06f  $evidence/control-web.spdx.json" | sha256sum --check
+          echo "c9a0724eb1f22538176d6d412773c48f861ca6a5329a73121c73f15c10db880b  $evidence/sandbox-web.spdx.json" | sha256sum --check
+          jq -e --arg digest "$CONTROL_API_DIGEST" '.packages[] | select(.name == "ghcr.io/taka-wzx/flowpilot-arena-control-api") | .versionInfo == $digest' "$evidence/control-api.spdx.json"
+          jq -e --arg digest "$SANDBOX_API_DIGEST" '.packages[] | select(.name == "ghcr.io/taka-wzx/flowpilot-arena-sandbox-api") | .versionInfo == $digest' "$evidence/sandbox-api.spdx.json"
+          jq -e --arg digest "$CONTROL_WEB_DIGEST" '.packages[] | select(.name == "ghcr.io/taka-wzx/flowpilot-arena-control-web") | .versionInfo == $digest' "$evidence/control-web.spdx.json"
+          jq -e --arg digest "$SANDBOX_WEB_DIGEST" '.packages[] | select(.name == "ghcr.io/taka-wzx/flowpilot-arena-sandbox-web") | .versionInfo == $digest' "$evidence/sandbox-web.spdx.json"
+      - name: Log in to GHCR with the repository token
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Attest control API SPDX SBOM
+        id: control_api
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-control-api
+          subject-digest: ${{ env.CONTROL_API_DIGEST }}
+          sbom-path: ${{ runner.temp }}/v1-image-evidence/control-api.spdx.json
+          push-to-registry: true
+      - name: Attest sandbox API SPDX SBOM
+        id: sandbox_api
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-sandbox-api
+          subject-digest: ${{ env.SANDBOX_API_DIGEST }}
+          sbom-path: ${{ runner.temp }}/v1-image-evidence/sandbox-api.spdx.json
+          push-to-registry: true
+      - name: Attest control Web SPDX SBOM
+        id: control_web
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-control-web
+          subject-digest: ${{ env.CONTROL_WEB_DIGEST }}
+          sbom-path: ${{ runner.temp }}/v1-image-evidence/control-web.spdx.json
+          push-to-registry: true
+      - name: Attest sandbox Web SPDX SBOM
+        id: sandbox_web
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-sandbox-web
+          subject-digest: ${{ env.SANDBOX_WEB_DIGEST }}
+          sbom-path: ${{ runner.temp }}/v1-image-evidence/sandbox-web.spdx.json
+          push-to-registry: true
+      - name: Verify all GitHub native SPDX SBOM attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for subject in \
+            "control-api:$CONTROL_API_DIGEST" \
+            "sandbox-api:$SANDBOX_API_DIGEST" \
+            "control-web:$CONTROL_WEB_DIGEST" \
+            "sandbox-web:$SANDBOX_WEB_DIGEST"; do
+            component="${subject%%:*}"
+            digest="${subject#*:}"
+            gh attestation verify "oci://ghcr.io/taka-wzx/flowpilot-arena-${component}@${digest}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --predicate-type https://spdx.dev/Document/v2.3 \
+              --signer-workflow taka-wzx/flowpilot-arena/.github/workflows/attest-v1.0.0-images.yml \
+              --source-digest "$SOURCE_SHA"
+          done
+      - name: Upload signed attestation bundles
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: w16-v1.0.0-sbom-attestation-bundles
+          path: |
+            ${{ steps.control_api.outputs.bundle-path }}
+            ${{ steps.sandbox_api.outputs.bundle-path }}
+            ${{ steps.control_web.outputs.bundle-path }}
+            ${{ steps.sandbox_web.outputs.bundle-path }}
+          if-no-files-found: error
+          retention-days: 90

@@ -1,4 +1,4 @@
-name: W16 Private Candidate Images
+name: W16 Release Images
 
 on:
   workflow_dispatch:
@@ -7,8 +7,8 @@ on:
         description: Exact 40-character main commit to publish
         required: true
         type: string
-      confirm_private_candidate:
-        description: Publish the four Private linux/amd64 candidate images
+      confirm_release_images:
+        description: Publish and attest the four linux/amd64 release images
         required: true
         default: false
         type: boolean
@@ -17,13 +17,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: w16-private-candidate-${{ inputs.source_ref }}
+  group: w16-release-images-${{ inputs.source_ref }}
   cancel-in-progress: false
 
 jobs:
   validate-source:
     name: Validate immutable main source
-    if: inputs.confirm_private_candidate
+    if: inputs.confirm_release_images
     runs-on: ubuntu-24.04
     outputs:
       source_sha: ${{ steps.source.outputs.sha }}
@@ -52,7 +52,10 @@ jobs:
     needs: validate-source
     runs-on: ubuntu-24.04
     permissions:
+      artifact-metadata: write
+      attestations: write
       contents: read
+      id-token: write
       packages: write
     strategy:
       fail-fast: false
@@ -92,7 +95,7 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push the Private candidate
+      - name: Build and push the digest-only image
         id: push
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
@@ -109,6 +112,12 @@ jobs:
             org.opencontainers.image.title=${{ matrix.image }}
           provenance: mode=max
           sbom: true
+      - name: Attest native build provenance
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
       - name: Record the immutable digest
         env:
           COMPONENT: ${{ matrix.component }}
@@ -134,16 +143,20 @@ jobs:
           retention-days: 30
   image-evidence:
     name: Registry-digest SBOM and vulnerability evidence
-    if: always() && inputs.confirm_private_candidate
+    if: always() && inputs.confirm_release_images
     needs: build-and-push
     runs-on: ubuntu-24.04
     permissions:
       actions: read
+      artifact-metadata: write
+      attestations: write
       contents: read
-      packages: read
+      id-token: write
+      packages: write
     outputs:
       blocking_vulnerabilities: ${{ steps.summary.outputs.blocking_vulnerabilities }}
       secret_findings: ${{ steps.summary.outputs.secret_findings }}
+      unexpected_license_assertions: ${{ steps.summary.outputs.unexpected_license_assertions }}
     steps:
       - name: Download all digest evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -188,6 +201,7 @@ jobs:
           mkdir -p "$output_dir"
           total_blocking=0
           total_secrets=0
+          total_unexpected_licenses=0
           for component in control-api sandbox-api control-web sandbox-web; do
             record="$RUNNER_TEMP/digests/${component}.digest"
             image="$(sed -n 's/^image=//p' "$record")"
@@ -200,25 +214,93 @@ jobs:
               --timeout 10m "$reference"
             blocking="$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity == "HIGH" or .Severity == "CRITICAL")] | length' "$output_dir/${component}.trivy.json")"
             secrets="$(jq '[.Results[]?.Secrets[]?] | length' "$output_dir/${component}.trivy.json")"
-            noassertion="$(jq '[.packages[]? | select((.licenseDeclared // "NOASSERTION") == "NOASSERTION" or (.licenseConcluded // "NOASSERTION") == "NOASSERTION")] | length' "$output_dir/${component}.spdx.json")"
+            declared_noassertion="$(jq '[.packages[]? | select((.licenseDeclared // "NOASSERTION") == "NOASSERTION")] | length' "$output_dir/${component}.spdx.json")"
+            concluded_noassertion="$(jq '[.packages[]? | select((.licenseConcluded // "NOASSERTION") == "NOASSERTION")] | length' "$output_dir/${component}.spdx.json")"
+            unexpected_licenses="$(jq --arg image "$image" '[.packages[]? | select((.licenseDeclared // "NOASSERTION") == "NOASSERTION") | select(.name != ".python-rundeps" and .name != "python" and .name != $image)] | length' "$output_dir/${component}.spdx.json")"
             total_blocking=$((total_blocking + blocking))
             total_secrets=$((total_secrets + secrets))
-            echo "${component}: ${reference}; HIGH/CRITICAL=${blocking}; secrets=${secrets}; SPDX_NOASSERTION=${noassertion}" >> "$GITHUB_STEP_SUMMARY"
+            total_unexpected_licenses=$((total_unexpected_licenses + unexpected_licenses))
+            echo "${component}: ${reference}; HIGH/CRITICAL=${blocking}; secrets=${secrets}; SPDX_declared_NOASSERTION=${declared_noassertion}; SPDX_concluded_NOASSERTION=${concluded_noassertion}; unexpected_declared_NOASSERTION=${unexpected_licenses}" >> "$GITHUB_STEP_SUMMARY"
           done
           echo "blocking_vulnerabilities=$total_blocking" >> "$GITHUB_OUTPUT"
           echo "secret_findings=$total_secrets" >> "$GITHUB_OUTPUT"
+          echo "unexpected_license_assertions=$total_unexpected_licenses" >> "$GITHUB_OUTPUT"
+      - name: Resolve immutable attestation subjects
+        id: subjects
+        shell: bash
+        run: |
+          set -euo pipefail
+          for component in control-api sandbox-api control-web sandbox-web; do
+            record="$RUNNER_TEMP/digests/${component}.digest"
+            digest="$(sed -n 's/^digest=//p' "$record")"
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+            key="${component//-/_}_digest"
+            echo "${key}=${digest}" >> "$GITHUB_OUTPUT"
+          done
+      - name: Attest control API SPDX SBOM
+        id: attest_control_api_sbom
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-control-api
+          subject-digest: ${{ steps.subjects.outputs.control_api_digest }}
+          sbom-path: ${{ runner.temp }}/image-evidence/control-api.spdx.json
+          push-to-registry: true
+      - name: Attest sandbox API SPDX SBOM
+        id: attest_sandbox_api_sbom
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-sandbox-api
+          subject-digest: ${{ steps.subjects.outputs.sandbox_api_digest }}
+          sbom-path: ${{ runner.temp }}/image-evidence/sandbox-api.spdx.json
+          push-to-registry: true
+      - name: Attest control Web SPDX SBOM
+        id: attest_control_web_sbom
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-control-web
+          subject-digest: ${{ steps.subjects.outputs.control_web_digest }}
+          sbom-path: ${{ runner.temp }}/image-evidence/control-web.spdx.json
+          push-to-registry: true
+      - name: Attest sandbox Web SPDX SBOM
+        id: attest_sandbox_web_sbom
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
+        with:
+          subject-name: ghcr.io/taka-wzx/flowpilot-arena-sandbox-web
+          subject-digest: ${{ steps.subjects.outputs.sandbox_web_digest }}
+          sbom-path: ${{ runner.temp }}/image-evidence/sandbox-web.spdx.json
+          push-to-registry: true
+      - name: Verify native provenance and SPDX SBOM attestations
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_SHA: ${{ inputs.source_ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for component in control-api sandbox-api control-web sandbox-web; do
+            image="ghcr.io/taka-wzx/flowpilot-arena-${component}"
+            digest="$(sed -n 's/^digest=//p' "$RUNNER_TEMP/digests/${component}.digest")"
+            gh attestation verify "oci://${image}@${digest}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow taka-wzx/flowpilot-arena/.github/workflows/release-images.yml \
+              --source-digest "$SOURCE_SHA"
+            gh attestation verify "oci://${image}@${digest}" \
+              --repo "$GITHUB_REPOSITORY" \
+              --predicate-type https://spdx.dev/Document/v2.3 \
+              --signer-workflow taka-wzx/flowpilot-arena/.github/workflows/release-images.yml \
+              --source-digest "$SOURCE_SHA"
+          done
       - name: Upload SBOM and Trivy evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: w16-private-candidate-image-evidence
+          name: w16-release-image-evidence
           path: ${{ runner.temp }}/image-evidence
           if-no-files-found: error
           retention-days: 30
 
   kind-helm-smoke:
     name: kind and Helm digest-only lifecycle
-    if: always() && inputs.confirm_private_candidate
+    if: always() && inputs.confirm_release_images
     needs: build-and-push
     runs-on: ubuntu-24.04
     permissions:
@@ -329,9 +411,9 @@ jobs:
             --wait --timeout 5m
           helm uninstall flowpilot-w16 --namespace flowpilot-w16 --wait
 
-  private-candidate-gate:
-    name: Private candidate verification gate
-    if: always() && inputs.confirm_private_candidate
+  release-image-gate:
+    name: Release image verification gate
+    if: always() && inputs.confirm_release_images
     needs:
       - build-and-push
       - image-evidence
@@ -345,6 +427,7 @@ jobs:
           KIND_HELM_RESULT: ${{ needs.kind-helm-smoke.result }}
           BLOCKING_VULNERABILITIES: ${{ needs.image-evidence.outputs.blocking_vulnerabilities }}
           SECRET_FINDINGS: ${{ needs.image-evidence.outputs.secret_findings }}
+          UNEXPECTED_LICENSE_ASSERTIONS: ${{ needs.image-evidence.outputs.unexpected_license_assertions }}
         shell: bash
         run: |
           set -euo pipefail
@@ -367,6 +450,10 @@ jobs:
           }
           [[ "$SECRET_FINDINGS" == "0" ]] || {
             echo "::error::secret findings: $SECRET_FINDINGS"
+            failed=1
+          }
+          [[ "$UNEXPECTED_LICENSE_ASSERTIONS" == "0" ]] || {
+            echo "::error::unexpected licenseDeclared=NOASSERTION packages: $UNEXPECTED_LICENSE_ASSERTIONS"
             failed=1
           }
           exit "$failed"

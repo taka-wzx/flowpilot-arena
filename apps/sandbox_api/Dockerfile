@@ -11,7 +11,8 @@ RUN pip install --no-cache-dir "uv==0.12.3"
 COPY pyproject.toml uv.lock alembic.ini ./
 COPY migrations ./migrations
 COPY src ./src
-RUN uv sync --locked --no-dev
+RUN uv sync --locked --no-dev --no-cache \
+    && /usr/local/bin/python -m pip uninstall --yes uv pip
 
 RUN adduser -D -u 10002 flowpilot
 USER flowpilot

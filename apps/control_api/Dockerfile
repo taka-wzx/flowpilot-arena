@@ -12,7 +12,8 @@ COPY pyproject.toml uv.lock ./
 COPY src ./src
 COPY alembic.ini ./alembic.ini
 COPY migrations ./migrations
-RUN uv sync --locked --no-dev
+RUN uv sync --locked --no-dev --no-cache \
+    && /usr/local/bin/python -m pip uninstall --yes uv pip
 
 RUN adduser -D -u 10001 flowpilot
 USER flowpilot

@@ -2,6 +2,7 @@
 name = "flowpilot-control-api"
 version = "0.10.0"
 description = "W10 tenant-isolated OIDC Control Plane for FlowPilot Arena"
+license = "Apache-2.0"
 requires-python = ">=3.13,<3.14"
 dependencies = [
   "alembic>=1.15,<2.0",

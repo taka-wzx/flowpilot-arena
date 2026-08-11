@@ -49,14 +49,32 @@ The release workflow now separates `licenseDeclared` from
 allowing only the base-image `.python-rundeps`, the Python binary package, and
 the document-root image package. `licenseConcluded=NOASSERTION` remains an
 honest statement that no independent legal conclusion was performed. Exact
-post-release package counts and checksums are recorded only after the remote
-registry workflow passes.
+post-release registry run 31454378571 passed. Its SPDX package counts,
+declared `NOASSERTION` counts, unexpected counts, and SPDX byte SHA-256 were:
+
+- control-api: 65 / 3 / 0 /
+  `0a2d70340208626370e180d1bfec12d66f43332044cb82a834380bca79045330`;
+- sandbox-api: 58 / 3 / 0 /
+  `ea3d9c4d7c6b7f8bc61dd358a3986f38846add1e5f46e007ec7c0d883c198b23`;
+- control-web: 72 / 1 / 0 /
+  `86996b393936baa29e29dd9e5d945269389a6d2eb575e85b23a995d39d05c46c`;
+- sandbox-web: 72 / 1 / 0 /
+  `44d4813432a8d98eaa4ffa7dfa725068c6f3132e77517c796bf3f6f40c589cee`.
+
+All four Trivy documents again contained zero HIGH/CRITICAL vulnerabilities
+and zero secret findings. The remaining declared `NOASSERTION` names are only
+`.python-rundeps`, `python`, and the image document root in each API image,
+plus the image document root in each Web image.
 
 The repository became Public after run 31316287397. The post-release workflow
 therefore adds GitHub native SLSA provenance to new builds and native SPDX 2.3
 SBOM attestations to new and existing release digests through the immutable
 `actions/attest` commit recorded in the W16 contract. Existing release images
 receive SBOM attestations only; their original build provenance is never
-retroactively claimed as GitHub-native.
+retroactively claimed as GitHub-native. Run 31454356060 completed that
+checksum-bound backfill for the four `v1.0.0` digests. Run 31454378571 signed
+and verified both SLSA provenance and SPDX 2.3 SBOM attestations for all four
+new digests. Independent verification with an empty Docker credential
+directory returned one expected attestation of each type for every subject.
 
 No credential, private URL, machine path, or secret is present in the artifact.

@@ -3,10 +3,9 @@
 ## Authority and frozen history
 
 This contract also governs the separately authorized W16 post-release
-compliance and Aliyun ACK closure on
-`codex/w16-post-release-compliance-cloud`. The branch starts at the verified
-public `v1.0.0` commit on `origin/main`,
-`4795aefe15be66f2405a2b899db7e5764810b8ea`, which contains
+evidence closure on `codex/w16-post-release-evidence`. The branch starts at
+the verified PR 53 merge on `origin/main`,
+`14ad304ef64df638c9a61a898db5c3329021fd33`, which contains
 the original W16 commit `23f546daa8298bfaed20a2574fa9378055d26090` and
 W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 (`w12-production`), W13
@@ -14,10 +13,10 @@ W16 PR 45 merge `d1b03993fc912179d3cdbef00b9f26f524ca9c52`. W12
 releases, merges, reports, protocols, schemas, catalogs, and hashes are
 immutable. The repository, four GHCR packages, annotated `v1.0.0` tag, and
 GitHub Release are already public and final. This follow-up authorizes the
-exact post-release file changes, selected-actions policy addition, push, PR,
-normal CI, squash merge, one existing-digest SBOM-attestation dispatch, one
-new image/attestation dispatch, anonymous verification, and deployment to the
-previously authorized Aliyun ACK target. It does not authorize history
+exact post-release evidence changes, push, PR, normal CI, squash merge,
+anonymous verification, and deployment to the previously authorized Aliyun
+ACK target. The selected-actions policy addition and the two exact workflow
+dispatches are complete and must not be repeated. It does not authorize history
 rewrite, rollback, retag, rerelease, editing the existing GitHub Release, or
 deployment to any other cloud target. Cloud mutation requires a concrete
 authenticated ACK context and recoverable target values; credentials must
@@ -100,7 +99,7 @@ or package hashes. If a container digest or generator is unavailable, the
 machine-readable status and evidence say so; no hand-written component list is
 called a passed SBOM.
 
-## Exact post-release closure allowlist
+## Exact post-release evidence allowlist
 
 Only these exact paths may be created or modified. There are no directory
 wildcards:
@@ -109,14 +108,7 @@ wildcards:
 AGENTS.md
 README.md
 README.zh-CN.md
-apps/control_api/Dockerfile
-apps/control_api/pyproject.toml
-apps/sandbox_api/Dockerfile
-apps/sandbox_api/pyproject.toml
-.github/workflows/release-images.yml
-.github/workflows/attest-v1.0.0-images.yml
 docs/agent-contract.md
-docs/deploy-aliyun-ack.md
 docs/evidence/week-16-release.md
 docs/sbom-status.md
 ~~~
@@ -133,15 +125,14 @@ external Benchmarks. The Aliyun deployment is limited to the recovered
 authorized ACK context, namespace-scoped Helm resources, immutable image
 digests, and synthetic demo settings.
 
-After local implementation verification, explicitly stage only changed paths
-in this allowlist and create the implementation commit:
+After local evidence verification, explicitly stage only changed paths in this
+allowlist and create the evidence commit:
 
-    fix: close W16 post-release compliance gaps
+    docs: record W16 post-release attestations
 
-Push, PR, normal CI, and squash merge are authorized. After merge, add the
-single pinned `actions/attest` reference to the existing selected-actions
-policy, execute exactly one existing-digest attestation dispatch and one
-remediated-image dispatch, verify all four subjects through the GitHub API and
-anonymous GHCR access, and record exact evidence. A separate evidence-only
-commit/PR is authorized when remote run IDs/digests or ACK results are known.
-The annotated `v1.0.0` tag and existing Release remain immutable.
+Push, PR, normal CI, and squash merge are authorized. Runs 31454356060 and
+31454378571, their downloaded artifacts, and anonymous verification provide
+the exact evidence; neither workflow may be rerun. The annotated `v1.0.0` tag
+and existing Release remain immutable. Aliyun ACK execution remains pending
+only because the current runtime has no kubeconfig or kubectl context; a later
+cloud-evidence change is allowed after the authorized context is restored.

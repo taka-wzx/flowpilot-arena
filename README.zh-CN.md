@@ -62,17 +62,20 @@ smoke 覆盖。
 
 ## W16 材料
 
-- W16 PR 45 及截至 PR 51 的 release-closure follow-up 均已合并；main 上的
-  公开证据基线为 `bc5da480...`。
+- W16 PR 45 及截至 PR 53 的 release/post-release follow-up 均已合并；main
+  上的 Attestation 基线为 `14ad304e...`。
 - Helm：[deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena)
-- 候选镜像 workflow：
+- Release 镜像 workflow：
   [.github/workflows/release-images.yml](.github/workflows/release-images.yml)。
   它只接受 main 上精确的 40 位 commit，只发布四个 `linux/amd64`
-  `sha-<commit>` 候选，生成 SBOM/Trivy/provenance 证据并执行 kind/Helm
-  生命周期；不会创建 `latest` 或 `v1.0.0`。
-- 最终 workflow run 31316287397 已通过四镜像精确 digest 构建、零
-  HIGH/CRITICAL、零 secret、registry SPDX/Trivy、sandbox-web DNS 和完整
-  kind/Helm 生命周期。精确 digest 与 artifact checksum 见
+  `sha-<commit>` 镜像，签发 GitHub native SLSA provenance 与 SPDX 2.3 SBOM
+  Attestation，生成 SBOM/Trivy 证据并执行 kind/Helm 生命周期；不会创建
+  `latest` 或 `v1.0.0`。
+- 发布后 workflow run 31454378571 已通过四镜像精确 digest 构建、native
+  provenance/SBOM 验证、零 HIGH/CRITICAL、零 secret、许可证 gate、
+  sandbox-web DNS 和完整 kind/Helm 生命周期。run 31454356060 还对四个不可变
+  `v1.0.0` 镜像 digest 的原始 SPDX 做了 checksum 验证并补充 native SBOM
+  Attestation。精确 digest 与 artifact checksum 见
   [docs/evidence/week-16-release.md](docs/evidence/week-16-release.md)。
 - Demo：[docs/demo.md](docs/demo.md) 与
   [tests/integration/w16_demo.py](tests/integration/w16_demo.py)
@@ -80,6 +83,7 @@ smoke 覆盖。
 - Release Notes：[docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md)
 - SBOM：[docs/sbom.spdx.json](docs/sbom.spdx.json) 与
   [docs/sbom-status.md](docs/sbom-status.md)
+- 阿里云 ACK：[凭据安全部署 runbook](docs/deploy-aliyun-ack.md)
 - 模型卡：[docs/model-card.md](docs/model-card.md)
 - 贡献/安全/许可证：[CONTRIBUTING.md](CONTRIBUTING.md) ·
   [SECURITY.md](SECURITY.md) · [LICENSE](LICENSE)
@@ -103,10 +107,12 @@ GIF/视频必须来自真实的本地确定性运行并完成 Cookie、Bearer、
 break-glass、外部 Benchmark 或生产认证。合成结果不是实际模型质量；WorkArena
 因仓库没有版本化本地资产、许可材料和 checksum 而 unavailable。Helm 4.2.0 与
 kind 0.32.0 在 NetworkPolicy、Web 运行时、rollback 与限定 CoreDNS 修复后已通过
-验证。最终 registry run 的四个镜像均为零 HIGH/CRITICAL、零 secret。仓库与
-registry SPDX 证据按实际限制公开：大量 package license 字段仍为 `NOASSERTION`，
-Private-plan run 无 GitHub native Artifact Attestations，录屏和云部署仍 unavailable；
-这些限制被明确披露，不作为 waiver。
+验证。发布后 registry run 的四个镜像均为零 HIGH/CRITICAL、零 secret。移除仅构建
+所需的 uv/pip 后，API SBOM 从 1,117/1,110 个 package 降至 65/58 个；声明许可证为
+`NOASSERTION` 的数量收敛为 3/3/1/1，且意外项为零。新四 digest 的 GitHub native
+provenance 与 SPDX SBOM Attestation 均通过匿名验证，四个 `v1.0.0` digest 也已有
+native SPDX SBOM Attestation。`licenseConcluded=NOASSERTION` 仍如实表示未进行独立
+法律结论。录屏和云部署仍 unavailable；这些限制被明确披露，不作为 waiver。
 
 ## 明确不支持的生产操作
 

@@ -532,20 +532,70 @@ not modified by the post-release closure.
 The final pre-publication image run 31316287397 could not use GitHub native
 Artifact Attestations because the repository was Private on a non-Enterprise
 plan. After publication, the GitHub Attestations API still returned 404 for
-the four release digests. The post-release closure adds a one-time workflow
-that checksum-verifies and SBOM-attests the exact four SPDX files from run
-31316287397. It does not manufacture historical build provenance. New image
-builds sign native SLSA provenance in the build job and sign the exact
-registry-generated SPDX 2.3 document after Syft/Trivy verification.
+the four release digests. PR 53 merged as
+`14ad304ef64df638c9a61a898db5c3329021fd33`; PR CI run 31453578398 and main
+CI run 31454234614 passed. The selected-actions policy retained its existing
+11 entries and `github_owned_allowed=false` / `verified_allowed=false`, adding
+only `actions/attest@a1948c3f048ba23858d222213b7c278aabede763`.
+
+One-time run 31454356060 checksum-verified the exact four SPDX files from run
+31316287397, then created and verified a GitHub native SPDX 2.3 SBOM
+attestation for each immutable `v1.0.0` digest. It did not manufacture
+historical build provenance. Downloaded bundle byte SHA-256 values were:
+
+- control-api `40d75cd1103c433a48f1c07c2e469ca90a95c857bde50d665b7f209bcd440f1f`;
+- sandbox-api `545b139da04d885e7e26141b3d0b6c57364a9bfdfeac485bba17b6e0633363a3`;
+- control-web `8277d5d52ce99ce17aaa38178bb50e244d6c59cf077331a86beeb3aee500e85c`;
+- sandbox-web `3c22b5dac6fff67cb3596a7e07954063cdd3786f02af5ad692f7da250b5f326c`.
+
+Independent verification with an empty Docker credential directory returned
+exactly one trusted SPDX 2.3 attestation for every release digest, constrained
+to the repository, signer workflow, and source commit `14ad304e...`.
 
 The declared-license root cause is recorded in `docs/sbom-status.md`. The two
 API runtime images are changed only to remove build-only uv, pip, and uv cache
 content and to include the existing Apache-2.0 project metadata. The release
 workflow now fails on any declared `NOASSERTION` package other than the exact
-base-image/runtime document roots listed in the contract. Remote run IDs,
-digests, SBOM hashes, residual counts, vulnerability results, and attestation
-verification are appended only after the implementation reaches main and the
-two authorized workflow dispatches pass.
+base-image/runtime document roots listed in the contract.
+
+Post-release image run 31454378571 passed four builds, registry publication,
+native SLSA provenance, native SPDX SBOM attestations, Syft/Trivy evidence,
+zero unexpected declared-license assertions, the digest-only kind/Helm
+lifecycle, and the final gate. Its immutable subjects were:
+
+- control-api
+  `sha256:d62675232ec06a2b47fa03449d7d2bfe5fa3156262e6c3db41db7d536d4a8f37`;
+- sandbox-api
+  `sha256:bd565b70c5f37c7f3bfcfdb8b9b9347d89470edfd59a5ad89f5e48f5ac07482d`;
+- control-web
+  `sha256:36889cb700ef4543a1300ee029bf91be2368f43c06f6529e6a860371818697ca`;
+- sandbox-web
+  `sha256:c5b06bb60025b7796f8d5f51631169beaaad88b9bbe88d72630a93f6258d3cf5`.
+
+Registry SPDX package count / declared `NOASSERTION` / unexpected declaration
+/ byte SHA-256 were control-api 65 / 3 / 0 /
+`0a2d70340208626370e180d1bfec12d66f43332044cb82a834380bca79045330`,
+sandbox-api 58 / 3 / 0 /
+`ea3d9c4d7c6b7f8bc61dd358a3986f38846add1e5f46e007ec7c0d883c198b23`,
+control-web 72 / 1 / 0 /
+`86996b393936baa29e29dd9e5d945269389a6d2eb575e85b23a995d39d05c46c`,
+and sandbox-web 72 / 1 / 0 /
+`44d4813432a8d98eaa4ffa7dfa725068c6f3132e77517c796bf3f6f40c589cee`.
+All four Trivy documents contained zero HIGH/CRITICAL vulnerabilities and zero
+secret findings. `licenseConcluded=NOASSERTION` remains because no independent
+legal conclusion was performed.
+
+Downloaded combined provenance/SBOM JSONL byte SHA-256 values were control-api
+`d7f690616d6ed921bd4ceab49b6e3703673438afae1a94d828e516358b9bf882`,
+sandbox-api
+`85e9e7ca056e5e2336bbeb590b11b0dcb9266974f65f7cd909f9fa0fe5e9d36d`,
+control-web
+`83e8438bb671776335297453f20cd3ebbb3727b16aeba08b031d8c8158045cad`,
+and sandbox-web
+`54402c127db770f386d14d6785824e9d41addf7ada59740cca421750454922f6`.
+With the same empty Docker credential directory, each new digest independently
+verified exactly one native SLSA provenance and one native SPDX 2.3 SBOM
+attestation constrained to the release workflow and source commit.
 
 Aliyun ACK deployment is authorized, but this workstation currently has no
 Aliyun CLI configuration, Alibaba Cloud environment variables, kubeconfig, or

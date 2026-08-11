@@ -2,8 +2,8 @@
 
 ## Current phase and immutable baselines
 
-This branch is the authorized W16 post-release compliance and Aliyun ACK
-closure on `codex/w16-post-release-compliance-cloud`. The
+This branch is the authorized W16 post-release evidence closure on
+`codex/w16-post-release-evidence`. The
 authoritative W16 contract is `docs/agent-contract.md`; the roadmap is
 `docs/project-roadmap.md`. W12-W15, the two security-maintenance merges, and
 their tags/releases are immutable:
@@ -31,11 +31,13 @@ their tags/releases are immutable:
 - W16 public README PR 52 merge/origin main, annotated `v1.0.0` tag, and
   published GitHub Release
   `4795aefe15be66f2405a2b899db7e5764810b8ea`.
+- W16 post-release compliance PR 53 merge/origin main
+  `14ad304ef64df638c9a61a898db5c3329021fd33`.
 
 Do not rewrite, roll back, retag, rerelease, or otherwise modify those
 objects. W15's report, protocol, configuration, schema, and all hashes remain
-frozen. Work only on `codex/w16-post-release-compliance-cloud`, created from
-the verified public `v1.0.0` commit on `origin/main` above. Never move or
+frozen. Work only on `codex/w16-post-release-evidence`, created from the
+verified PR 53 merge on `origin/main` above. Never move or
 replace the existing `v1.0.0` tag or edit/rerelease its GitHub Release.
 
 ## W16 authority boundary
@@ -53,23 +55,23 @@ data, secret, arbitrary URL/API/Shell/SQL/JavaScript capability, or external
 Benchmark is allowed. WorkArena remains `unavailable/local_assets_absent`.
 Helm rendering/local Compose is never cloud deployment or production
 certification. The repository and four GHCR packages are already Public. The
-user has authorized this post-release branch, exact file changes below,
-selected-actions policy addition for `actions/attest`, push, PR, normal CI,
-squash merge, one existing-digest SBOM-attestation dispatch, one remediated
-image dispatch, anonymous attestation/image verification, and deployment to
-the previously authorized Aliyun ACK target. Cloud mutation must still stop
+user authorized PR 53, the selected-actions policy addition, the two exact
+workflow dispatches, anonymous verification, this evidence-only branch,
+push, PR, normal CI, squash merge, and deployment to the previously authorized
+Aliyun ACK target. Runs 31454356060 and 31454378571 passed; they must not be
+rerun. Cloud mutation must still stop
 unless a concrete authenticated ACK kubeconfig/context and target
 region/cluster are present. Public DNS/TLS or paid resource creation also
 requires the concrete already-authorized values to be recoverable; never
-invent them or print credentials. The implementation commit subject is:
+invent them or print credentials. The evidence commit subject is:
 
-    fix: close W16 post-release compliance gaps
+    docs: record W16 post-release attestations
 
 The literal `%SystemDrive%/` path and every `code_review_agent` repository are
 outside scope. Do not inspect, enumerate, scan, modify, delete, or stage them;
 preserve unrelated `.tmp/` content.
 
-## Exact post-release closure allowlist
+## Exact post-release evidence allowlist
 
 Only the following exact paths may be created or modified. Directory
 wildcards are forbidden; add a path here before changing it.
@@ -78,14 +80,7 @@ wildcards are forbidden; add a path here before changing it.
 AGENTS.md
 README.md
 README.zh-CN.md
-apps/control_api/Dockerfile
-apps/control_api/pyproject.toml
-apps/sandbox_api/Dockerfile
-apps/sandbox_api/pyproject.toml
-.github/workflows/release-images.yml
-.github/workflows/attest-v1.0.0-images.yml
 docs/agent-contract.md
-docs/deploy-aliyun-ack.md
 docs/evidence/week-16-release.md
 docs/sbom-status.md
 ~~~
@@ -131,9 +126,9 @@ git diff -- . ':(exclude)%SystemDrive%'
 git status --short --untracked-files=all -- . ':(exclude)%SystemDrive%'
 ~~~
 
-Record unavailable tooling and cloud parameters honestly. After the
-implementation commit, push/PR/CI/squash merge may proceed, then update the
-selected-actions policy, execute the two authorized workflows, verify their
-attestations/artifacts, and use a separate evidence-only closure commit if
-remote run IDs/digests or ACK results must be recorded. Stop before any cloud
-target other than the recovered authorized Aliyun ACK context.
+Record unavailable tooling and cloud parameters honestly. The two authorized
+workflows are complete and must not be dispatched again. After this single
+evidence commit, push/PR/CI/squash merge may proceed. Stop before any cloud
+target other than the recovered authorized Aliyun ACK context; if that context
+is restored later, record its namespace-scoped result in a separate authorized
+cloud-evidence change.

@@ -1,49 +1,134 @@
 # FlowPilot Arena
 
-> 受治理的企业级 computer-use Agent 与可重置的合成 Arena。W17 通过边界
-> 明确的 Portfolio Demo Console 展示已有本地证据。
+<div align="center">
 
-## 一分钟了解
+### 受治理的企业级 Computer-Use Agent 与可重置合成 Arena
 
-FlowPilot 面向合成企业应用协调 Joiner/Mover/Leaver 流程。Agent 能够观察变化
-页面、规划跨系统的类型化动作、从中断中恢复，并在高风险操作前停下来等待人工
-审批；但 Agent 不是权威来源。Control Plane 负责身份、租户/RBAC、审批、审计、
-队列/租约/栅栏和 receipt/idempotency，只有独立 Sandbox database-fact
-Grader 决定业务成功。
+[English](README.md) · [简体中文](README.zh-CN.md)
 
-受治理流程为：
+[![CI](https://github.com/taka-wzx/flowpilot-arena/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/taka-wzx/flowpilot-arena/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/release-v1.0.0-1f6feb)](https://github.com/taka-wzx/flowpilot-arena/releases/tag/v1.0.0)
+[![License](https://img.shields.io/badge/license-Apache--2.0-2ea44f)](LICENSE)
+[![Demo](https://img.shields.io/badge/demo-synthetic%20%7C%20local%20%7C%20deterministic-d97706)](docs/demo.md)
 
-observe -> plan -> execute -> recover -> verify
+**观察 → 规划 → 执行 → 恢复 → 验证**
 
-当前 Demo 使用合成数据和 deterministic fake provider。真实
-provider/model/OCR/VLM/embedding 调用和真实成本严格为零。
+FlowPilot 面向合成企业应用协调入职、转岗和离职流程。Agent 能够观察变化页面、
+规划类型化动作、从中断中恢复，并在高风险操作前等待人工审批；但 Agent 永远不
+是权威来源。身份、租户/RBAC、审批、审计、队列/租约/栅栏和幂等回执由 Control
+Plane 强制执行，只有独立 Sandbox 数据库事实 Grader 能判定任务是否成功。
+
+[运行 Demo](#五分钟本地-demo) ·
+[查看架构](#系统架构) ·
+[核对证据](#可验证的项目结果) ·
+[查看发布证据](docs/evidence/week-16-release.md)
+
+</div>
+
+> [!IMPORTANT]
+> 已发布 Demo 是本地、确定性和纯合成的，使用 fake provider、合成身份和合成
+> 数据。真实 provider、model、OCR、VLM、embedding、billing、账号数据调用和
+> 真实成本均为零。这是面向作品集的工程验证，不是生产部署或模型质量认证。
+
+## 项目展示的核心能力
+
+| 能力 | 工程重点 |
+|---|---|
+| 受治理的 Agent 执行 | OIDC 身份、租户隔离、RBAC、L0-L4 审批、强 ETag 与防篡改审计链 |
+| 持久化编排 | Temporal 工作流、Checkpoint、有界恢复、队列/限流、租约、栅栏与幂等回执 |
+| 浏览器安全 | 隔离 Playwright context、封闭的类型化动作空间、Prompt Injection 防护与禁止任意代码执行 |
+| 独立评测 | 可重置合成 Arena 与数据库事实 Grader，严格区分 Agent 终态和业务成功 |
+| 可观测交付 | trace/replay、OpenTelemetry、Prometheus、Tempo、Grafana、确定性测试产物与脱敏证据 |
+| 可复现发布 | Docker Compose、digest-only Helm、GitHub Actions、SLSA provenance、SPDX SBOM 与 Trivy/gitleaks gate |
+
+## 可验证的项目结果
+
+下列每个数字均保留其原始冻结协议的适用范围。合成结果不代表真实模型质量、生产
+SLO、ROI、统计显著性或安全认证。
+
+| 证据范围 | 已验证结果 | 来源 |
+|---|---:|---|
+| W15 评测矩阵 | 11 配置 × 3 种子 × 18 实例；594/594 次计划内主试验均已执行，超时和缺失记录均为 0 | [W15 报告](docs/evidence/week-15-report.md) |
+| W15 Full System | 合成任务成功率 83.33%；相对配对 DOM ReAct 基线提升 31.48 个百分点 | [W15 报告](docs/evidence/week-15-report.md) |
+| W15 恢复与安全 | 恢复率 100%；安全失败 0；重复业务副作用 0 | [W15 报告](docs/evidence/week-15-report.md) |
+| W15 评测运行时 | Full System API P95 为 133.988 ms；浏览器最大并发 4 | [W15 报告](docs/evidence/week-15-report.md) |
+| W12 负载验证 | 50 用户、1,000 次受保护请求；API P95 为 353.186 ms；意外 HTTP 响应和 5xx 均为 0 | [W12 报告](docs/evidence/week-12-report.md) |
+| W17 Demo Console | 27 项测试通过，lint、typecheck 与 production build gate 通过 | [W17 证据](docs/evidence/week-17-portfolio-demo-console.md) |
+| 发布镜像 | 4 个精确 digest 镜像；HIGH/CRITICAL 与 secret 发现均为 0；具备 native SLSA provenance 和 SPDX 2.3 SBOM Attestation | [W16 发布证据](docs/evidence/week-16-release.md) |
+
+W15 的 `finished_ungraded` 仅表示 Agent 执行终止，绝不等于业务成功；只有独立
+Grader 能做出该判定。
+
+## Portfolio Demo Console
+
+W17 将 Control Web 收敛为可直接用于作品集展示的控制台，但不扩展任何后端权限。
+
+- 显示明确的 `SYNTHETIC LOCAL DEMO` 环境标记。
+- 展示身份、组织、角色、活动/终态 run 数、待审批数和 audit-chain 状态。
+- 使用封闭 schema 与合成任务引用提交固定 Joiner/Mover/Leaver 流程。
+- 支持 run 历史筛选、受限详情，以及观察 → 规划 → 执行 → 恢复 → 验证时间线。
+- 提供受限 trace/replay，并明确展示缺失证据，不编造阶段状态。
+- 复用强 ETag 审批决策和 stale-decision 防护。
+- 使用 5 秒固定轮询与 2 分钟上限，支持手动刷新，并在终态、页面隐藏、错误或
+  unmount 时清理。
+- 严格区分 Agent 状态与独立 Grader 结果。
+- 响应式、键盘可操作，并覆盖 loading、empty、forbidden、failure、stale 和
+  polling-timeout 状态。
+
+详见 [Demo 分步指南](docs/demo.md)、
+[W17 ADR](docs/adr/0017-w17-portfolio-demo-console.md) 和
+[实施计划](docs/plans/week-17-portfolio-demo-console.md)。
 
 ## 系统架构
 
-~~~mermaid
+```mermaid
 flowchart LR
-  U["本地合成用户"] --> Web["Control Web"]
-  Web --> API["Control API"]
-  API --> ID["Keycloak + Control PostgreSQL"]
-  API --> WF["私有 Workflow Worker"]
+  U["本地合成用户"] --> CW["Control Web\nPortfolio Demo Console"]
+  CW --> CA["Control API"]
+  CA --> ID["Keycloak / OIDC"]
+  CA --> CDB["Control PostgreSQL"]
+  CA --> WF["私有 fenced Workflow Worker"]
   WF --> T["Temporal + Recovery"]
-  WF --> PA["Planning / DOM / Vision / Hybrid"]
-  PA --> BW["隔离 Browser Worker"]
-  BW --> SB["合成 Sandbox"]
-  SB --> G["独立 database-fact Grader"]
-  API --> TR["不透明 trace/replay"]
-~~~
+  T --> PA["Planning / DOM / Vision / Hybrid"]
+  PA --> BW["隔离 Playwright Browser Worker"]
+  BW --> SA["合成企业应用"]
+  SA --> SDB["Sandbox PostgreSQL"]
+  SDB --> G["独立数据库事实 Grader"]
+  CA --> TR["不透明 trace / replay"]
+  CA --> OT["OpenTelemetry"]
+  OT --> OBS["Prometheus / Tempo / Grafana"]
+```
 
-W1-W15 边界见 [docs/architecture.md](docs/architecture.md) 和
-[docs/threat-model.md](docs/threat-model.md)。W16 Helm 只是封闭的、
-namespace-scoped 部署封装，不是新的控制通路。
+### 权威与恢复边界
 
-## 五分钟快速启动
+1. 浏览器、页面、OCR 和模型内容只是不可信数据，永远不是权限来源。
+2. Agent 只能在服务端定义的封闭策略内选择类型化动作。
+3. 高风险动作必须停止并等待组织范围内的人工审批。
+4. Temporal Checkpoint、租约/栅栏和回执保证重投安全，并阻止过期 Worker 提交
+   业务副作用。
+5. Agent 以 `finished_ungraded` 结束；独立 Sandbox Grader 检查数据库事实并判定
+   合成任务结果。
+
+更多说明见[系统架构](docs/architecture.md)和[威胁模型](docs/threat-model.md)。
+
+## 技术栈
+
+| 层级 | 技术 |
+|---|---|
+| Control 与 Sandbox API | Python 3.13、FastAPI、Pydantic、SQLAlchemy、Alembic、PostgreSQL |
+| Agent Runtime | Temporal、Playwright、类型化 DAG Planning、DOM/Vision/Hybrid 路由、有界恢复 |
+| 身份与治理 | OIDC、Keycloak、租户 RBAC、审批策略、ETag 并发控制、审计链 |
+| Web | React 19、TypeScript、Vite、Vitest、Testing Library |
+| 可观测性 | OpenTelemetry、Prometheus、Tempo、Grafana、受限 trace/replay |
+| 交付 | Docker Compose、Helm/Kubernetes、GitHub Actions、SLSA provenance、SPDX SBOM、Trivy |
+| 质量保障 | pytest、mypy、Ruff、ESLint、Vitest、Locust、gitleaks、detect-private-key |
+
+## 五分钟本地 Demo
 
 依赖：Python 3.13、uv、Node.js 24/npm 和 Docker Compose。不需要云账号、镜像
-仓库凭据或外部 Benchmark。
+仓库凭据、外部 Benchmark 或真实 provider。
 
-~~~powershell
+```powershell
 $env:RECOVERY_ENVELOPE_KEY = '<runtime-only local key>'
 docker compose -f deploy/compose/compose.yaml config
 docker compose -f deploy/compose/compose.yaml up --build -d
@@ -52,101 +137,82 @@ docker compose -f deploy/compose/compose.yaml --profile acceptance run --build -
 python tests/integration/w16_demo_smoke.py
 docker compose -f deploy/compose/compose.yaml down -v --remove-orphans
 Remove-Item Env:RECOVERY_ENVELOPE_KEY
-~~~
+```
 
-其他 profile 覆盖 vision、hybrid planning、recovery、context、identity、
-approval、production、observability、security 和 W15 Development-only
-evaluation。上面的 Compose 体积清理是本地 reset，不会授权产品删除。API
-健康端点为 /healthz，Web 健康端点为 /；trace/replay 和独立 Grader 由已有
-smoke 覆盖。
+本地服务健康后打开：
 
-## W17 Portfolio Demo Console
+- Control Web：<http://127.0.0.1:5173>
+- Sandbox Web：<http://127.0.0.1:5174>
 
-本地 Compose 就绪后打开：
+Control Web 只使用普通的新标签页链接进入 Sandbox，不嵌入 Sandbox，也不绕过
+浏览器隔离。上述 volume 清理仅重置本地合成环境。
 
-- Control Web：`http://127.0.0.1:5173`
-- Sandbox Web：`http://127.0.0.1:5174`
+## 仓库导航
 
-Control Web 明确标记为 `SYNTHETIC LOCAL DEMO`，展示当前身份和角色、合成 run
-数量、待审批数、audit-chain 状态、固定 Joiner/Mover/Leaver 提交、客户端状态
-筛选、受限 run detail 与 trace/replay，并以普通链接进入保持隔离的 Sandbox
-Web。三个提交选项只使用固定本地 schema 与合成参数，不提供任意 JSON、URL、
-provider、Shell、SQL 或 JavaScript 输入。
+```text
+apps/
+├── control_api/       身份、租户/RBAC、审批、审计与 run admission
+├── control_web/       W17 Portfolio Demo Console
+├── workflow_worker/   私有 outbox、lease、fence 与 dispatch 边界
+├── recovery_worker/   Temporal 持久恢复与 Checkpoint
+├── planning_agent/    类型化有界 DAG Planning
+├── dom_agent/         DOM-only 执行路径
+├── vision_agent/      Vision-only 执行路径
+├── hybrid_agent/      确定性 DOM/Vision 路由
+├── browser_worker/    隔离 Playwright 执行
+├── sandbox_api/       合成企业状态与独立 Grader
+└── sandbox_web/       合成企业 UI
+deploy/
+├── compose/           权威本地拓扑
+└── helm/              封闭的 digest-only Kubernetes 包装
+tests/
+├── integration/       端到端 acceptance 与 evidence smoke
+└── load/              冻结的 W12 Locust 验证 profile
+docs/                  架构、威胁模型、ADR、计划与证据
+```
 
-API 名称 `production-runs` 是历史命名，不代表真实生产。本控制台不使用真实
-provider、个人数据、生产身份、生产认证或公网部署。Agent terminal state 与独立
-Grader 严格分离：`finished_ungraded` 不是业务成功；当前 Control API 不提供独立
-Grader 结果时，页面明确显示 `Grader result unavailable from this surface`，不会
-编造结论。详见 [W17 Demo 指南](docs/demo.md)、
-[ADR](docs/adr/0017-w17-portfolio-demo-console.md) 和
-[实施计划](docs/plans/week-17-portfolio-demo-console.md)。
+## 证据与文档
 
-## W16 材料
+- [Demo walkthrough](docs/demo.md)
+- [系统架构](docs/architecture.md)
+- [威胁模型](docs/threat-model.md)
+- [W15 评测报告](docs/evidence/week-15-report.md)
+- [Benchmark Card](docs/benchmark-card.md)
+- [Model Card](docs/model-card.md)
+- [W16 发布证据](docs/evidence/week-16-release.md)
+- [W17 Demo Console 证据](docs/evidence/week-17-portfolio-demo-console.md)
+- [SPDX SBOM](docs/sbom.spdx.json) 与 [SBOM 状态](docs/sbom-status.md)
 
-- W16 PR 45 及截至 PR 54 的 release/post-release follow-up 均已合并；main
-  上的 Attestation 来源为 `14ad304e...`，发布后证据基线为 `66c71a5...`。
-- Helm：[deploy/helm/flowpilot-arena](deploy/helm/flowpilot-arena)
-- Release 镜像 workflow：
-  [.github/workflows/release-images.yml](.github/workflows/release-images.yml)。
-  它只接受 main 上精确的 40 位 commit，只发布四个 `linux/amd64`
-  `sha-<commit>` 镜像，签发 GitHub native SLSA provenance 与 SPDX 2.3 SBOM
-  Attestation，生成 SBOM/Trivy 证据并执行 kind/Helm 生命周期；不会创建
-  `latest` 或 `v1.0.0`。
-- 发布后 workflow run 31454378571 已通过四镜像精确 digest 构建、native
-  provenance/SBOM 验证、零 HIGH/CRITICAL、零 secret、许可证 gate、
-  sandbox-web DNS 和完整 kind/Helm 生命周期。run 31454356060 还对四个不可变
-  `v1.0.0` 镜像 digest 的原始 SPDX 做了 checksum 验证并补充 native SBOM
-  Attestation。精确 digest 与 artifact checksum 见
-  [docs/evidence/week-16-release.md](docs/evidence/week-16-release.md)。
-- Demo：[docs/demo.md](docs/demo.md) 与
-  [tests/integration/w16_demo.py](tests/integration/w16_demo.py)
-- 架构：[docs/architecture.md](docs/architecture.md)
-- Release Notes：[docs/release-notes-v1.0.0.md](docs/release-notes-v1.0.0.md)
-- SBOM：[docs/sbom.spdx.json](docs/sbom.spdx.json) 与
-  [docs/sbom-status.md](docs/sbom-status.md)
-- 阿里云云端验证：两个 Web 镜像已在现有 ECS 的临时单节点 K3s 上完成检查，
-  详见[发布证据](docs/evidence/week-16-release.md)。这不是 ACK 部署；
-  [ACK runbook](docs/deploy-aliyun-ack.md) 未执行。
-- 模型卡：[docs/model-card.md](docs/model-card.md)
-- 贡献/安全/许可证：[CONTRIBUTING.md](CONTRIBUTING.md) ·
-  [SECURITY.md](SECURITY.md) · [LICENSE](LICENSE)
+## 发布与安全状态
 
-W15 冻结的 synthetic Reporting 结果、矩阵、hash 和 WorkArena 状态见
-[week-15-report](docs/evidence/week-15-report.md) 和
-[benchmark-card](docs/benchmark-card.md)。三次重复不支持显著性、真实成本、
-生产 SLO、ROI 或安全认证结论。
+- 当前 `main` 在 `v1.0.0` 之后增加了 W17 Portfolio Demo Console；不可变的
+  `v1.0.0` tag 仍是 W16 发布，不包含 W17 展示层改动。
+- 公开的 `v1.0.0` GitHub Release 与 annotated tag 保持不可变。
+- 启用 Helm 组件必须提供精确的 `repository@sha256:<64 hex>` 镜像；不会创建
+  `latest` 镜像。
+- 容器以非 root、只读根文件系统、drop capabilities、RuntimeDefault seccomp、
+  固定资源、探针与 default-deny 网络策略运行。
+- 最新验证的四镜像发布 run 为零 HIGH/CRITICAL、零 secret，并具备 native
+  provenance/SBOM Attestation。
+- 临时阿里云 ECS 单节点 K3s 验证只检查了两个 Web 镜像和 loopback，随后已清理；
+  它不是 ACK、公网入口、高可用或生产认证。
 
-## Demo 媒体
+报告漏洞前请阅读 [SECURITY.md](SECURITY.md)。发布与 Attestation 细节保存在
+[W16 证据记录](docs/evidence/week-16-release.md)中。
 
-GIF/视频必须来自真实的本地确定性运行并完成 Cookie、Bearer、nonce、DSN、
-机器路径、个人数据、secret 和调试信息脱敏。本环境没有录屏工具，因此媒体
-如实为 unavailable；[docs/demo.md](docs/demo.md) 提供带字幕的静态 fallback。
-不使用 AI 生成画面冒充产品运行。
+## 明确限制
 
-## 安全边界与已知限制
+FlowPilot **不会**连接真实 HR、IAM、ITSM、mail 或 asset 系统，不接受任意 Shell、
+SQL、JavaScript、provider、URL、secret 或个人数据输入。项目不提供
+impersonation、全局管理员、break-glass、物理删除、公网部署、生产身份、托管 ACK、
+外部 WorkArena Benchmark、生产 SLO、ROI 或安全认证。WorkArena 保持
+`unavailable/local_assets_absent`，因为仓库中没有版本化本地资产、许可材料或
+checksum。
 
-仓库现为 Public。云端证据仅限在现有阿里云 ECS 上临时进行的单节点 K3s
-双 Web 镜像验证；它不是 ACK 或生产部署，未开放公网入口，验证后已清理。
-没有托管集群部署、生产身份、生产 provider、任意浏览器/API/代码执行、物理删除、
-impersonation、delegation、break-glass、外部 Benchmark 或生产认证。合成结果不是实际模型质量；WorkArena
-因仓库没有版本化本地资产、许可材料和 checksum 而 unavailable。Helm 4.2.0 与
-kind 0.32.0 在 NetworkPolicy、Web 运行时、rollback 与限定 CoreDNS 修复后已通过
-验证。发布后 registry run 的四个镜像均为零 HIGH/CRITICAL、零 secret。移除仅构建
-所需的 uv/pip 后，API SBOM 从 1,117/1,110 个 package 降至 65/58 个；声明许可证为
-`NOASSERTION` 的数量收敛为 3/3/1/1，且意外项为零。新四 digest 的 GitHub native
-provenance 与 SPDX SBOM Attestation 均通过匿名验证，四个 `v1.0.0` digest 也已有
-native SPDX SBOM Attestation。`licenseConcluded=NOASSERTION` 仍如实表示未进行独立
-法律结论。录屏与 ACK 托管集群部署仍 unavailable/未执行；有限 ECS 验证不改变
-这些边界。
+## 贡献与许可证
 
-## 明确不支持的生产操作
+欢迎在既有权威和安全边界内贡献。修改前请阅读
+[CONTRIBUTING.md](CONTRIBUTING.md) 与
+[W17 agent contract](docs/agent-contract.md)。
 
-不要用本发布材料修改真实 HR/IAM/ITSM/mail/asset 系统、处理薪酬或法律数据、
-绕过审批、授予全局管理员、上传真实凭据、暴露服务入口，或把 Agent 完成状态、
-Dashboard、Reporting、Helm、Demo 输出当成业务成功。
-
-修改仓库前请先阅读 [W17 plan](docs/plans/week-17-portfolio-demo-console.md)、
-[W17 contract](docs/agent-contract.md) 与
-[W17 evidence](docs/evidence/week-17-portfolio-demo-console.md)。公开源码复核已完成；package
-visibility、`v1.0.0` 与 GitHub Release 是显式发布操作。另行授权的 ECS/K3s 验证已
-完成并清理，且不属于本 release；此处不再授权任何云操作。
+项目使用 [Apache-2.0](LICENSE) 许可证。
